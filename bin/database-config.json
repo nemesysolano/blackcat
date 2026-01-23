@@ -1,0 +1,8 @@
+{
+    "host": "nas",
+    "port": 5432,
+    "dbname": "qf",
+    "user": "postgres",
+    "password": "admin",
+    "sqlalchemy.url": "postgresql+psycopg2://postgres:admin@nas:5432/qf"
+}
