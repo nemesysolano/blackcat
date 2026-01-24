@@ -1,6 +1,7 @@
 
 from qf.indicators import scale_with_multiplier
 from qf.indicators import volumeprice
+from qf.indicators import ensemble
 from qf.indicators import wavelets
 from qf.dbsync import read_quote_names, db_config
 from qf.nn.splitter import create_datasets
@@ -67,20 +68,19 @@ def set_seeds(seed=42):
 def create_cnn_model(input_dim):
     # input_dim = 14 (your lags)
     inputs = layers.Input(shape=(input_dim, 1))
-
     # 1. Convolutional Layer: Scans for patterns using 32 different "filters"
     # kernel_size=3 means it looks at 3 consecutive lags at a time
     x = layers.Conv1D(filters=32, kernel_size=3, activation='leaky_relu', padding='same')(inputs)
     x = layers.MaxPooling1D(pool_size=2)(x) # Reduces noise
     
     # 2. Second Scan: Finds more complex combinations of the first patterns
-    x = layers.Conv1D(filters=64, kernel_size=3, activation='leaky_relu', padding='same')(x)
+    x = layers.Conv1D(filters=32, kernel_size=3, activation='leaky_relu', padding='same')(x)
     x = layers.GlobalAveragePooling1D()(x) # Flattens the data for the final decision
     
     # 3. Final Decision Layers
-    x = layers.Dense(32, activation='leaky_relu')(x)
+    x = layers.Dense(64, activation='leaky_relu')(x)
     x = layers.Dropout(0.2)(x)
-    outputs = layers.Dense(1, activation='tanh')(x) 
+    outputs = layers.Dense(1, activation='linear')(x) 
 
     model = models.Model(inputs=inputs, outputs=outputs)
     model.compile(optimizer='adam', loss=directional_mse, metrics=['mae'])
@@ -89,7 +89,8 @@ def create_cnn_model(input_dim):
 indicator = {
     "pricetime": wavelets.pricetime,
     "volumetime": wavelets.volumetime,
-    "volumeprice": volumeprice
+    "volumeprice": volumeprice,
+    "ensemble": ensemble
 }
 if __name__ == "__main__":
     set_seeds(42)

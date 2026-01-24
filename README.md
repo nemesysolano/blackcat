@@ -249,3 +249,7 @@ Instead of opening multiple orders, you calculate a Volume Factor ($V_f$) based 
 The `Max_Kelly_Size` (for know on denoted as $K_{\max}$) is defined as
 
 $K_{\max} = \frac{\text{edge\_diff}}{50}$
+
+
+# References #
+[The deep learning book](https://www.deeplearningbook.org)

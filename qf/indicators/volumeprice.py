@@ -40,14 +40,14 @@ def volumeprice_sql(quote_name, lookback_periods):
 
 def volumeprice(sqlalchemy_url, quote_name, lookback_periods):
     (sql_template, features, target) = volumeprice_sql(quote_name, lookback_periods)
-    print(sql_template)
+    
     engine = create_engine(sqlalchemy_url)
     
     with engine.connect() as connection:
         df = pd.read_sql(sql_template, connection)
         # engine.connect() used in a 'with' block handles closing, 
         # but explicit close is fine.
-    
+        connection.close()
     engine.dispose()
     
     # Drop rows where LAG functions returned NULL (the beginning of the dataset)
