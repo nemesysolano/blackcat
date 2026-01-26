@@ -5,11 +5,12 @@ def volumeprice_sql(quote_name, lookback_periods):
     volume_term = '1.0' if quote_name.endswith('=X') else 'ABS("VOLUME_DIFF%%")'
     lags = []
     features = set()
+    scale_factor = 10
     
     # Range is 1 to lookback_periods (inclusive)
     # i=1 generates Feature Y1: LAG(1) - LAG(2) (No Leak)
     for i in range(1, lookback_periods+1): 
-        term = f'(LAG(y, {i}) OVER (order by "TIMESTAMP") - LAG(Y, {i+1}) OVER (order by "TIMESTAMP")) y{i}'
+        term = f'(LAG(y, {i}) OVER (order by "TIMESTAMP") - LAG(Y, {i+1}) OVER (order by "TIMESTAMP")) * {scale_factor}  y{i}'
         lags.append(term)
         features.add(f"y{i}")
     
@@ -31,7 +32,7 @@ def volumeprice_sql(quote_name, lookback_periods):
             order by "TIMESTAMP"
         )
         select "TIMESTAMP", 
-        (y - LAG(Y, 1) OVER (order by "TIMESTAMP")) AS y_target,
+        (y - LAG(Y, 1) OVER (order by "TIMESTAMP")) * {scale_factor}  AS y_target,
         {','.join(lags)}
         from PRICE_VOL 
         order by "TIMESTAMP"

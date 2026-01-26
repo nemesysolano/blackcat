@@ -118,6 +118,8 @@ is a periodic non-linear function defined as
 
 $V(t) = \frac{\sum^2_{i=1} (\cos Φ_i(t) + \sin Φ_i(t))^2}{4}$.
 
+The $\tanh (32⋅|W(t)|⋅|V(t)|)$ formula is called **market power** which, albeit not actually tradable, will be provided as input to the ensemble model as measurement of trend stability$ 
+
 ## Price Momentum ##
 
 **Price momentum measures** the _velocity_ of price changes as opposed to the actual price levels themselves and (unlike price) is a directional quantity. In this work
@@ -148,6 +150,15 @@ $v(t) = Δ_1(v(t))⋅V(t)$
 The average wavelet momentum is defined as
 
 $a(t) = Δ_1(v(t))⋅\frac{W(t) + V(t)}{2}$
+
+### Bar Direction ###
+
+Consider the OHLC bar at time $t$; the **bar momentum** is defined as 
+
+$\vec b = Δ_{\%}(c(t) - o(t), h(t) - l(t))$, where
+
+$o(t),\space  l(t),\space  h(t)$ and $c(t)$ are open, low, high and close price at time $t$ respectively.
+
 
 ## Price Acceleration Model ##
 
@@ -253,3 +264,5 @@ $K_{\max} = \frac{\text{edge\_diff}}{50}$
 
 # References #
 [The deep learning book](https://www.deeplearningbook.org)
+
+# Scripts #

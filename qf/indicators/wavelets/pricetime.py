@@ -4,13 +4,16 @@ import pandas as pd
 def pricetime_sql(quote_name, lookback_periods):
     lags = []
     features = set()
+    scale_factor = 1
     
     # Range is 1 to lookback_periods (inclusive)
     # i=1 generates Feature Y1: LAG(1) - LAG(2) (No Leak)
     for i in range(1, lookback_periods+1): 
-        term = f'(LAG(W, {i}) OVER (order by "TIMESTAMP") - LAG(W, {i+1}) OVER (order by "TIMESTAMP")) *10 w{i}'
+        term = f'(LAG(W, {i}) OVER (order by "TIMESTAMP") - LAG(W, {i+1}) OVER (order by "TIMESTAMP")) * {scale_factor} w{i}'
         lags.append(term)
         features.add(f"w{i}")
+    for angle in ["Θh↑", "Θh↓", "Θl↑", "Θl↓"]:
+        features.add(angle)
     
     return ((
     f"""		
@@ -55,12 +58,15 @@ def pricetime_sql(quote_name, lookback_periods):
         ORDER BY "TIMESTAMP"
     ), pricetime as (select 
         quote."TICKER", quote."TIMESTAMP",
+        "Θh↑", "Θh↓", "Θl↑", "Θl↓",
         ((POWER(cos("Θh↑") + sin("Θh↑"),2) + POWER(cos("Θh↓") + sin("Θh↓"),2) + POWER(cos("Θl↑") + sin("Θl↑"),2) + POWER(cos("Θl↓") + sin("Θl↓"),2)) / 8) * (
         ("CLOSE" - LAG("CLOSE", 1) OVER (order by angles."TIMESTAMP")) / (ABS("CLOSE") + ABS(LAG("CLOSE", 1) OVER (order by angles."TIMESTAMP")) + 0.00009)
         ) as W
         from ANGLES inner join quote on angles."TICKER" = quote."TICKER" and angles."TIMESTAMP" = quote."TIMESTAMP"
+        order by angles."TIMESTAMP"
     ) select "TIMESTAMP", W, 
-        (W - LAG(W, 1) OVER (order by "TIMESTAMP")) AS w_target,
+        (W - LAG(W, 1) OVER (order by "TIMESTAMP")) * {scale_factor}  AS w_target,
+        "Θh↑", "Θh↓", "Θl↑", "Θl↓",  -- Add these to the final selection
         {",".join(lags)}    
         from pricetime
         order by "TIMESTAMP"

@@ -13,7 +13,7 @@ def quote_exists(connection, quote_name):
 
 def import_historical_data(connection, historical_data, quote_name):
     cursor = connection.cursor();
-    statement = "PREPARE INSERT_QUOTE AS INSERT INTO quote (\"TICKER\", \"TIMESTAMP\", \"OPEN\", \"HIGH\", \"LOW\", \"CLOSE\", \"VOLUME\") VALUES ($1, $2, $3, $4, $5, $6, $7)"
+    statement = "PREPARE INSERT_QUOTE AS INSERT INTO quote (\"TICKER\", \"TIMESTAMP\", \"OPEN\", \"HIGH\", \"LOW\", \"CLOSE\", \"VOLUME\") VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (\"TICKER\", \"TIMESTAMP\") DO NOTHING;"
     cursor.execute(statement)
     count = 0
     for index, row in historical_data.iterrows():
@@ -41,18 +41,17 @@ def get_last_quote(connection, quote_name):
     return last_quote
 
 def import_since_last_update(connection, quote_name):
-    last_quote = get_last_quote(connection, quote_name)
-    next_quote = datetime.now()
-    next_quote = next_quote.strftime('%Y-%m-%d')
-    first_quote = last_quote.strftime('%Y-%m-%d')
-
-    if next_quote < first_quote:
+    max_quote_date = get_last_quote(connection, quote_name)
+    first_quote_date = max_quote_date + timedelta(days=1)
+    next_quote_date = datetime.now()
+    
+    if next_quote_date > first_quote_date:
         ticker_data = yf.Ticker(quote_name)
-        historical_data = ticker_data.history(start=next_quote, end=first_quote)
+        historical_data = ticker_data.history(start=first_quote_date, end=next_quote_date)
         count = import_historical_data(connection, historical_data, quote_name)
-        print(f"📁: inserted {count} records from '{quote_name}' since '{first_quote}' to '{next_quote}.")
+        print(f"📁: inserted {count} records from '{quote_name}' since '{first_quote_date}' to '{next_quote_date}.")
     else:
-        print(f"📁: records for '{quote_name}' since '{first_quote}' to '{next_quote} are up to date.")
+        print(f"📁: records for '{quote_name}' since '{first_quote_date}' to '{next_quote_date} are up to date.")
 
 def import_quote(connection_string, quote):
     connection = None

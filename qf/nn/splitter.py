@@ -1,6 +1,6 @@
 def create_datasets(args):     
-    X_train, X_val, X_test, Y_train, Y_val, Y_test = create_trade_datasets(args)
-    return X_train.to_numpy(), X_val.to_numpy(), X_test.to_numpy(), Y_train.to_numpy(), Y_val.to_numpy(), Y_test.to_numpy()
+    X_train, X_val, X_test, Y_train, Y_val, Y_test, test_data = create_trade_datasets(args)
+    return X_train.to_numpy(), X_val.to_numpy(), X_test.to_numpy(), Y_train.to_numpy(), Y_val.to_numpy(), Y_test.to_numpy(), test_data
  
 
 def create_trade_datasets(args): 
@@ -33,5 +33,5 @@ def create_trade_datasets(args):
     assert len(X_test) == len(Y_test)
     assert len(Y_train) + len(Y_val) + len(Y_test) == n
 
-    return X_train, X_val, X_test, Y_train, Y_val, Y_test
+    return X_train, X_val, X_test, Y_train, Y_val, Y_test, test_data
  

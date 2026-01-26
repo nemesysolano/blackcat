@@ -26,7 +26,7 @@ def create_backtest_stats(results):
     f_cap = float(np.ravel(equity_curve)[0]) if np.ndim(equity_curve) > 0 else equity_curve
     
     initial_capital = equity_array[0]
-    total_return_pct = (f_cap - initial_capital) / initial_capital
+    total_return_pct = (equity_array[-1] - initial_capital) / initial_capital
     
     # Now np.diff will produce a simple 1D vector
     returns = get_returns(equity_array)

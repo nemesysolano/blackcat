@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# for INDICATOR in $(cat ${SCRIPT_DIR}/../documents/indicators.txt)
+for INDICATOR in $(echo "ensemble")
+do
+    trade-model documents/quotes.txt $INDICATOR
+done

@@ -1,12 +1,11 @@
 from bin.train_model import directional_mse
-from qf.indicators import volumeprice
+from qf.indicators import volumeprice, bardirection
 from qf.indicators import ensemble
 from qf.indicators import wavelets
 from qf.trade.stats import create_backtest_stats
 import sys
 import os
 from qf.dbsync import read_quote_names, db_config
-from qf.indicators import scale_with_multiplier
 from qf.nn.splitter import create_trade_datasets
 from qf.trade import Position, Transaction
 from qf.trade.stats import get_returns
@@ -16,13 +15,6 @@ import qf.trade as trade
 from sqlalchemy import create_engine
 import numpy as np
 import traceback
-
-indicator = {
-    "pricetime": wavelets.pricetime,
-    "volumetime": wavelets.volumetime,
-    "volumeprice": volumeprice,
-    "ensemble": ensemble
-}
 
 def get_quotes(sqlalchemy_url, quote_name, X_test):
     engine = create_engine(sqlalchemy_url)
@@ -39,61 +31,100 @@ def get_quotes(sqlalchemy_url, quote_name, X_test):
     engine.dispose()
     return df
 
-def trade_quotes(sqlalchemy_url, quote_name, context, predictions, edge, initial_cap = 10000):
-    transaction_log = []    
-    cash = [initial_cap]
-    longs, shorts = 0, 0
-    winner_longs, winner_shorts = 0, 0
-    loser_longs, loser_shorts = 0, 0
-    timestamp = context.index
-    position = None
-    n = len(context)
-    context = get_quotes(sqlalchemy_url, quote_name, context)
+def trade_quotes(sqlalchemy_url, quote_name, X_test, predictions, edge, contrarian, structural_check):
+    # 1. Prepare price data and merge with model features/angles
+    df = get_quotes(sqlalchemy_url, quote_name, X_test)
+    n = len(df)
     
-    assert  len(context) == len(predictions)
+    # Initialize backtest state
+    active_position = None
+    transaction_log = []
+    cash = 10000.0
+    equity_curve = []
+    
+    # Counters for stats
+    long_trades = 0
+    short_trades = 0
+    winner_longs = 0
+    winner_shorts = 0
+    loser_longs = 0
+    loser_shorts = 0
 
-    for i in range(n-1):
-        t = timestamp[i]
-        prediction = predictions[i]
-        open_price, close_price, high_price, low_price = context.loc[t, "OPEN"], context.loc[t, "CLOSE"], context.loc[t, "HIGH"], context.loc[t, "LOW"]
-        transaction = Transaction.from_position(position, i, n, open_price, low_price, high_price, close_price)
-
-        if not transaction is None:            
-            if transaction.exit_reason == 1:
-                winner_longs += 1 if transaction.side == 1 else 0
-                winner_shorts += 1 if transaction.side == -1 else 0
-            elif transaction.exit_reason == -1:
-                loser_longs += 1 if transaction.side == 1 else 0
-                loser_shorts += 1 if transaction.side == -1 else 0
-            transaction_log.append(transaction)
-            cash.append(cash[-1] + transaction.pl)
-            position = None
-        else:
-            cash.append(cash[-1])
-
-        if position is None:
-            entry_index = i + 1
-            t_1 = timestamp[entry_index]            
-            entry_price = context.loc[t_1, "OPEN"]                       
-            position = Position.create(quote_name, context, entry_index, prediction, edge, entry_price)
-            if position.side == 1:
-                longs += 1
-            else:
-                shorts += 1
-            
+    for i in range(n):
+        row = df.iloc[i]
+        current_price = row['CLOSE']
         
-    print(f"Traded {len(transaction_log)} transactions for {quote_name}")
-    return (quote_name, cash, longs, shorts, winner_longs, winner_shorts, loser_longs, loser_shorts, transaction_log)
+        # --- PHASE 1: CHECK FOR EXITS ---
+        if active_position is not None:
+            # Transaction.from_position requires 7 arguments
+            transaction = Transaction.from_position(
+                active_position, 
+                i, 
+                n, 
+                row['OPEN'], 
+                row['LOW'], 
+                row['HIGH'], 
+                row['CLOSE']
+            )
+            
+            if transaction is not None:
+                # Trade Closed: Record results and update counters
+                transaction_log.append(transaction)
+                cash += transaction.pl
+                
+                if transaction.side == 1:
+                    if transaction.pl > 0: winner_longs += 1
+                    else: loser_longs += 1
+                else:
+                    if transaction.pl > 0: winner_shorts += 1
+                    else: loser_shorts += 1
+                
+                active_position = None # Reset for next trade
 
-def predict(quote_name, X_test):
-    checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{quote_name}-{indicator_name}.keras')
-    model = tf.keras.models.load_model(checkpoint_filepath, custom_objects={'directional_mse': directional_mse})
-    X_test = X_test.to_numpy().reshape((X_test.shape[0], X_test.shape[1], 1))    
-    predictions = model.predict(X_test)
-    return predictions
+        # --- PHASE 2: CHECK FOR ENTRIES ---
+        # Only enter if we don't have an open position and aren't at the very last bar
+        if active_position is None and i < n - 1:
+            # Position.create implements the angle "Double Check"
+            # Returns None if Momentum and Structure diverge
+            active_position = Position.create(
+                quote_name, 
+                df, 
+                i, 
+                predictions[i], 
+                edge, 
+                current_price,
+                contrarian,
+                structural_check
+            )
+            
+            if active_position is not None:
+                if active_position.side == 1: long_trades += 1
+                else: short_trades += 1
 
+        # --- PHASE 3: TRACK EQUITY ---
+        current_equity = cash
+        if active_position is not None:
+            # Unrealized P&L calculation
+            if active_position.side == 1:
+                current_equity += (current_price - active_position.entry_price) * active_position.quantity
+            else:
+                current_equity += (active_position.entry_price - current_price) * active_position.quantity
+        
+        equity_curve.append(current_equity)
 
-def generate_reports(results, indicator_name, quote_name):
+    return (
+        quote_name, 
+        equity_curve, 
+        long_trades, 
+        short_trades, 
+        winner_longs, 
+        winner_shorts, 
+        loser_longs, 
+        loser_shorts, 
+        transaction_log
+    )
+
+def generate_reports(results, indicator_name, quote_name, structural_check):
     stats = create_backtest_stats(results)
     transactions = results[-1]
     output_file = os.path.join(os.getcwd(), "test-results", f"report-{indicator_name}-backtest.csv")
@@ -103,9 +134,9 @@ def generate_reports(results, indicator_name, quote_name):
     with open(output_file, mode) as f: #
         if mode == 'w':
             print(
-            "Ticker,Initial Capital,Final Capital,Total Return (%),Max Drawdown (%),Volatility (per step),Sharpe Ratio,Number of Steps,Peak Equity,Final Drawdown,Long Trades,Short Trades,Winner Longs,Winner Shorts,Loser Longs,Loser Shorts,", 
+            "Ticker,Structural Check,Initial Capital,Final Capital,Total Return (%),Max Drawdown (%),Volatility (per step),Sharpe Ratio,Number of Steps,Peak Equity,Final Drawdown,Long Trades,Short Trades,Winner Longs,Winner Shorts,Loser Longs,Loser Shorts,", 
             file=f)    
-        print(f"{stats['Ticker']},{stats['Initial Capital']:.2f},{stats['Final Capital']:.2f},{stats['Total Return (%)']:.2f},{stats['Max Drawdown (%)']:.2f},{stats['Volatility (per step)']:.4f},{stats['Sharpe Ratio']:.4f},{stats['Number of Steps']},{stats['Peak Equity']:.2f},{stats['Final Drawdown (%)']:.2f},{stats['Long Trades']},{stats['Short Trades']},{stats['Winner Longs']},{stats['Winner Shorts']},{stats['Loser Longs']},{stats['Loser Shorts']}", file=f)
+        print(f"{stats['Ticker']},{structural_check},{stats['Initial Capital']:.2f},{stats['Final Capital']:.2f},{stats['Total Return (%)']:.2f},{stats['Max Drawdown (%)']:.2f},{stats['Volatility (per step)']:.4f},{stats['Sharpe Ratio']:.4f},{stats['Number of Steps']},{stats['Peak Equity']:.2f},{stats['Final Drawdown (%)']:.2f},{stats['Long Trades']},{stats['Short Trades']},{stats['Winner Longs']},{stats['Winner Shorts']},{stats['Loser Longs']},{stats['Loser Shorts']}", file=f)
 
         transactions_file = os.path.join(os.getcwd(), "test-results", f"report-{indicator_name}-{quote_name}-backtest-details.csv")
         os.remove(transactions_file) if os.path.exists(transactions_file) else None
@@ -132,11 +163,27 @@ def already_traded(indicator_name, quote_name):
     transactions_file = os.path.join(os.getcwd(), "test-results", f"report-{indicator_name}-{quote_name}-backtest-details.csv")
     return os.path.exists(transactions_file)
 
+def predict(quote_name, X_test):
+    checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{quote_name}-{indicator_name}.keras')
+    model = tf.keras.models.load_model(checkpoint_filepath, custom_objects={'directional_mse': directional_mse})    
+    X_test = X_test.to_numpy().reshape((X_test.shape[0], X_test.shape[1], 1))    
+    predictions = model.predict(X_test)
+    return predictions
+
+indicators = {
+    "pricetime": wavelets.pricetime,
+    "volumetime": wavelets.volumetime,
+    "volumeprice": volumeprice,
+    "ensemble": ensemble,
+    "bardirection": bardirection
+}
+
+
 if __name__ == "__main__":
     quotes_file = sys.argv[1]
     indicator_name = sys.argv[2]    
     scale_multiplier = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
-    indicator = indicator[indicator_name]
+    indicator = indicators[indicator_name]
     lookback_periods = 14
     _, sqlalchemy_url = db_config()
     quotes = read_quote_names(quotes_file)
@@ -145,8 +192,7 @@ if __name__ == "__main__":
     model_stats.set_index('Ticker', inplace=True)
 
     for quote_name in quotes:                
-        _, _, X_test, _, _, _ = create_trade_datasets(scale_with_multiplier(indicator(sqlalchemy_url, quote_name, lookback_periods), scale_multiplier))
-       
+        _, _, X_test, _, _, _, test_data = create_trade_datasets(indicator(sqlalchemy_url, quote_name, lookback_periods))
         quote_stats = get_stats(model_stats,quote_name)
         tradable = quote_stats is not None and check_if_tradable(quote_stats)
         
@@ -154,10 +200,12 @@ if __name__ == "__main__":
             if check_if_tradable(quote_stats) and not already_traded(indicator_name, quote_name):
                 print(f"{quote_name} is tradable with {indicator_name} indicator.")
                 predictions = predict(quote_name, X_test)
-                edge = quote_stats["Edge"]            
-                results = trade_quotes(sqlalchemy_url, quote_name, X_test, predictions, edge)
-                generate_reports(results, indicator_name, quote_name)
-                print(f"Traded {len(X_test)} quotes from {quote_name} with {indicator_name} indicator.")
+                edge = quote_stats["Edge"]     
+                contrarian = np.sign(quote_stats["Match %"]-quote_stats["Diff %"]) < 0
+                structural_check = True if indicator_name == "ensemble" else False
+                results = trade_quotes(sqlalchemy_url, quote_name, test_data, predictions, edge, contrarian, structural_check)
+                generate_reports(results, indicator_name, quote_name, structural_check)
+                print(f"Traded {len(test_data)} quotes from {quote_name} with {indicator_name} indicator and  tructural check = {structural_check}.")
             else:
                 if already_traded(indicator_name, quote_name):
                     print(f"{quote_name} is already traded with {indicator_name} indicator.")

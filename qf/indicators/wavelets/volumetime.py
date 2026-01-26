@@ -4,11 +4,12 @@ import pandas as pd
 def volumetime_sql(quote_name, lookback_periods):
     lags = []
     features = set()
-    
+    scale_factor = 10
+
     # Feature generation: Using double % to escape for SQLAlchemy if needed, 
     # but here we use a clean 'pct' naming convention.
     for i in range(1, lookback_periods + 1): 
-        term = f'''(LAG(v_mom, {i}) OVER (order by "TIMESTAMP") - LAG(v_mom, {i+1}) OVER (order by "TIMESTAMP")) v{i}'''
+        term = f'''(LAG(v_mom, {i}) OVER (order by "TIMESTAMP") - LAG(v_mom, {i+1}) OVER (order by "TIMESTAMP")) * {scale_factor} v{i}'''
         lags.append(term)
         features.add(f"v{i}")
     
@@ -19,6 +20,7 @@ def volumetime_sql(quote_name, lookback_periods):
                ROW_NUMBER() OVER (ORDER BY "TIMESTAMP") as rn
         FROM QUOTE
         WHERE "TICKER" = '{quote_name}' 
+        ORDER BY "TIMESTAMP"
     ),
     structural_pivots AS (
         SELECT 
@@ -38,18 +40,21 @@ def volumetime_sql(quote_name, lookback_periods):
             WHERE rn < curr.rn AND "VOLUME" < curr."VOLUME" 
             ORDER BY rn DESC LIMIT 1
         ) v_dn ON TRUE
+        ORDER BY curr."TIMESTAMP"
     ),
     bases AS (
         SELECT *,
             GREATEST(i_v_up, i_v_dn, 1) AS B_t,
             GREATEST(ABS(val_v_up), ABS(val_v_dn), 0.000009) AS C_t
         FROM structural_pivots
+        ORDER BY "TIMESTAMP"
     ),
     angles AS (
         SELECT *,
             ATAN(COALESCE((1.0 * i_v_up / NULLIF(B_t, 0)) / ((1.0 * val_v_up / NULLIF(C_t, 0)) + 0.000009), 0)) AS phi1,
             ATAN(COALESCE((1.0 * i_v_dn / NULLIF(B_t, 0)) / ((1.0 * val_v_dn / NULLIF(C_t, 0)) + 0.000009), 0)) AS phi2
         FROM bases
+        ORDER BY "TIMESTAMP"
     ),
     base_momentum AS (
         SELECT 
@@ -57,11 +62,12 @@ def volumetime_sql(quote_name, lookback_periods):
             (
                 (POWER(COS(phi1) + SIN(phi1), 2) + POWER(COS(phi2) + SIN(phi2), 2)) / 4) * (
                 ("CLOSE" - LAG("CLOSE", 1) OVER (order by "TIMESTAMP")) / (ABS("CLOSE") + ABS(LAG("CLOSE", 1) OVER (order by "TIMESTAMP")) + 0.000009)
-            ) AS v_mom
+            ) AS v_mom            
         FROM angles
+        ORDER BY "TIMESTAMP"
     )
-    SELECT "TIMESTAMP",
-    (v_mom - LAG(v_mom, 1) OVER (ORDER BY "TIMESTAMP"))  AS v_target,
+    SELECT "TIMESTAMP", v_mom,
+    (v_mom - LAG(v_mom, 1) OVER (ORDER BY "TIMESTAMP")) * {scale_factor}  AS v_target,
     {", ".join(lags)}    
     FROM base_momentum
     ORDER BY "TIMESTAMP"

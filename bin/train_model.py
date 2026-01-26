@@ -1,5 +1,5 @@
 
-from qf.indicators import scale_with_multiplier
+from qf.indicators import bardirection
 from qf.indicators import volumeprice
 from qf.indicators import ensemble
 from qf.indicators import wavelets
@@ -90,7 +90,8 @@ indicator = {
     "pricetime": wavelets.pricetime,
     "volumetime": wavelets.volumetime,
     "volumeprice": volumeprice,
-    "ensemble": ensemble
+    "ensemble": ensemble,
+    "bardirection": bardirection
 }
 if __name__ == "__main__":
     set_seeds(42)
@@ -101,7 +102,7 @@ if __name__ == "__main__":
     lookback_periods = 14
     _, sqlalchemy_url = db_config()
     
-    X_train, X_val, X_test, Y_train, Y_val, Y_test = create_datasets(scale_with_multiplier(indicator(sqlalchemy_url, quote_name, lookback_periods), scale_multiplier))
+    X_train, X_val, X_test, Y_train, Y_val, Y_test, _ = create_datasets(indicator(sqlalchemy_url, quote_name, lookback_periods))
 
     X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
     X_val = X_val.reshape((X_val.shape[0], X_val.shape[1], 1))
