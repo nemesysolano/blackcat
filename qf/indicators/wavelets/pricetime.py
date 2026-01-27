@@ -18,7 +18,7 @@ def pricetime_sql(quote_name, lookback_periods):
     return ((
     f"""		
     WITH quote_indexed AS (
-        SELECT  "TICKER", "TIMESTAMP",  "HIGH",  "LOW",  ROW_NUMBER() OVER (ORDER BY "TIMESTAMP") as rn
+        SELECT  "TICKER", "TIMESTAMP", "CLOSE",  "HIGH",  "LOW",  ROW_NUMBER() OVER (ORDER BY "TIMESTAMP") as rn
         FROM QUOTE
         WHERE "TICKER" = '{quote_name}' 
     ),
@@ -27,6 +27,7 @@ def pricetime_sql(quote_name, lookback_periods):
             curr.rn, 
             curr."TICKER", 
             curr."TIMESTAMP", 
+            curr."CLOSE", 
             curr."HIGH", 
             curr."LOW",
             (curr.rn - h_up.rn) AS i_h_up, 
@@ -48,7 +49,7 @@ def pricetime_sql(quote_name, lookback_periods):
         FROM structural_pivots
     ), angles as (
         SELECT 
-            "TICKER", "TIMESTAMP",
+            "TICKER", "TIMESTAMP", "CLOSE",
             -- COALESCE ensures that if a pivot hasn't occurred yet, the angle defaults to 0
             COALESCE(ATAN((1.0 * i_h_up / NULLIF(B_t, 0)) / ((1.0 * p_h_up / NULLIF(C_t, 0)) + 0.000009)), 0) AS "Θh↑",
             COALESCE(ATAN((1.0 * i_h_dn / NULLIF(B_t, 0)) / ((1.0 * p_h_dn / NULLIF(C_t, 0)) + 0.000009)), 0) AS "Θh↓",
@@ -58,13 +59,13 @@ def pricetime_sql(quote_name, lookback_periods):
         ORDER BY "TIMESTAMP"
     ), pricetime as (select 
         quote."TICKER", quote."TIMESTAMP",
-        "Θh↑", "Θh↓", "Θl↑", "Θl↓",
+        "Θh↑", "Θh↓", "Θl↑", "Θl↓", angles."CLOSE",
         ((POWER(cos("Θh↑") + sin("Θh↑"),2) + POWER(cos("Θh↓") + sin("Θh↓"),2) + POWER(cos("Θl↑") + sin("Θl↑"),2) + POWER(cos("Θl↓") + sin("Θl↓"),2)) / 8) * (
-        ("CLOSE" - LAG("CLOSE", 1) OVER (order by angles."TIMESTAMP")) / (ABS("CLOSE") + ABS(LAG("CLOSE", 1) OVER (order by angles."TIMESTAMP")) + 0.00009)
+        (angles."CLOSE" - LAG(angles."CLOSE", 1) OVER (order by angles."TIMESTAMP")) / (ABS(angles."CLOSE") + ABS(LAG(angles."CLOSE", 1) OVER (order by angles."TIMESTAMP")) + 0.00009)
         ) as W
         from ANGLES inner join quote on angles."TICKER" = quote."TICKER" and angles."TIMESTAMP" = quote."TIMESTAMP"
         order by angles."TIMESTAMP"
-    ) select "TIMESTAMP", W, 
+    ) select "TIMESTAMP", W, "CLOSE",
         (W - LAG(W, 1) OVER (order by "TIMESTAMP")) * {scale_factor}  AS w_target,
         "Θh↑", "Θh↓", "Θl↑", "Θl↓",  -- Add these to the final selection
         {",".join(lags)}    
@@ -87,4 +88,5 @@ def pricetime(sqlalchemy_url, quote_name, lookback_periods):
     # Drop rows where LAG functions returned NULL (the beginning of the dataset)
     df.dropna(inplace=True)
     df.set_index('TIMESTAMP', inplace=True)
+    
     return df, features, target

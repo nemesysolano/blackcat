@@ -66,7 +66,7 @@ def volumetime_sql(quote_name, lookback_periods):
         FROM angles
         ORDER BY "TIMESTAMP"
     )
-    SELECT "TIMESTAMP", v_mom,
+    SELECT "TIMESTAMP", v_mom, "CLOSE",
     (v_mom - LAG(v_mom, 1) OVER (ORDER BY "TIMESTAMP")) * {scale_factor}  AS v_target,
     {", ".join(lags)}    
     FROM base_momentum

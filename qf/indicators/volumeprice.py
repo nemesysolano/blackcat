@@ -27,11 +27,11 @@ def volumeprice_sql(quote_name, lookback_periods):
             order by "TIMESTAMP"
         ),
         PRICE_VOL as (
-            select "TIMESTAMP", "CLOSE_DIFF%%" * {volume_term} y
+            select "TIMESTAMP", "CLOSE", "CLOSE_DIFF%%" * {volume_term} y
             from PCT_DIFF
             order by "TIMESTAMP"
         )
-        select "TIMESTAMP", 
+        select "TIMESTAMP", "CLOSE",
         (y - LAG(Y, 1) OVER (order by "TIMESTAMP")) * {scale_factor}  AS y_target,
         {','.join(lags)}
         from PRICE_VOL 
