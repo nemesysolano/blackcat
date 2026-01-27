@@ -1,5 +1,0 @@
-Ticker,Entry Index,Exit Index,Duration,Side,Entry Price,Exit Price,PL,TP Price,SL Price,Exit Reason
-USFD,57,58,1,-1,65.80,66.46,-11.19,64.48,66.46,-1
-USFD,161,162,1,1,64.77,63.81,-11.01,66.07,64.12,-1
-USFD,243,245,2,-1,80.17,78.57,27.26,78.57,80.97,1
-USFD,319,320,1,1,76.64,78.17,26.06,78.17,75.87,1

@@ -10,63 +10,62 @@ class Position(NamedTuple):
     take_profit: float
     stop_loss: float
 
+    @staticmethod
+    def _calculate_dynamic_levels(entry_price, side, edge, atr_pct, efficiency_ratio):
+        """
+        Calculates TP/SL based on market rhythm and model confidence.
+        """
+        reward = min(efficiency_ratio + (edge / 100), 0.975)
+        print(f"Reward: {reward}")
+        if side == 1:
+            tp_factor = 1 + reward
+            sl_factor = 1 - reward*0.25
+        else:
+            tp_factor = 1 - reward
+            sl_factor = 1 + reward*0.25
+        
+
+        take_profit = entry_price * tp_factor
+        stop_loss = entry_price * sl_factor
+
+        
+        return take_profit, stop_loss
 
     @staticmethod
     def create_with_check(quote_name, context, entry_index, prediction, edge, entry_price, contrarian):
         t = context.index[entry_index]
-        
-        # 1. Base Direction from Ensemble Model
         side = int(np.sign(prediction)) * (-1 if contrarian else 1)
-        
-        current_bar_dir = context.loc[t, "d"]
-        # VETO: If the model predicts Long (+1), but the bar is closing as a 
-        # Red/Down bar (negative 'd'), the trade is cancelled.
-        if np.sign(current_bar_dir) != side:
-            return None
+        efficiency_ratio = context.loc[t, "ER"]
+        current_atr_pct = context.loc[t, "ATR %"]
 
-        # 2. Extract Structural Angles & Bar Direction
+        # 1. Structural VETO (The "Must-Have" conditions)
         t_l_up = context.loc[t, "Θl↑"]
         t_h_dn = context.loc[t, "Θh↓"]
-        # Assuming 'd' is the column name for Bar Direction (Close-Open)/(High-Low)
-        current_bar_dir = context.loc[t, "d"] 
-
-        # 3. Structural Sanity Check (Pricetime logic)
-        volume_factor = 0.0
-        if side == 1: # Long
-            if t_l_up > t_h_dn: volume_factor = 1.0
-            elif t_l_up > 0: volume_factor = 0.5 # Weak momentum
-        else: # Short
-            if t_h_dn > t_l_up: volume_factor = 1.0
-            elif t_h_dn > 0: volume_factor = 0.5
-
-        # 4. Bar Direction Conviction Filter (The New Step)
-        # If bar direction is opposite to our prediction, it's a "fake out"
-        if np.sign(current_bar_dir) != side:
-            return None # Skip: Price is moving against the trend within the bar
+        current_bar_dir = context.loc[t, "d"]
         
-        # Scale volume further if the bar is "weak" (less than 30% conviction)
-        if abs(current_bar_dir) < 0.3:
-            volume_factor *= 0.5
+        # Basic structural check: Are we swimming with the current?
+        structural_alignment = (side == 1 and t_l_up > t_h_dn) or (side == -1 and t_h_dn > t_l_up)
+        bar_alignment = np.sign(current_bar_dir) == side
 
-        # 5. VETO: If power is too low, the move is likely a 'fake' or 'drift'
-        # A threshold of 0.15 - 0.20 is a good starting point for 'Laminar Flow'
-        if "market_power" in context.columns:
-            market_power = context.loc[t, "market_power"]
-            if market_power < 0.0075:
-                return None
+        if not (structural_alignment and bar_alignment):
+            return None # Cancel trade if structure or bar direction opposes us
 
-        # 6. Final Sizing & Risk
-        k_max = edge / 50
+        # 2. Dynamic Market Power Factor (The "Conviction" scaling)
+        market_power = context.loc[t, "market_power"]
+        avg_power = context.loc[t, "avg_market_power"]
         
-        if "ER" in context.columns:
-            er_value = context.loc[t, "ER"]
-            volatility_scaler = np.clip(er_value, 0.5, 1.0)        
-        else:
-            volatility_scaler = 1.0
+        # Ratio of current power to average (clamped between 0.5 and 1.0)
+        power_ratio = market_power / (avg_power + 1e-9)
+        volume_factor = np.clip(power_ratio, 0.5, 1.0)
 
-        quantity = max(1, int(k_max * volume_factor * volatility_scaler * 100))
-        take_profit = entry_price * (1 + 0.02 * side)
-        stop_loss = entry_price * (1 - 0.01 * side)
+        # 3. Position Sizing
+        k_max = (edge / 50) * efficiency_ratio
+        quantity = max(1, int(k_max * volume_factor * 100))
+
+        # 4. Risk Management (Fixed 2% TP / 1% SL)
+        take_profit, stop_loss = Position._calculate_dynamic_levels(
+            entry_price, side, edge, current_atr_pct, efficiency_ratio
+        )
 
         return Position(quote_name, entry_index, entry_price, side, quantity, take_profit, stop_loss)
     
@@ -77,20 +76,24 @@ class Position(NamedTuple):
         Used to establish a baseline for the model's raw predictive power.
         """
         # 1. Base Direction from Ensemble Model (allowing for contrarian flipping)
+        t = context.index[entry_index]
         side = int(np.sign(prediction)) * (-1 if contrarian else 1)
-        
+        efficiency_ratio = context.loc[t, "ER"]
+        current_atr_pct = context.loc[t, "ATR %"]
+
         # 2. Fixed Volume Factor
         # Without checks, we assume 100% size conviction based on the model signal
         volume_factor = 1.0
 
         # 3. Position Sizing
         # Formula: K_max = edge / 50
-        k_max = edge / 50
+        k_max = (edge / 50) * efficiency_ratio
         quantity = max(1, int(k_max * volume_factor * 100)) 
 
         # 4. Risk Management (Fixed 2% TP / 1% SL)
-        take_profit = entry_price * (1 + 0.02 * side)
-        stop_loss = entry_price * (1 - 0.01 * side)
+        take_profit, stop_loss = Position._calculate_dynamic_levels(
+            entry_price, side, edge, current_atr_pct, efficiency_ratio
+        )
 
         return Position(
             ticker=quote_name,

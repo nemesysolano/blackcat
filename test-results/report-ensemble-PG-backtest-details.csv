@@ -1,4 +1,0 @@
-Ticker,Entry Index,Exit Index,Duration,Side,Entry Price,Exit Price,PL,TP Price,SL Price,Exit Reason
-PG,1,3,2,-1,156.62,158.18,-17.23,153.48,158.18,-1
-PG,138,139,1,-1,159.66,161.26,-35.13,156.47,161.26,-1
-PG,172,173,1,-1,160.51,157.30,70.62,157.30,162.11,1

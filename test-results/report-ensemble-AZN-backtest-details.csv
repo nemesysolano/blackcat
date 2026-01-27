@@ -1,5 +1,0 @@
-Ticker,Entry Index,Exit Index,Duration,Side,Entry Price,Exit Price,PL,TP Price,SL Price,Exit Reason
-AZN,70,71,1,-1,64.89,63.59,46.72,63.59,65.53,1
-AZN,172,173,1,-1,67.99,66.63,36.71,66.63,68.67,1
-AZN,252,253,1,-1,72.59,73.31,-16.69,71.13,73.31,-1
-AZN,370,372,2,-1,89.94,90.84,-9.89,88.14,90.84,-1

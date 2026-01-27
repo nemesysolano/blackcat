@@ -1,5 +1,5 @@
 from typing import NamedTuple
-
+import qf.trade
 class Transaction(NamedTuple):
     ticker: str
     entry_index: int
@@ -12,9 +12,11 @@ class Transaction(NamedTuple):
     take_profit: float
     stop_loss: float
     exit_reason: int # -1 stop loss, 0 bar close, 1 take profit
+    friction: float
+
 
     @staticmethod
-    def from_position(position, exit_index, n, current_open_price, current_low_price, current_high_price, current_close_price):
+    def from_position(position, exit_index, n, current_open_price, current_low_price, current_high_price, current_close_price, current_atr_pct):
         if position is None:
             return None
 
@@ -24,38 +26,40 @@ class Transaction(NamedTuple):
         
         # side 1 = Long
         if position.side == 1:
-            # Use position.take_profit instead of position.tp
-            if current_high_price >= position.take_profit:
+            if current_open_price >= position.take_profit or current_high_price >= position.take_profit:
                 exit_price = position.take_profit 
                 exit_reason = 1
                 pl = position.take_profit - position.entry_price
-            elif current_low_price <= position.stop_loss or current_open_price <= position.stop_loss:
+            elif current_open_price <= position.stop_loss or current_low_price <= position.stop_loss:
                 exit_price = min(position.stop_loss, current_open_price)
                 exit_reason = -1
-                pl = position.stop_loss - position.entry_price                
-        # side -1 = Short
-        elif position.side == -1:
-            if current_low_price <= position.take_profit:
-                exit_price = position.take_profit
-                exit_reason = 1
-                pl = position.entry_price - position.take_profit
-            elif current_high_price >= position.stop_loss or current_open_price >= position.stop_loss:
-                exit_price =  max(position.stop_loss, current_open_price) # position.stop_loss
-                exit_reason = -1
-                pl = position.entry_price - position.stop_loss
-        elif exit_index == n-1: # Means that we have an open position at end of stream
-            if position.side == 1:
-                exit_price = current_close_price
-                exit_reason = 0
-                pl = current_close_price - position.entry_price
-            else:
+                pl = position.stop_loss - position.entry_price   
+            elif position.entry_price > current_close_price:
                 exit_price = current_close_price
                 exit_reason = 0
                 pl = position.entry_price - current_close_price
+                
+        # side -1 = Short
+        elif position.side == -1:
+            if current_open_price <= position.take_profit or current_low_price <= position.take_profit:
+                exit_price = position.take_profit
+                exit_reason = 1
+                pl = position.entry_price - position.take_profit
+            elif current_open_price >= position.stop_loss or current_high_price >= position.stop_loss:
+                exit_price =  max(position.stop_loss, current_open_price) # position.stop_loss
+                exit_reason = -1
+                pl = position.entry_price - position.stop_loss
+            elif position.entry_price < current_close_price:
+                exit_price = current_close_price
+                exit_reason = 0
+                pl = current_close_price - position.entry_price
 
         if exit_reason is None:
             return None
 
+        slip_in = qf.trade.dynamic_slippage(current_atr_pct)
+        slip_out = qf.trade.dynamic_slippage(current_atr_pct)
+        friction = (position.entry_price * slip_in) + (exit_price * slip_out)
         return Transaction(
             ticker = position.ticker,
             exit_index = exit_index,
@@ -64,8 +68,9 @@ class Transaction(NamedTuple):
             side = position.side,
             entry_price = position.entry_price,
             exit_price = exit_price,
-            pl = pl * position.quantity,
+            pl = (pl-friction) * position.quantity,
             take_profit = position.take_profit, # Fixed name
             stop_loss = position.stop_loss, # Fixed name
-            exit_reason = exit_reason
+            exit_reason = exit_reason,
+            friction = friction
         )

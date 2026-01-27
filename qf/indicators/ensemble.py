@@ -25,13 +25,16 @@ def ensemble(sqlalchemy_url, quote_name, lookback_periods):
 
     merged_df['d'] = bd_df['d']
     merged_df['v_mom'] = vt_df['v_mom']
-    merged_df['market_power'] = 32 * np.abs(merged_df['w']) * np.abs(merged_df['v_mom']) 
-
+    merged_df['market_power'] = 32 * np.abs(merged_df['w']) * np.abs(merged_df['v_mom'])
+    merged_df['avg_market_power'] = merged_df['market_power'].rolling(window=lookback_periods).mean()
+    merged_df['std_market_power'] = merged_df['market_power'].rolling(window=lookback_periods).std()
+    merged_df['rel_market_power'] = (merged_df['avg_market_power'] -  merged_df['market_power']) / merged_df['std_market_power']
     merged_df.dropna(inplace=True)    
 
     direction = abs(bd_df['CLOSE'] - bd_df['CLOSE'].shift(lookback_periods))
     volatility = abs(bd_df['CLOSE'] - bd_df['CLOSE'].shift(1)).rolling(window=lookback_periods).sum()
     merged_df['ER'] = direction / (volatility + 1e-9)
+    merged_df['ATR %'] = (volatility / lookback_periods) / bd_df['CLOSE']
     merged_df.dropna(inplace=True)
 
     # 4. New Weighted Target (Structural-First)
@@ -44,7 +47,7 @@ def ensemble(sqlalchemy_url, quote_name, lookback_periods):
     ) / 100
 
     # 5. Full Feature Set for the DNN
-    merged_features = ['market_power']
+    merged_features = ['rel_market_power', 'ER']
     merged_features.extend(pt_features)
     merged_features.extend(vt_features)
     merged_features.extend(vp_features)

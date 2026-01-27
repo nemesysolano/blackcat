@@ -1,5 +1,0 @@
-Ticker,Entry Index,Exit Index,Duration,Side,Entry Price,Exit Price,PL,TP Price,SL Price,Exit Reason
-ZL=F,86,87,1,-1,40.75,41.71,-8.56,39.94,41.16,-1
-ZL=F,170,171,1,1,47.44,48.39,23.72,48.39,46.97,1
-ZL=F,221,222,1,1,50.61,51.62,19.23,51.62,50.10,1
-ZL=F,268,269,1,1,53.64,54.71,20.38,54.71,53.10,1

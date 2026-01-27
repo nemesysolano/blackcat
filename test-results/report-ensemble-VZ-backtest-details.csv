@@ -1,4 +1,0 @@
-Ticker,Entry Index,Exit Index,Duration,Side,Entry Price,Exit Price,PL,TP Price,SL Price,Exit Reason
-VZ,60,61,1,-1,38.16,38.55,-4.58,37.40,38.55,-1
-VZ,154,155,1,1,40.65,39.40,-2.44,41.46,40.24,-1
-VZ,172,173,1,-1,40.27,39.47,19.33,39.47,40.68,1

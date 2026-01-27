@@ -109,8 +109,8 @@ if __name__ == "__main__":
     X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
     model = create_cnn_model(X_train.shape[1])
     patience = 10
-    epochs = 50
-    batch_size = 32
+    epochs = 100
+    batch_size = 100
     model.summary()
     checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{quote_name}-{indicator_name}.keras')
 
@@ -147,11 +147,7 @@ if __name__ == "__main__":
         validation_data=(X_val, Y_val),
         epochs=epochs,
         batch_size=batch_size,
-        callbacks=(
-            model_checkpoint_callback, 
-            early_stopping_callback,
-            # penalty_callback
-        )
+        callbacks = callbacks
     )    
 
   

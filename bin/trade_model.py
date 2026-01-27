@@ -64,7 +64,8 @@ def trade_quotes(sqlalchemy_url, quote_name, X_test, predictions, edge, contrari
                 row['OPEN'], 
                 row['LOW'], 
                 row['HIGH'], 
-                row['CLOSE']
+                row['CLOSE'],
+                row['ATR %']
             )
             
             if transaction is not None:
@@ -142,10 +143,10 @@ def generate_reports(results, indicator_name, quote_name, structural_check):
         os.remove(transactions_file) if os.path.exists(transactions_file) else None
         with open(transactions_file, 'w') as t: #
             print(
-                "Ticker,Entry Index,Exit Index,Duration,Side,Entry Price,Exit Price,PL,TP Price,SL Price,Exit Reason", 
+                "Ticker,Entry Index,Exit Index,Duration,Side,Entry Price,Exit Price,PL,TP Price,SL Price,Exit Reason, Friction", 
                 file=t)
             for transaction in transactions:
-                print(f"{transaction.ticker},{transaction.entry_index},{transaction.exit_index},{transaction.duration},{transaction.side},{transaction.entry_price:.2f},{transaction.exit_price:.2f},{transaction.pl:.2f},{transaction.take_profit:.2f},{transaction.stop_loss:.2f},{transaction.exit_reason}", file=t)
+                print(f"{transaction.ticker},{transaction.entry_index},{transaction.exit_index},{transaction.duration},{transaction.side},{transaction.entry_price:.2f},{transaction.exit_price:.2f},{transaction.pl:.2f},{transaction.take_profit:.2f},{transaction.stop_loss:.2f},{transaction.exit_reason},{transaction.friction:.5f}", file=t)
 
 def check_if_tradable(quote_stats):
     try:

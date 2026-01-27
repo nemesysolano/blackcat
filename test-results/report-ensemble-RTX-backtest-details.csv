@@ -1,4 +1,0 @@
-Ticker,Entry Index,Exit Index,Duration,Side,Entry Price,Exit Price,PL,TP Price,SL Price,Exit Reason
-RTX,184,186,2,1,118.68,121.05,33.23,121.05,117.49,1
-RTX,246,248,2,1,155.19,153.64,-24.83,158.29,153.64,-1
-RTX,337,340,3,-1,168.02,169.70,-23.52,164.66,169.70,-1
