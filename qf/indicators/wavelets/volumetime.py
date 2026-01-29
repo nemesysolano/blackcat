@@ -1,3 +1,4 @@
+from qf.indicators.augmentation import add_volatility_columns
 from sqlalchemy import create_engine
 import pandas as pd
 #  (vol_wavelet_momentum - LAG(vol_wavelet_momentum, 1) OVER (ORDER BY "TIMESTAMP")) as v_target
@@ -51,22 +52,23 @@ def volumetime_sql(quote_name, lookback_periods):
     ),
     angles AS (
         SELECT *,
-            ATAN(COALESCE((1.0 * i_v_up / NULLIF(B_t, 0)) / ((1.0 * val_v_up / NULLIF(C_t, 0)) + 0.000009), 0)) AS phi1,
-            ATAN(COALESCE((1.0 * i_v_dn / NULLIF(B_t, 0)) / ((1.0 * val_v_dn / NULLIF(C_t, 0)) + 0.000009), 0)) AS phi2
+            ATAN(COALESCE((1.0 * i_v_up / NULLIF(B_t, 0)) / ((1.0 * val_v_up / NULLIF(C_t, 0)) + 0.000009), 0)) AS "φ1",
+            ATAN(COALESCE((1.0 * i_v_dn / NULLIF(B_t, 0)) / ((1.0 * val_v_dn / NULLIF(C_t, 0)) + 0.000009), 0)) AS "φ2"
         FROM bases
         ORDER BY "TIMESTAMP"
     ),
     base_momentum AS (
         SELECT 
-            "TIMESTAMP", "CLOSE",
+            "TIMESTAMP", "CLOSE", angles."φ1", angles."φ2",
             (
-                (POWER(COS(phi1) + SIN(phi1), 2) + POWER(COS(phi2) + SIN(phi2), 2)) / 4) * (
+                (POWER(COS("φ1") + SIN("φ1"), 2) + POWER(COS("φ1") + SIN("φ1"), 2)) / 4) * (
                 ("CLOSE" - LAG("CLOSE", 1) OVER (order by "TIMESTAMP")) / (ABS("CLOSE") + ABS(LAG("CLOSE", 1) OVER (order by "TIMESTAMP")) + 0.000009)
-            ) AS v_mom            
+            ) AS v_mom,
+            (POWER(COS("φ1") + SIN("φ1"), 2) + POWER(COS("φ1") + SIN("φ1"), 2)) / 4 "v(t)"
         FROM angles
         ORDER BY "TIMESTAMP"
     )
-    SELECT "TIMESTAMP", v_mom, "CLOSE",
+    SELECT "TIMESTAMP", v_mom, "CLOSE", base_momentum."φ1", base_momentum."φ2", "v(t)",
     (v_mom - LAG(v_mom, 1) OVER (ORDER BY "TIMESTAMP")) * {scale_factor}  AS v_target,
     {", ".join(lags)}    
     FROM base_momentum
@@ -88,4 +90,5 @@ def volumetime(sqlalchemy_url, quote_name, lookback_periods):
     # Drop rows where LAG functions returned NULL (the beginning of the dataset)
     df.dropna(inplace=True)
     df.set_index('TIMESTAMP', inplace=True)
+    add_volatility_columns(df, lookback_periods)
     return df, features, target    

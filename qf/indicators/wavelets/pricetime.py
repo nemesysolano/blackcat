@@ -1,3 +1,4 @@
+from qf.indicators.augmentation import add_volatility_columns
 from sqlalchemy import create_engine
 import pandas as pd
 
@@ -12,8 +13,6 @@ def pricetime_sql(quote_name, lookback_periods):
         term = f'(LAG(W, {i}) OVER (order by "TIMESTAMP") - LAG(W, {i+1}) OVER (order by "TIMESTAMP")) * {scale_factor} w{i}'
         lags.append(term)
         features.add(f"w{i}")
-    for angle in ["Θh↑", "Θh↓", "Θl↑", "Θl↓"]:
-        features.add(angle)
     
     return ((
     f"""		
@@ -62,10 +61,11 @@ def pricetime_sql(quote_name, lookback_periods):
         "Θh↑", "Θh↓", "Θl↑", "Θl↓", angles."CLOSE",
         ((POWER(cos("Θh↑") + sin("Θh↑"),2) + POWER(cos("Θh↓") + sin("Θh↓"),2) + POWER(cos("Θl↑") + sin("Θl↑"),2) + POWER(cos("Θl↓") + sin("Θl↓"),2)) / 8) * (
         (angles."CLOSE" - LAG(angles."CLOSE", 1) OVER (order by angles."TIMESTAMP")) / (ABS(angles."CLOSE") + ABS(LAG(angles."CLOSE", 1) OVER (order by angles."TIMESTAMP")) + 0.00009)
-        ) as W
+        ) as W,
+        ((POWER(cos("Θh↑") + sin("Θh↑"),2) + POWER(cos("Θh↓") + sin("Θh↓"),2) + POWER(cos("Θl↑") + sin("Θl↑"),2) + POWER(cos("Θl↓") + sin("Θl↓"),2)) / 8) "w(t)"
         from ANGLES inner join quote on angles."TICKER" = quote."TICKER" and angles."TIMESTAMP" = quote."TIMESTAMP"
         order by angles."TIMESTAMP"
-    ) select "TIMESTAMP", W, "CLOSE",
+    ) select "TIMESTAMP", W, "w(t)", "CLOSE",
         (W - LAG(W, 1) OVER (order by "TIMESTAMP")) * {scale_factor}  AS w_target,
         "Θh↑", "Θh↓", "Θl↑", "Θl↓",  -- Add these to the final selection
         {",".join(lags)}    
@@ -88,5 +88,6 @@ def pricetime(sqlalchemy_url, quote_name, lookback_periods):
     # Drop rows where LAG functions returned NULL (the beginning of the dataset)
     df.dropna(inplace=True)
     df.set_index('TIMESTAMP', inplace=True)
-    
+
+    add_volatility_columns(df, lookback_periods)
     return df, features, target

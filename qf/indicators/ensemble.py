@@ -1,6 +1,8 @@
+from qf.indicators.augmentation import add_volatility_columns
 from qf.indicators.wavelets import pricetime, volumetime
 from qf.indicators import volumeprice, bardirection
 import numpy as np
+import pandas as pd
 
 def ensemble(sqlalchemy_url, quote_name, lookback_periods):
     # 1. Fetch all component indicators
@@ -12,38 +14,32 @@ def ensemble(sqlalchemy_url, quote_name, lookback_periods):
     merged_target = 'avg_target'
     # Using pricetime as the base because it contains the structural 'Θ' angles
     merged_df = pt_df.copy()
-
+    
     # 2. Merge Features and Targets
-    merged_df[vt_features] = vt_df[vt_features]
-    merged_df[vt_target] = vt_df[vt_target]
-
-    merged_df[vp_features] = vp_df[vp_features]
-    merged_df[vp_target] = vp_df[vp_target]
-
-    merged_df[bd_features] = bd_df[bd_features]
-    merged_df[bd_target] = bd_df[bd_target]
-
-    merged_df['d'] = bd_df['d']
-    merged_df['v_mom'] = vt_df['v_mom']
+    # Use pd.concat to merge all features at once, aligning on index (inner join)
+    # This ensures we only keep rows common to all indicators and avoids manual assignment
+    additional_cols = [
+        vt_df[vt_features + [vt_target,'v_mom', 'v(t)', 'φ1', 'φ2']],
+        vp_df[vp_features + [vp_target]],
+        bd_df[bd_features + [bd_target,'d']]
+    ]
+    
+    merged_df = pd.concat([merged_df] + additional_cols, axis=1, join='inner')    
     merged_df['market_power'] = 32 * np.abs(merged_df['w']) * np.abs(merged_df['v_mom'])
     merged_df['avg_market_power'] = merged_df['market_power'].rolling(window=lookback_periods).mean()
     merged_df['std_market_power'] = merged_df['market_power'].rolling(window=lookback_periods).std()
     merged_df['rel_market_power'] = (merged_df['avg_market_power'] -  merged_df['market_power']) / merged_df['std_market_power']
     merged_df.dropna(inplace=True)    
 
-    direction = abs(bd_df['CLOSE'] - bd_df['CLOSE'].shift(lookback_periods))
-    volatility = abs(bd_df['CLOSE'] - bd_df['CLOSE'].shift(1)).rolling(window=lookback_periods).sum()
-    merged_df['ER'] = direction / (volatility + 1e-9)
-    merged_df['ATR %'] = (volatility / lookback_periods) / bd_df['CLOSE']
-    merged_df.dropna(inplace=True)
-
+    add_volatility_columns(merged_df, lookback_periods)
+    
     # 4. New Weighted Target (Structural-First)
     # PriceTime (45%) + BarDir (30%) + VolumeTime (20%) + VolumePrice (5%)
     merged_df[merged_target] = (
-        45 * merged_df[pt_target] + 
-        30 * merged_df[bd_target] + 
-        20 * merged_df[vt_target] + 
-        5  * merged_df[vp_target]
+        30 * merged_df[pt_target] +
+        30 * merged_df[bd_target] +
+        25 * merged_df[vt_target] +
+        15 * merged_df[vp_target]
     ) / 100
 
     # 5. Full Feature Set for the DNN
@@ -51,6 +47,6 @@ def ensemble(sqlalchemy_url, quote_name, lookback_periods):
     merged_features.extend(pt_features)
     merged_features.extend(vt_features)
     merged_features.extend(vp_features)
-    merged_features.extend(bd_features)
+    merged_features.extend(bd_features)    
     
     return merged_df, merged_features, merged_target

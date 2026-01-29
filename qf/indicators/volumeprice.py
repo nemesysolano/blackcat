@@ -1,3 +1,4 @@
+from qf.indicators.augmentation import add_volatility_columns
 from sqlalchemy import create_engine
 import pandas as pd
 
@@ -54,4 +55,5 @@ def volumeprice(sqlalchemy_url, quote_name, lookback_periods):
     # Drop rows where LAG functions returned NULL (the beginning of the dataset)
     df.dropna(inplace=True)
     df.set_index('TIMESTAMP', inplace=True)
+    add_volatility_columns(df, lookback_periods)
     return df, features, target

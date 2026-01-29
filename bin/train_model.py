@@ -1,5 +1,5 @@
 
-from qf.indicators import bardirection
+from qf.indicators import angular, bardirection
 from qf.indicators import volumeprice
 from qf.indicators import ensemble
 from qf.indicators import wavelets
@@ -70,16 +70,18 @@ def create_cnn_model(input_dim):
     inputs = layers.Input(shape=(input_dim, 1))
     # 1. Convolutional Layer: Scans for patterns using 32 different "filters"
     # kernel_size=3 means it looks at 3 consecutive lags at a time
-    x = layers.Conv1D(filters=32, kernel_size=3, activation='leaky_relu', padding='same')(inputs)
+    x = layers.Conv1D(filters=128, kernel_size=3, activation='relu', padding='same')(inputs)
     x = layers.MaxPooling1D(pool_size=2)(x) # Reduces noise
     
-    # 2. Second Scan: Finds more complex combinations of the first patterns
-    x = layers.Conv1D(filters=32, kernel_size=3, activation='leaky_relu', padding='same')(x)
+    # 3. Second Scan: Finds more complex combinations of the first patterns
+    x = layers.Conv1D(filters=64, kernel_size=3, activation='relu', padding='same')(x)
     x = layers.GlobalAveragePooling1D()(x) # Flattens the data for the final decision
     
-    # 3. Final Decision Layers
-    x = layers.Dense(64, activation='leaky_relu')(x)
+    # 4. Final Decision Layers
+    x = layers.Dense(32, activation='relu')(x)
+    x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.2)(x)
+    
     outputs = layers.Dense(1, activation='linear')(x) 
 
     model = models.Model(inputs=inputs, outputs=outputs)
@@ -91,7 +93,9 @@ indicator = {
     "volumetime": wavelets.volumetime,
     "volumeprice": volumeprice,
     "ensemble": ensemble,
-    "bardirection": bardirection
+    "bardirection": bardirection,
+    "angular_bar": angular.angular_bar,
+    "angular_force": angular.angular_force
 }
 if __name__ == "__main__":
     set_seeds(42)
@@ -99,6 +103,8 @@ if __name__ == "__main__":
     indicator_name = sys.argv[2]
     scale_multiplier = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
     indicator = indicator[indicator_name]
+    report_sign_match = not indicator is angular.angular_force
+
     lookback_periods = 14
     _, sqlalchemy_url = db_config()
     
@@ -108,9 +114,9 @@ if __name__ == "__main__":
     X_val = X_val.reshape((X_val.shape[0], X_val.shape[1], 1))
     X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
     model = create_cnn_model(X_train.shape[1])
-    patience = 10
-    epochs = 100
-    batch_size = 100
+    patience = 50
+    epochs = 120
+    batch_size = 32
     model.summary()
     checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{quote_name}-{indicator_name}.keras')
 
@@ -168,9 +174,19 @@ if __name__ == "__main__":
     output_file = os.path.join(os.getcwd(), "test-results", f"report-{indicator_name}.csv")
     mode = 'a' if os.path.exists(output_file) else 'w'
     with open(output_file, mode) as f:
-        if mode == 'w':
-            print("Ticker,MSE,MAE,Match %,Diff %,Pct Diff%,Edge,tradable", file=f)
+        if mode == 'w':            
+            if report_sign_match:
+                print("Ticker,MSE,MAE,Match %,Diff %,Pct Diff%,Edge,tradable", file=f)
+            else:
+                print("Ticker,MSE,MAE", file=f)
+        
         pct_diff = int(np.abs(matching_pct - different_pct) * 100)
         edge_diff = int((max(matching_pct, different_pct) * 100) - 50)
         tradable = edge_diff > 6
-        print(f"{quote_name},{mse:.4f},{mae:.4f},{matching_pct:.4f},{different_pct:.4f},{pct_diff},{edge_diff},{tradable}", file=f)
+
+        if report_sign_match:
+            print(f"{quote_name},{mse:.4f},{mae:.4f},{matching_pct:.4f},{different_pct:.4f},{pct_diff},{edge_diff},{tradable}", file=f)
+        else:
+            print(f"{quote_name},{mse:.4f},{mae:.4f}", file=f)
+    
+

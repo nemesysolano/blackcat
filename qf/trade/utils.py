@@ -1,13 +1,21 @@
 import numpy as np
 
 # Suggested Stress-Test Version
-def dynamic_slippage(atr_pct, base_median_bps=1.0, base_sigma=0.8):
+# utils.py
+
+def dynamic_slippage(atr_pct, base_median_bps=3.5, base_sigma=1.1):
     """
-    Simulates realistic friction. 1.0 bps = 0.01% of price.
+    Simulates realistic friction including spread, fees, and impact.
+    3.5 bps = 0.035% of price.
     """
+    # Using a higher sigma (1.1) to simulate 'unlucky' fills/fat tails
     noise = np.random.lognormal(mean=np.log(base_median_bps), sigma=base_sigma)
-    # Scale cost by volatility (ATR)
-    turbulence_factor = np.clip(atr_pct / 0.008, 1.0, 8.0) 
+    
+    # Scale cost by volatility (ATR). 
+    # If ATR% is high, the spread usually widens and fills are harder to get.
+    # We increase the ceiling from 8.0 to 12.0
+    turbulence_factor = np.clip(atr_pct / 0.005, 1.0, 12.0) 
+    
     return (noise * turbulence_factor) / 10000
 
 def random_slippage(): # just a random nummber between 0.01 and 0.10

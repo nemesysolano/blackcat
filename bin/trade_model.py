@@ -18,7 +18,7 @@ import traceback
 
 def get_quotes(sqlalchemy_url, quote_name, X_test):
     engine = create_engine(sqlalchemy_url)
-    sql_template = f"SELECT \"TIMESTAMP\", \"OPEN\", \"HIGH\", \"LOW\", \"CLOSE\" FROM QUOTE WHERE  \"TICKER\" = '{quote_name}'"
+    sql_template = f"SELECT \"TIMESTAMP\", \"OPEN\", \"HIGH\", \"LOW\" FROM QUOTE WHERE  \"TICKER\" = '{quote_name}'"
     with engine.connect() as connection:
         df = pd.read_sql(sql_template, connection)
         connection.close()
@@ -31,7 +31,7 @@ def get_quotes(sqlalchemy_url, quote_name, X_test):
     engine.dispose()
     return df
 
-def trade_quotes(sqlalchemy_url, quote_name, X_test, predictions, edge, contrarian, structural_check):
+def trade_quotes(sqlalchemy_url, quote_name, X_test, indicators, edge, contrarian, structural_check, scalping):
     # 1. Prepare price data and merge with model features/angles
     df = get_quotes(sqlalchemy_url, quote_name, X_test)
     n = len(df)
@@ -60,12 +60,12 @@ def trade_quotes(sqlalchemy_url, quote_name, X_test, predictions, edge, contrari
             transaction = Transaction.from_position(
                 active_position, 
                 i, 
-                n, 
                 row['OPEN'], 
                 row['LOW'], 
                 row['HIGH'], 
                 row['CLOSE'],
-                row['ATR %']
+                row['ATR %'],
+                scalping
             )
             
             if transaction is not None:
@@ -91,7 +91,7 @@ def trade_quotes(sqlalchemy_url, quote_name, X_test, predictions, edge, contrari
                 quote_name, 
                 df, 
                 i, 
-                predictions[i], 
+                indicators[i], 
                 edge, 
                 current_price,
                 contrarian,
@@ -143,16 +143,17 @@ def generate_reports(results, indicator_name, quote_name, structural_check):
         os.remove(transactions_file) if os.path.exists(transactions_file) else None
         with open(transactions_file, 'w') as t: #
             print(
-                "Ticker,Entry Index,Exit Index,Duration,Side,Entry Price,Exit Price,PL,TP Price,SL Price,Exit Reason, Friction", 
+                "Ticker,Entry Index,Exit Index,Duration,Side,Entry Price,Exit Price,PL,Exit Reason,Friction,Entry Force, Θl↑,Θh↓,ER,ATR %,φ1,φ2,W,d", 
                 file=t)
             for transaction in transactions:
-                print(f"{transaction.ticker},{transaction.entry_index},{transaction.exit_index},{transaction.duration},{transaction.side},{transaction.entry_price:.2f},{transaction.exit_price:.2f},{transaction.pl:.2f},{transaction.take_profit:.2f},{transaction.stop_loss:.2f},{transaction.exit_reason},{transaction.friction:.5f}", file=t)
+                print(f"{transaction.ticker},{transaction.entry_index},{transaction.exit_index},{transaction.duration},{transaction.side},{transaction.entry_price:.2f},{transaction.exit_price:.2f},{transaction.pl:.2f},{transaction.exit_reason},{transaction.friction:.5f},{transaction.entry_force:.5f},{transaction.t_l_up:.5f},{transaction.t_h_dn:.5f},{transaction.efficiency_ratio:.5f},{transaction.current_atr_pct:.5f},{transaction.phi_1:.5f},{transaction.phi_2:.5f},{transaction.W:.5f},{transaction.d:.5f}", file=t)
 
 def check_if_tradable(quote_stats):
     try:
-        return quote_stats["tradable"]
+        return quote_stats["Edge"] > 6
     except:
         return False
+    
 def get_stats(model_stats, quote_name):
     try:
         model_stats = model_stats.loc[quote_name]
@@ -203,15 +204,16 @@ if __name__ == "__main__":
                 predictions = predict(quote_name, X_test)
                 edge = quote_stats["Edge"]     
                 contrarian = np.sign(quote_stats["Match %"]-quote_stats["Diff %"]) < 0
-                structural_check = True if indicator_name == "ensemble" else False
-                results = trade_quotes(sqlalchemy_url, quote_name, test_data, predictions, edge, contrarian, structural_check)
+                structural_check = False # True if indicator_name == "ensemble" else False
+                scalping = False
+                results = trade_quotes(sqlalchemy_url, quote_name, test_data, predictions, edge, contrarian, structural_check, scalping)
                 generate_reports(results, indicator_name, quote_name, structural_check)
                 print(f"Traded {len(test_data)} quotes from {quote_name} with {indicator_name} indicator and  tructural check = {structural_check}.")
             else:
                 if already_traded(indicator_name, quote_name):
                     print(f"{quote_name} is already traded with {indicator_name} indicator.")
                 else:
-                    print(f"{quote_name} is not tradable with {indicator_name} indicator.")
+                    print(f"{quote_name} is not tradable with {indicator_name} indicator because edge is {quote_stats['Edge']}.")
 
         except ValueError as value_error:
             print(f"💀: Uncaught exception while trading {quote_name}")

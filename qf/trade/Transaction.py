@@ -13,10 +13,18 @@ class Transaction(NamedTuple):
     stop_loss: float
     exit_reason: int # -1 stop loss, 0 bar close, 1 take profit
     friction: float
-
-
+    entry_force: float
+    t_l_up: float
+    t_h_dn: float
+    efficiency_ratio: float
+    current_atr_pct: float
+    phi_1: float
+    phi_2: float
+    W:float
+    d:float
+    
     @staticmethod
-    def from_position(position, exit_index, n, current_open_price, current_low_price, current_high_price, current_close_price, current_atr_pct):
+    def from_position(position, exit_index, current_open_price, current_low_price, current_high_price, current_close_price, current_atr_pct, scalping):
         if position is None:
             return None
 
@@ -34,10 +42,10 @@ class Transaction(NamedTuple):
                 exit_price = min(position.stop_loss, current_open_price)
                 exit_reason = -1
                 pl = position.stop_loss - position.entry_price   
-            elif position.entry_price > current_close_price:
+            elif scalping and exit_index > position.entry_index and current_close_price > position.entry_price:
                 exit_price = current_close_price
                 exit_reason = 0
-                pl = position.entry_price - current_close_price
+                pl = current_close_price - position.entry_price
                 
         # side -1 = Short
         elif position.side == -1:
@@ -49,10 +57,10 @@ class Transaction(NamedTuple):
                 exit_price =  max(position.stop_loss, current_open_price) # position.stop_loss
                 exit_reason = -1
                 pl = position.entry_price - position.stop_loss
-            elif position.entry_price < current_close_price:
+            elif scalping and exit_index > position.entry_index and current_close_price < position.entry_price:
                 exit_price = current_close_price
                 exit_reason = 0
-                pl = current_close_price - position.entry_price
+                pl = position.entry_price - current_close_price
 
         if exit_reason is None:
             return None
@@ -72,5 +80,14 @@ class Transaction(NamedTuple):
             take_profit = position.take_profit, # Fixed name
             stop_loss = position.stop_loss, # Fixed name
             exit_reason = exit_reason,
-            friction = friction
+            friction = friction,
+            t_l_up = position.t_l_up,
+            t_h_dn = position.t_h_dn,
+            efficiency_ratio = position.efficiency_ratio,
+            current_atr_pct = position.current_atr_pct,
+            entry_force = position.entry_force,
+            phi_1=position.phi_1,
+            phi_2=position.phi_2,
+            W = position.W,
+            d = position.d        
         )

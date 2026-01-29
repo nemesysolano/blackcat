@@ -145,11 +145,11 @@ Volume-Price momentum is defined as
 
 $v(t) = Δ_1(v(t))⋅V(t)$
 
-### Average Wavelet Momemtum ###
+### Average Wavelet Force ###
 
 The average wavelet momentum is defined as
 
-$a(t) = Δ_1(v(t))⋅\frac{W(t) + V(t)}{2}$
+$a(t) = \frac{W(t) + V(t)}{2}$
 
 ### Bar Direction ###
 

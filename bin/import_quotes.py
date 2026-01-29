@@ -13,7 +13,7 @@ if __name__ == "__main__":
     connection_string, _ = db_config()
 
     update_structure(connection_string)
-    import_quotes(connection_string, quotes)
+    #import_quotes(connection_string, quotes)
     
 
     
