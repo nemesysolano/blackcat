@@ -1,9 +1,9 @@
 
-from qf.indicators import angular, bardirection
-from qf.indicators import volumeprice
-from qf.indicators import ensemble
-from qf.indicators import wavelets
+from sqlalchemy import create_engine
+from qf.indicators import price_time_wavelet_direction, price_time_wavelet_force, volume_time_wavelet_direction
 from qf.dbsync import read_quote_names, db_config
+from qf.nn import directional_mse
+from qf.nn import PenaltyScheduler
 from qf.nn.splitter import create_datasets
 import tensorflow as tf
 layers = tf.keras.layers
@@ -12,49 +12,9 @@ regularizers = tf.keras.regularizers
 import os
 import sys
 import tensorflow as tf
-from tensorflow.keras import layers, models, regularizers
 import random
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras import layers, models, regularizers
-from tensorflow.keras.utils import register_keras_serializable
-
-# Global variable to track the penalty weight (starts at 2.0)
-dynamic_penalty_weight = tf.Variable(2.0, trainable=False, dtype=tf.float32, name="dynamic_penalty_weight")
-
-@register_keras_serializable(package='Custom', name='directional_mse')
-def directional_mse(y_true, y_pred):
-    mse = tf.square(y_true - y_pred)
-    
-    # 1. Sign Penalty (The existing logic)
-    sign_mismatch = tf.cast(tf.sign(y_true) != tf.sign(y_pred), tf.float32)
-    
-    # 2. Conviction Penalty (The MAGIC)
-    # If |pred| < |true| * 0.5, the model is being "cowardly"
-    too_weak = tf.cast(tf.abs(y_pred) < (tf.abs(y_true) * 0.5), tf.float32)
-    
-    # 3. Combine penalties
-    # We use a very high weight (e.g., 15.0) for wrong direction
-    # and a medium weight (e.g., 3.0) for being too weak
-    total_penalty = (sign_mismatch * dynamic_penalty_weight) + (too_weak * 3.0)
-    
-    return tf.reduce_mean(mse * (1.0 + total_penalty))
-
-class PenaltyScheduler(tf.keras.callbacks.Callback):
-    def __init__(self, start_val=2.0, end_val=10.0, total_epochs=50):
-        super().__init__()
-        self.start_val = start_val
-        self.end_val = end_val
-        self.total_epochs = total_epochs
-
-    def on_epoch_begin(self, epoch, logs=None):
-        # Linear increase from start_val to end_val over the course of training
-        new_val = self.start_val + (self.end_val - self.start_val) * (epoch / self.total_epochs)
-        new_val = min(new_val, self.end_val) # Cap at the end value
-        
-        # Set the value in the backend so the loss function sees it
-        tf.keras.backend.set_value(dynamic_penalty_weight, new_val)
-        print(f" - [Callback] Penalty weight for epoch {epoch+1} is {new_val:.2f}")
 
 def set_seeds(seed=42):
     os.environ['PYTHONHASHSEED'] = str(seed)
@@ -65,7 +25,7 @@ def set_seeds(seed=42):
     os.environ['TF_DETERMINISTIC_OPS'] = '1'
 
 
-def create_cnn_model(input_dim):
+def create_cnn_model(input_dim, indicator):
     # input_dim = 14 (your lags)
     inputs = layers.Input(shape=(input_dim, 1))
     # 1. Convolutional Layer: Scans for patterns using 32 different "filters"
@@ -73,29 +33,26 @@ def create_cnn_model(input_dim):
     x = layers.Conv1D(filters=128, kernel_size=3, activation='relu', padding='same')(inputs)
     x = layers.MaxPooling1D(pool_size=2)(x) # Reduces noise
     
-    # 3. Second Scan: Finds more complex combinations of the first patterns
+    # 2. Second Scan: Finds more complex combinations of the first patterns
     x = layers.Conv1D(filters=64, kernel_size=3, activation='relu', padding='same')(x)
     x = layers.GlobalAveragePooling1D()(x) # Flattens the data for the final decision
     
-    # 4. Final Decision Layers
-    x = layers.Dense(32, activation='relu')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Dropout(0.2)(x)
-    
-    outputs = layers.Dense(1, activation='linear')(x) 
+    # 3. Final Decision Layers
+    x = layers.Dense(64, activation='relu', kernel_regularizer=regularizers.l2(0.001))(x)
+    x = layers.BatchNormalization()(x) # Stabilizes learning
+    x = layers.Dropout(0.1)(x)
 
+    activation = 'linear' if indicator is price_time_wavelet_force else 'tanh'
+  
+    outputs = layers.Dense(1, activation = activation)(x)
     model = models.Model(inputs=inputs, outputs=outputs)
-    model.compile(optimizer='adam', loss=directional_mse, metrics=['mae'])
+    model.compile(optimizer='adam', loss='mse', metrics=['mae'])
     return model
 
 indicator = {
-    "pricetime": wavelets.pricetime,
-    "volumetime": wavelets.volumetime,
-    "volumeprice": volumeprice,
-    "ensemble": ensemble,
-    "bardirection": bardirection,
-    "angular_bar": angular.angular_bar,
-    "angular_force": angular.angular_force
+    "price-time-wavelet-force": price_time_wavelet_force,
+    "price-time-wavelet-direction": price_time_wavelet_direction,
+    "volume-time-wavelet-direction": volume_time_wavelet_direction
 }
 if __name__ == "__main__":
     set_seeds(42)
@@ -103,90 +60,93 @@ if __name__ == "__main__":
     indicator_name = sys.argv[2]
     scale_multiplier = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
     indicator = indicator[indicator_name]
-    report_sign_match = not indicator is angular.angular_force
-
     lookback_periods = 14
     _, sqlalchemy_url = db_config()
-    
-    X_train, X_val, X_test, Y_train, Y_val, Y_test, _ = create_datasets(indicator(sqlalchemy_url, quote_name, lookback_periods))
+    engine = create_engine(sqlalchemy_url)
 
-    X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
-    X_val = X_val.reshape((X_val.shape[0], X_val.shape[1], 1))
-    X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
-    model = create_cnn_model(X_train.shape[1])
-    patience = 50
-    epochs = 120
-    batch_size = 32
-    model.summary()
-    checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{quote_name}-{indicator_name}.keras')
+    with engine.connect() as connection:
+        print(f"Training {quote_name} with {indicator_name} indicator")
+        X_train, X_val, X_test, Y_train, Y_val, Y_test, _ = create_datasets(indicator(connection, quote_name, lookback_periods))
+        X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
+        X_val = X_val.reshape((X_val.shape[0], X_val.shape[1], 1))
+        X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
+        model = create_cnn_model(X_train.shape[1], indicator)
 
-    model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath=checkpoint_filepath,
-        save_best_only=True,
-        monitor='val_mae',
-        mode='min'
-    )
+        patience = 50
+        epochs = 100
+        batch_size = 50
+        model.summary()
+        checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{quote_name}-{indicator_name}.keras')
 
-    early_stopping_callback = tf.keras.callbacks.EarlyStopping(
-        monitor='val_mae',
-        mode='min',
-        restore_best_weights=True,
-        patience = patience
-    )
+        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+            filepath=checkpoint_filepath,
+            save_best_only=True,
+            monitor='val_mae',
+            mode='min'
+        )
 
-    # Instantiate the new scheduler
-    penalty_callback = PenaltyScheduler(start_val=2.0, end_val=12.0, total_epochs=50)
+        early_stopping_callback = tf.keras.callbacks.EarlyStopping(
+            monitor='val_mae',
+            mode='min',
+            restore_best_weights=True,
+            patience = patience
+        )
 
-    if indicator is volumeprice:
-        callbacks=(
-            model_checkpoint_callback, 
-            early_stopping_callback,
-            penalty_callback
-        )        
-    else:
-        callbacks=(
-            model_checkpoint_callback, 
-            early_stopping_callback
-        )                
-    model.fit(
-        X_train, Y_train,
-        validation_data=(X_val, Y_val),
-        epochs=epochs,
-        batch_size=batch_size,
-        callbacks = callbacks
-    )    
+        # Instantiate the new scheduler
+        penalty_callback = PenaltyScheduler(start_val=2.0, end_val=12.0, total_epochs=50)
 
-  
-    best_model = tf.keras.models.load_model(checkpoint_filepath, custom_objects={'directional_mse': directional_mse})
-    mse, mae = best_model.evaluate(X_test, Y_test, verbose=0) 
-    
-    # 3. Apply Polarity to Test Set
-    Y_pred_raw = best_model.predict(X_test).flatten() 
-    Y_pred = np.int32(np.sign(Y_pred_raw)).flatten()
-    Y_expected = np.int32(np.sign(Y_test)).flatten()
-
-    matching  = Y_pred == Y_expected
-    different = Y_pred != Y_expected
-    matching_pct = np.count_nonzero(matching) / len(Y_pred)
-    different_pct = np.count_nonzero(different) / len(Y_pred)
-
-    print(f"Finished with {quote_name} Model Training")
-    output_file = os.path.join(os.getcwd(), "test-results", f"report-{indicator_name}.csv")
-    mode = 'a' if os.path.exists(output_file) else 'w'
-    with open(output_file, mode) as f:
-        if mode == 'w':            
-            if report_sign_match:
-                print("Ticker,MSE,MAE,Match %,Diff %,Pct Diff%,Edge,tradable", file=f)
-            else:
-                print("Ticker,MSE,MAE", file=f)
-        
-        pct_diff = int(np.abs(matching_pct - different_pct) * 100)
-        edge_diff = int((max(matching_pct, different_pct) * 100) - 50)
-        tradable = edge_diff > 6
-
-        if report_sign_match:
-            print(f"{quote_name},{mse:.4f},{mae:.4f},{matching_pct:.4f},{different_pct:.4f},{pct_diff},{edge_diff},{tradable}", file=f)
+        if indicator is price_time_wavelet_direction:
+            callbacks=(
+                model_checkpoint_callback, 
+                early_stopping_callback,
+                penalty_callback
+            )        
         else:
-            print(f"{quote_name},{mse:.4f},{mae:.4f}", file=f)
+            callbacks=(
+                model_checkpoint_callback, 
+                early_stopping_callback
+            )                
+        model.fit(
+            X_train, Y_train,
+            validation_data=(X_val, Y_val),
+            epochs=epochs,
+            batch_size=batch_size,
+            callbacks = callbacks
+        )    
+
+    
+        best_model = tf.keras.models.load_model(checkpoint_filepath, custom_objects={'directional_mse': directional_mse})
+        mse, mae = best_model.evaluate(X_test, Y_test, verbose=0) 
+        
+        # 3. Apply Polarity to Test Set
+        Y_pred_raw = best_model.predict(X_test).flatten() 
+        Y_pred = np.int32(np.sign(Y_pred_raw)).flatten()
+        Y_expected = np.int32(np.sign(Y_test)).flatten()
+
+        matching  = Y_pred == Y_expected
+        different = Y_pred != Y_expected
+        matching_pct = np.count_nonzero(matching) / len(Y_pred)
+        different_pct = np.count_nonzero(different) / len(Y_pred)
+
+        print(f"Finished with {quote_name} Model Training")
+        output_file = os.path.join(os.getcwd(), "test-results", f"report-{indicator_name}.csv")
+        mode = 'a' if os.path.exists(output_file) else 'w'
+        with open(output_file, mode) as f:
+            if mode == 'w':
+                if indicator is price_time_wavelet_direction or indicator is volume_time_wavelet_direction:
+                    print("Ticker,MSE,MAE,Match %,Different %,Pct Diff%,Edge,tradable", file=f)
+                else:
+                    print("Ticker,MSE,MAE", file=f)
+
+            pct_diff = int(np.abs(matching_pct - different_pct) * 100)
+            edge_diff = int((max(matching_pct, different_pct) * 100) - 50)
+            tradable = edge_diff > 6
+            if indicator is price_time_wavelet_direction or indicator is volume_time_wavelet_direction:
+                print(f"{quote_name},{mse},{mae},{matching_pct * 100},{different_pct * 100},{pct_diff},{edge_diff},{tradable}", file=f)
+            else:
+                print(f"{quote_name},{mse},{mae}", file=f)
+        print(f"Report saved to {output_file}")
+        connection.close()
+    engine.dispose()
     
 

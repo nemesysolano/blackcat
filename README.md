@@ -108,158 +108,62 @@ By dividing the normalized time component by the normalized volume component, we
 $Φ_k(t) = \arctan\left(\frac{b_k(t)}{c_k(t) + \epsilon}\right) \quad \text{for } k \in \{1, 2\}$
 
 ## Wavelets ##
-Consider the four price-time angles ${θ_1(t)}$, ${θ_2(t)}$, ${θ_3(t)}$ and ${θ_4(t1)}$ ruling at time ${t}$. The **price-time wavelet $W(t)$** function
+
+### Price-Time Wavelets ###
+Consider the four price-time angles ${θ_1(t)}$, ${θ_2(t)}$, ${θ_3(t)}$ and ${θ_4(t)}$ ruling at time ${t}$. The **price-time wavelet $W(t)$** function
 is a periodic non-linear function defined as
 
-$W(t) =\frac{\sum^4_{i=1} (\cos θ_i(t) + \sin θ_i(t))^2}{8}$.
+$W(t) =\frac{\sum^4_{i=1} (\cos (θ_i(t)) + \sin (θ_i(t)))}{4\sqrt{2}}$.
 
-Following the same lines, consider the two volume-time angles ${Φ_1(t)}$ and ${Φ_2(t)}$ ruling at time $t$. The **volume-time wavelet $V(t)$** function
+This wavelet function is useful to sketch the market structure at a given point in time $t$. 
+Let's move further and define the family of multivariative probability 
+functions $Ω(t)$ for $\{Θ_1(t), Θ_2(t), Θ_3(t), Θ_4(t)\}$. At any given time $t$ the four angles are bound to the $[0,\frac{π}{2}]$ interval, therefore
+we just need to isolate the normalization constant $A$ in the following equation:
+
+$A \int^{π/2}_{0} \int^{π/2}_{0} \int^{π/2}_{0} \int^{π/2}_{0} ω^2⋅dΘ_1⋅dΘ_2⋅dΘ_3⋅dΘ_4 = 1$, where
+
+$ω = \frac{\sum^4_{i=1} (\cos (θ_i) + \sin (θ_i))}{4\sqrt{2}}$.
+
+After calculating the quadruple integral and isolating $A$, we get
+
+$A = \frac{128}{\pi^4 + 2\pi^3 + 48\pi^2}$. Moreover, our probability function 
+
+$Ω(Θ_1, Θ_2, Θ_3, Θ_4)=\frac{128}{\pi^4 + 2\pi^3 + 48\pi^2}ω^2$
+
+As we wanted, we just found a family of functions $Ω(t)=Ω(Θ_1(t), Θ_2(t), Θ_3(t), Θ_4(t))$. For $i \in [1...k]$ we can use model a neural network to
+forecast 
+
+$\overrightarrow Ω(t) = Ω(t)⋅Δ_T(ξ(t)) - Ω(t-1)⋅Δ_T(ξ(t-1))$ given 
+
+$\{\overrightarrow Ω(t-k),...,\overrightarrow Ω(t-1)\}$ as input features where $k > 0$.
+
+### Volume-Time Wavelets ###
+Consider the two volume-time angles ${φ_1(t)}$ and ${φ_2(t)}$ ruling at time ${t}$. The **volume-time wavelet $V(t)$** function
 is a periodic non-linear function defined as
 
-$V(t) = \frac{\sum^2_{i=1} (\cos Φ_i(t) + \sin Φ_i(t))^2}{4}$.
+$V(t) =\frac{\sum^2_{i=1} (\cos (φ_i(t)) + \sin (φ_i(t)))}{2\sqrt{2}}$.
 
-The $\tanh (32⋅|W(t)|⋅|V(t)|)$ formula is called **market power** which, albeit not actually tradable, will be provided as input to the ensemble model as measurement of trend stability$ 
+Let's define another family of multivariative probability 
+functions $H(t)$ for $\{φ_1(t), φ_2(t)\}$. At any given time $t$ the four angles are bound to the $[0,\frac{π}{2}]$ interval,
+therefore we just need to isolate the normalization constant $A$ in the following equation:
 
-## Price Momentum ##
+$A \int^{π/2}_{0} \int^{π/2}_{0} h^2⋅dφ_1⋅dφ_2 = 1$, where
 
-**Price momentum measures** the _velocity_ of price changes as opposed to the actual price levels themselves and (unlike price) is a directional quantity. In this work
-we are going two define three kinds of price momentum.
+$h = \frac{\sum^2_{i=1} (\cos (φ_i) + \sin (φ_i))}{2\sqrt{2}}$.
 
-### Volume-Price Momentum ####
+After calculation the double integral and isolating $A$, we get
 
-Volume-Price momentum is defined as
+$A = \frac{16}{\pi^2 + 2\pi + 16}$ and the probability function we want is
 
-$y(t) = Δ_1(x(t))⋅|Δ_1(v(t))| $ where
+$H(φ_1, φ_2)=\frac{16}{\pi^2 + 2\pi + 16}h^2$
 
-$Δ_1$ is $Δ_T$ with $T=1$
+As we wanted, we just found a family of functions $H(t)=H(φ_1(t), φ_2(t))$. For $i \in [1...k]$ we can use model a neural network to
+forecast 
 
-### Price-Time Wavelet Momemtum ###
+$\overrightarrow H(t) =  H(t)⋅Δ_T(ξ(t)) - H(t-1)⋅Δ_T(ξ(t-1))$ given 
 
-Volume-Price momentum is defined as
+$\{\overrightarrow H(t-k),...,\overrightarrow H(t-1)\}$ as input features where $k > 0$.
 
-$w(t) = Δ_1(x(t))⋅W(t)$
-
-### Volume-Time Wavelet Momemtum ###
-
-Volume-Price momentum is defined as
-
-$v(t) = Δ_1(v(t))⋅V(t)$
-
-### Average Wavelet Force ###
-
-The average wavelet momentum is defined as
-
-$a(t) = \frac{W(t) + V(t)}{2}$
-
-### Bar Direction ###
-
-Consider the OHLC bar at time $t$; the **bar momentum** is defined as 
-
-$\vec b = Δ_{\%}(c(t) - o(t), h(t) - l(t))$, where
-
-$o(t),\space  l(t),\space  h(t)$ and $c(t)$ are open, low, high and close price at time $t$ respectively.
-
-
-## Price Acceleration Model ##
-
-Let $X=\{x(1),...,x(t-1), x(t),...\}$ a sequence of momenta belonging to the same type (Volume-Price, Price-Time Wavelet, Volume-Time Wavelet or Average Wavelet). A DNN model
-that forecast
-
- $x(t)-x(t-1)$ from past $\{x(t-k)-x(t-(k-1)),...,x(t-2)-x(t-1)\}$ is called **price acceleration model**.
-
-## Risk Management and Position Sizing ##
-
-### The Risk Assestment Reports ###
-
-Trainining process for price acceleration models generate the **risk assestment reports** sketched below
-
-|Ticker|MSE|MAE|Match %|Diff %|Pct Diff%|Edge|  tradable    |
-|------|---|---|-------|------|---------|----|--------------|
-|AAAAA |0.#|0.#|0.#    |0.#   |0.#      |99  | True or False|
-
-The meaning of the "Ticker", "MSE", "MAE" columns must be obvious to the reader. Let's describe the other columns:
-
-1. $\text{Match \%}$: Directional matches ratio (i.e How many times expected direction matches actual direction).
-2. $\text{Diff \%}$: Directional mismatches ratio (i.e How many times expected direction does not match actual direction).
-3. $\text{Pct Diff\%}$: Absolute difference between **Match %** and **Diff %**.
-4. $\text{Edge}$: $\max (\text{Match \%},\text{Diff \%}) 100 - 50$
-5. Tradable: True if $\text{Edge} > 6$
-
----
-Trading simulators must check $\mathbf{sign}(\text{Match \%}-\text{Diff \%})$ and handle it as contrarian signal (_sell_ when positive, _buy_ when negative)
-when it is negative.
-
-To calculate your precise Stop Loss (SL) and Take Profit (TP) levels, you need to combine the model's prediction magnitude, its historical error (MAE), and the statistical edge (edge_diff).
-Here is the step-by-step assembly for a ticker, using the values found in your report-pricevol.csv.
-#### 1. Define the "Unit of Risk" ($d_{risk}$) ####
-The MAE (Mean Absolute Error) represents the average distance the model is "off" by. To avoid being stopped out by normal model noise, your stop loss distance should be a multiple of this error.
-
-* Formula: $d_{risk} = k \cdot MAE$
-
-* Recommended $k$: $1.5$ to $2.0$ (Higher $k$ reduces stop-outs but requires a larger move to hit TP).
-
-#### 2. Determine the Target Reward Ratio ($R$) ####
-Use your edge_diff to find the minimum Reward-to-Risk ratio needed to break even. To ensure a positive expectancy, we add a Profit Buffer (e.g., $0.2$ to $0.5$).
-
-* Break-even Floor: $R_{floor} = \frac{50 - \text{edge\_diff}}{50 + \text{edge\_diff}}$ (Kelly Size)
-
-* Target Ratio: $R_{target} = R_{floor} + \text{Buffer}$
-
-#### 3. Calculate the Price Levels ####
-Now, apply these distances to the current price ($P_{curr}$) based on the model's predicted direction (the sign of $y_{pred}$ from your script).
-
-* For a Long Trade ($y_{pred} > 0$):
-
-  * Stop Loss Price = $P_{curr} \cdot (1 - d_{risk})$
-
-  * Take Profit Price = $P_{curr} \cdot (1 + (d_{risk} \cdot R_{target}))$
-
-* For a Short Trade ($y_{pred} < 0$):
-
-  * Stop Loss Price = $P_{curr} \cdot (1 + d_{risk})$
-
-  * Take Profit Price = $P_{curr} \cdot (1 - (d_{risk} \cdot R_{target}))$
-
-----
-
-#### Worked Example: AAOI ####
-Based on your latest report, AAOI has an MAE of 0.8580 and an edge_diff of 19. Let's assume the current price is $20.00.
-
-1. Calculate Risk Distance: Using $k=1.5$, $d_{risk} = 1.5 \cdot 0.00858 \approx 0.0128$ ($1.28\%$).
-
-2. Calculate Reward Ratio: * $R_{floor} = \frac{50-19}{50+19} = \frac{31}{69} \approx 0.45$.
-
-   * Add a $0.55$ buffer for a clean 1:1 Reward:Risk ratio ($R_{target} = 1.0$).
-     * Set Levels (assuming Long):
-       * Stop Loss: $20.00 \cdot (1 - 0.0128) = \mathbf{\$19.74}$
-       * Take Profit: $20.00 \cdot (1 + 0.0128) = \mathbf{\$20.26}$
-     * Set Levels (assuming Short):
-       * Stop Loss: $20.00 \cdot (1 + 0.0128) = \mathbf{\$20.26}$
-       * Take Profit: $20.00 \cdot (1 - 0.0128) = \mathbf{\$19.74}$
-
-### Final Sanity Check with Angles ###
-
-#### Entry Rules Table ####
-|Trade Direction ($y_{\text{pred}}$)|Structural Requirement (The Filter)|Pivot Geometry Logic                          |Execution Action     |
-|-----------------------------------|-----------------------------------|----------------------------------------------|---------------------|
-| Momentum Up (+)                   | $θ_{l↑} > θ_{h↓}$                 |Higher Low is closer/stronger than Lower High.|BUY (LONG)           |
-| Momentum Up (+)                   | $θ_{l↑} < θ_{h↓}$                 |Price is hitting a descending ceiling.        |PASS (or Reduce Size)|
-| Momentum Down (-)                 | $θ_{h↓} > θ_{l↑}$                 |Lower High is closer/stronger than Higher Low.|SELL (SHORT)         |
-| Momentum Down (-)                 | $θ_{h↓} < θ_{l↑}$                 |Price is hitting a rising floor.              |PASS (or Reduce Size)|
-
-When we talk about "reducing size" in a strategy, it usually refers to Position Sizing—choosing to buy fewer shares our maximum allowed capital—rather than opening ten separate small trades.
-Instead of opening multiple orders, you calculate a Volume Factor ($V_f$) based on our sanity checks:
-
-#### Volume Factor Table ####
-|Condition|Volume Factor|Final Shares to Buy                    |
-|---------|-------------|---------------------------------------|
-|Momentum + Structure   |1.0          |`Max_Kelly_Size`         |
-|Momentum only          |0.5          |`Max_Kelly_Size * 0.5`   |
-|Divergence             |0.0          |Do not trade             |
-
-The `Max_Kelly_Size` (for know on denoted as $K_{\max}$) is defined as
-
-$K_{\max} = \frac{\text{edge\_diff}}{50}$
 
 
 # References #

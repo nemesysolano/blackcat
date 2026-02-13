@@ -1,3 +1,12 @@
 #!/usr/bin/env bash
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-python3 ${SCRIPT_DIR}/train_model.py $*
+QUOTES_FILE=$1
+MODEL_NAME=$2
+
+QUOTES=$(cat $QUOTES_FILE)
+
+for QUOTE in $QUOTES; do
+    python3 ${SCRIPT_DIR}/train_model.py $QUOTE $MODEL_NAME
+done
+
+# python3 ${SCRIPT_DIR}/train_model.py $*
