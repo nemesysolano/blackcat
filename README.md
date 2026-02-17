@@ -164,9 +164,15 @@ $\overrightarrow H(t) =  H(t)⋅Δ_T(ξ(t)) - H(t-1)⋅Δ_T(ξ(t-1))$ given
 
 $\{\overrightarrow H(t-k),...,\overrightarrow H(t-1)\}$ as input features where $k > 0$.
 
+## Squared Standarized Volume ##
 
+The **squared standarized volume** $V(t)$ is required to calculate _liquidity cap_ in backtesting simulation.
+
+$\hat V(t) = [\frac{\hat v(t) - v(t)} {σ_v(t)}]^2 $ where
+
+$\hat v(t) = \frac{\sum^{k-1}_0 v(t-k)} {k}$ and
+
+$σ_v(t) = \sqrt {\frac{\sum^{k-1}_0  (\hat v(t)-v(t-k))^2}{k-1}}$
 
 # References #
 [The deep learning book](https://www.deeplearningbook.org)
-
-# Scripts #

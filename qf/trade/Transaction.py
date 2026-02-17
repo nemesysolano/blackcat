@@ -13,9 +13,10 @@ class Transaction(NamedTuple):
     pl: float
     exit_index: int
     exit_price: float
-    
+    exit_reason: str
+    state: list
     @staticmethod
-    def from_position(position: Position, pl: float, exit_index: int, exit_price: float):
+    def from_position(position: Position, pl: float, exit_index: int, exit_price: float, exit_reason: int):
         return Transaction(
             ticker=position.ticker,
             entry_index=position.entry_index,
@@ -27,6 +28,8 @@ class Transaction(NamedTuple):
             stop_loss=position.stop_loss,
             pl=pl,
             exit_index=exit_index,
-            exit_price=exit_price
+            exit_price=exit_price,
+            exit_reason=exit_reason,
+            state = position.state
         )
 

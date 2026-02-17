@@ -1,3 +1,4 @@
+import json
 from qf.indicators import price_time_wavelet_direction, price_time_wavelet_force, volume_time_wavelet_direction
 import sys
 import os
@@ -10,6 +11,10 @@ import numpy as np
 from sqlalchemy import create_engine
 import traceback
 from qf.trade import Position, Transaction
+import math
+
+from qf.trade.State import State
+
 OMEGA_MAX = 0.20
 FLOOR =0.13
 CEILING = 0.18
@@ -17,15 +22,19 @@ CEILING = 0.18
 # Import local classes (assuming they are in the same directory or python path)
 
 def get_quotes(connection, quote_name, index):
-    engine = create_engine(sqlalchemy_url)
     # Fetch OHLC + Volume to match X_test timestamps
     sql_template = f"""
         with quote_data as (
-            SELECT "TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME", ("CLOSE" - LAG("CLOSE", 1) over (ORDER BY "TIMESTAMP")) / ("CLOSE" + LAG("CLOSE", 1) over (ORDER BY "TIMESTAMP")) "ΔP"
+            SELECT "TICKER", "TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME", 
+            ("CLOSE" - LAG("CLOSE", 1) over (ORDER BY "TIMESTAMP")) / ("CLOSE" + LAG("CLOSE", 1) over (ORDER BY "TIMESTAMP")) "ΔP"  
             FROM QUOTE WHERE "TICKER" = '{quote_name}'
-        ) select "TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME", "CLOSE", COALESCE(STDDEV( "ΔP") OVER(ORDER BY "TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW),0.0001) "δP" 
-        from quote_data
-        order by "TIMESTAMP"
+        ) select quote_data."TICKER", quote_data."TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", 
+            COALESCE(STDDEV(quote_data."ΔP") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW),0.0001) "δP" ,
+            coalesce(POWER((AVG("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) - "VOLUME") / (stddev("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW)+0.0001),2),0) "V",
+            AVG("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) "AV",
+            indicators."H"
+        from quote_data inner join ANGULAR_INDICATORS('{quote_name}') indicators on quote_data."TIMESTAMP" = indicators."TIMESTAMP"
+        order by "TIMESTAMP"    
     """
     
     df = pd.read_sql(sql_template, connection)        
@@ -136,72 +145,162 @@ def get_stats_params(quote_name, force_stats):
         pass
     return default_mae, default_edge
 
-def calculate_levels(current_price, signal, δP):
+import math
+
+
+import math
+
+def calculate_levels(current_price, signal, delta_p, H, V):
     """
-    Calculates dynamic SL and TP based on real-time volatility (delta_p).
+    EXPERIMENTAL CALIBRATION (V-Adjusted):
+    - Stop Loss: Tiny (0.25 * delta_p), but scaled by sqrt(V) to survive volume noise.
+    - Take Profit: Scaled by both H (Force) and V (Volume instability).
     """
-    # Enforce scalars
     cp = float(current_price)
-    dp = float(δP)
-    
-    sl_multiplier = 2
-    tp_multiplier = 3
-    
-    sl_distance = cp * (dp * sl_multiplier)
-    tp_distance = cp * (dp * tp_multiplier)
-
-    if signal > 0:  # Long
-        stop_loss = cp - sl_distance
-        take_profit = cp + tp_distance
-    else:  # Short
-        stop_loss = cp + sl_distance
-        take_profit = cp - tp_distance
-
-    return float(stop_loss), float(take_profit)
-
-def update_hybrid_exit(position, row, delta_p, v_dir):
-    """
-    Updates SL using trailing logic and checks intra-bar extremes (HIGH/LOW).
-    """
-    # Force everything to standard floats to avoid Series comparison errors
-    high = float(row['HIGH'])
-    low = float(row['LOW'])
-    # Handle possible Series/numpy input for CLOSE
-    close_val = row['CLOSE']
-    close = float(close_val.to_numpy()[0]) #  if hasattr(close_val, 'to_numpy') else close_val
     dp = float(delta_p)
     
-    trail_dist = close * (dp * 2.0)
+    # Square root of V brings the squared standardized volume back to a Z-score scale
+    v_factor = math.sqrt(max(0, float(V)))
+    # We cap the expansion so the "tiny" stop doesn't become "huge" during extreme spikes
+    v_multiplier = 1.0 + min(v_factor, 2.0) 
+
+    # --- Experimental Parameters ---
+    SL_TINY_BASE = 0.25  
+    TP_BASE = 1.0
+    H_SCALAR = 5.0
+    
+    base_move = cp * dp
+    
+    # 1. Stop Loss: Tiny distance, adjusted by volume instability (V)
+    # This prevents getting stopped out by a single high-volume 'wick'
+    sl_distance = base_move * SL_TINY_BASE * v_multiplier
+    
+    # 2. Take Profit: Captures the immediate burst, also adjusted by V
+    tp_multiplier = (TP_BASE + (H_SCALAR * float(H))) * v_multiplier
+    tp_distance = base_move * tp_multiplier
+
+    if signal == 1:  # Long
+        tp = cp + tp_distance
+        sl = cp - sl_distance
+    else:            # Short
+        tp = cp - tp_distance
+        sl = cp + sl_distance
+        
+    return float(tp), float(sl)
+
+def update_hybrid_exit(position, row, delta_p, v_dir, current_force, p_dir=None):
+    """
+    Recommended implementation to minimize round-tri0pping:
+    1. V-Adjusted Tiny Stop: Uses volume noise to scale the 0.25*dP floor.
+    2. Break-Even Guard: Locks entry price once a 0.75*dP profit is reached.
+    3. Force Decay Exit: Quits if the Wavelet impulse weakens while in profit.
+    4. Instant Profit Exit: Captures the 'First Positive State' (covering slippage).
+    """
+    high = float(row['HIGH'])
+    low = float(row['LOW'])
+    close = float(row['CLOSE'])
+    dp = float(delta_p)
+    v_val = float(row['V'])
+    
+    # 5bps slippage penalty for realistic net calculation
+    slippage_cost = close * 0.0005 
+    
+    # Calculate current unrealized gain percentage
+    unrealized_gain_pct = ((close - position.entry_price) / position.entry_price) * position.side
+    
+    # --- 1. FORCE DECAY (MOMENTUM EXIT) ---
+    # If we are in profit and the Wavelet Force (H) drops by 30% from entry conviction,
+    # it suggests the 'wave' has peaked. Exit early.
+    if unrealized_gain_pct > 0.001 and current_force < (position.entry_force * 0.70):
+        exit_price = close - (slippage_cost * position.side)
+        return None, float(exit_price), 0
+
+    # --- 2. EXPERIMENTAL 'FIRST POSITIVE' EXIT ---
+    # Exit immediately if the position covers slippage (0.06% net profit).
+    if unrealized_gain_pct > 0.0006:
+        exit_price = close - (slippage_cost * position.side)
+        return None, float(exit_price), 0
+
+    # --- 3. DYNAMIC STOP LOSS CALCULATION ---
+    # Use V (Volume Noise) to give the 'tiny' stop slightly more room during high volume.
+    v_multiplier = 1.0 + min(math.sqrt(max(0, v_val)), 2.0)
+    tiny_stop_dist = position.entry_price * (dp * 0.25) * v_multiplier
 
     if position.side == 1:  # LONG
-        # 1. Check for Exit via intra-bar extremes
+        # A. Check hard Stop/Target
         if low <= position.stop_loss:
-            return None, float(position.stop_loss)
+            return None, float(position.stop_loss - slippage_cost), -1
         elif high >= position.take_profit:
-            return None, float(position.take_profit)
-        elif v_dir != position.side and close > position.entry_price:
-            return None, float(close)
-        
-        # 2. Update trailing SL
-        new_sl_calc = close - trail_dist
-        updated_sl = max(float(position.stop_loss), new_sl_calc)
-        return position._replace(stop_loss=updated_sl), None
+            return None, float(position.take_profit - slippage_cost), 1
+            
+        # B. Moving Stop Logic (Lock-in Profit)
+        # If profit exceeds 0.75 * standard deviation, move stop to Break-Even
+        new_sl = position.entry_price - tiny_stop_dist
+        if unrealized_gain_pct > (dp * 0.75):
+            new_sl = max(new_sl, position.entry_price + slippage_cost)
+            
+        updated_sl = max(float(position.stop_loss), new_sl)
+        return position._replace(stop_loss=updated_sl), None, 0
             
     else:  # SHORT
-        # 1. Check for Exit
+        # A. Check hard Stop/Target
         if high >= position.stop_loss:
-            return None, float(position.stop_loss)
+            return None, float(position.stop_loss + slippage_cost), -1
         elif low <= position.take_profit:
-            return None, float(position.take_profit)
-        elif v_dir != position.side and position.entry_price > close:
-            return None, float(close)
-                   
-        # 2. Update trailing SL
-        new_sl_calc = close + trail_dist
-        updated_sl = min(float(position.stop_loss), new_sl_calc)
-        return position._replace(stop_loss=updated_sl), None
+            return None, float(position.take_profit + slippage_cost), 1
+            
+        # B. Moving Stop Logic (Lock-in Profit)
+        new_sl = position.entry_price + tiny_stop_dist
+        if unrealized_gain_pct > (dp * 0.75):
+            new_sl = min(new_sl, position.entry_price - slippage_cost)
+            
+        updated_sl = min(float(position.stop_loss), new_sl)
+        return position._replace(stop_loss=updated_sl), None, 0
 
-def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions, force_predictions):
+def calculate_liquidity_cap(H, V, minimum):
+    """
+    H: Volume Wavelet Force (Geometric concentration).
+    V: Squared standardized volume (Instability/Noise).
+    minimum: The base lot size (anchor).
+    
+    Returns a capacity that scales the 'minimum' by the structural quality.
+    """
+    # H_ref is the force threshold (0.13) where we take the base lot.
+    H_ref = 0.13
+    
+    # Geometric quality: Higher H and Lower V increase capacity.
+    # We use sqrt(V) to get back to the Z-score magnitude scale.
+    quality = (H / H_ref) / (1 + np.sqrt(V))
+    
+    return int(minimum * quality)
+
+def calculate_dynamic_qty(confidence, H, V, current_capital, entry_price, minimum=10, maximum=100, max_alloc_pct=0.10):
+    """
+    Calculates quantity based on Wavelet Conviction, then caps it to 
+    ensure dollar exposure does not exceed a percentage of current capital.
+    """
+    # 1. Calculate Conviction Score (Geometric Edge)
+    conviction = (confidence * 0.6) + (H * 0.2) + (abs(V) * 0.2)
+    conviction = max(0.0, min(1.0, conviction))
+    
+    # 2. Determine "Ideal" Quantity from Model
+    range_width = maximum - minimum
+    ideal_qty = int(minimum + (range_width * conviction))
+    
+    # 3. Calculate "Capital Cap" (Risk Management)
+    # How many shares can we actually afford if we only use X% of capital?
+    max_dollar_exposure = current_capital * max_alloc_pct
+    cap_qty = int(max_dollar_exposure / entry_price)
+    
+    # 4. Final Quantity Selection
+    # We take the lower of the two. If the model wants 100 shares but we 
+    # can only afford 12 shares of ASML, we take 12.
+    final_qty = min(ideal_qty, cap_qty)
+    
+    # Safety Check: If the stock is so expensive we can't even afford 1 share, return 0
+    return max(0, min(maximum, final_qty))
+
+def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions, force_predictions):    
     initial_capital = 10000.0
     current_capital = float(initial_capital)
     active_position = None
@@ -219,16 +318,26 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
         v_dir = int(np.sign(volume_time_predictions[i][0]))
         f_val = force_predictions[i][0]
         close_series = row['CLOSE']
+        H = row['H']
+        V = row['V']
+        avg_volume = row['AV']
         curr_close = float(close_series.to_numpy()[0] if hasattr(close_series, 'to_numpy') else close_series)
 
         # --- 1. EXIT LOGIC (Trailing Stop Update) ---
-        if active_position is not None:
-            updated_pos, exit_price = update_hybrid_exit(active_position, row, curr_dp, v_dir)
+        if not (active_position is None):
+            updated_pos, exit_price , exit_reason = update_hybrid_exit(
+                active_position, 
+                row, 
+                curr_dp, 
+                v_dir, 
+                f_val, # <--- NEW
+                p_dir
+            )
             
-            if exit_price is not None:
+            if not (exit_price is None):
                 pl_total = float((exit_price - active_position.entry_price) * active_position.side * active_position.quantity)
                 current_capital += pl_total
-                
+
                 if active_position.side == 1:
                     long_trades += 1
                     if pl_total > 0: winner_longs += 1
@@ -238,7 +347,7 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
                     if pl_total > 0: winner_shorts += 1
                     else: loser_shorts += 1
                 
-                transactions.append(Transaction.from_position(active_position, pl_total, i, exit_price))
+                transactions.append(Transaction.from_position(active_position, pl_total, i, exit_price, exit_reason))
                 active_position = None
             else:
                 active_position = updated_pos
@@ -246,29 +355,54 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
         # --- 2. ENTRY LOGIC (Force Scaling) ---
         if active_position is None:
             confidence = (f_val - FLOOR) / (CEILING - FLOOR)
+            if v_dir != p_dir:
+                # UPDATED CALL: Passing current_capital and curr_close (entry_price)
+                dynamic_qty = calculate_dynamic_qty(
+                    confidence, H, V, 
+                    current_capital=current_capital, 
+                    entry_price=curr_close,
+                    minimum=10, 
+                    maximum=100,
+                    max_alloc_pct=0.10  # Limits exposure to 10% of balance
+                )
+                
+                # Guard clause: If capital is too low to trade the minimum/cap
+                if dynamic_qty == 0:
+                    continue 
 
-            if v_dir != p_dir: # and check_structure(p_dir, row):
-                dynamic_qty = max(10, int(100 * confidence))                
-                sl, tp_base = calculate_levels(curr_close, p_dir, curr_dp)                                    
-                tp_dist = abs(tp_base - curr_close) * (1.0 + (0.5 * confidence))
-                final_tp = curr_close + (tp_dist * p_dir)
+                tp_base, sl = calculate_levels(curr_close, v_dir, curr_dp, V, H)
+                tp_dist = abs(tp_base - curr_close) * (1.0 + 0.5 * confidence)
+                final_tp = curr_close + (tp_dist * v_dir)
 
                 active_position = Position(
-                    ticker=quote_name,
-                    entry_index=i,
-                    entry_price=curr_close,
-                    entry_force=f_val,
-                    side= v_dir,
-                    quantity=dynamic_qty,
-                    take_profit=float(final_tp),
-                    stop_loss=float(sl)
+                    ticker = quote_name,
+                    entry_index = i,
+                    entry_price =curr_close,
+                    entry_force = f_val,
+                    side = v_dir,
+                    quantity = dynamic_qty,
+                    take_profit = float(final_tp),
+                    stop_loss = float(sl),
+                    state = []
                 )
 
         # --- 3. EQUITY TRACKING ---
         unrealized = 0.0
         if active_position:
             unrealized = float((curr_close - active_position.entry_price) * active_position.side * active_position.quantity)
-        
+            active_position.state.append(
+                State(
+                    index = i,
+                    open_price = float(row['OPEN']),
+                    high_price = float(row['HIGH']),
+                    low_price = float(row['LOW']),
+                    close_price = curr_close,
+                    δP = curr_dp,
+                    V = V,
+                    H = H
+                )
+            )
+
         equity_curve.append(float(current_capital + unrealized))
 
     return create_backtest_stats(
@@ -333,6 +467,7 @@ if __name__ == "__main__":
     force_stats = get_model_stats(os.getcwd(), "report-price-time-wavelet-force.csv")
     lookback_periods = 14
     engine = create_engine(sqlalchemy_url)
+    exit_reasons = { '-1': 'Stop Loss', '0': 'Early Stop', '1': 'Take Profit'}
 
     with engine.connect() as connection:
         for quote_name in quotes:
@@ -342,14 +477,18 @@ if __name__ == "__main__":
             tradable = check_if_tradable(price_direction) and check_if_tradable(volume_direction)
             
             if tradable:
+                details_file = os.path.join(os.getcwd(), "test-results", f"report-{quote_name}-transactions.json")
+                if os.path.exists(details_file):
+                    continue
+
                 # Create datasets
                 _, _, X_price_time_test, _, _, _, _ = create_trade_datasets(price_time_wavelet_direction(connection, quote_name, lookback_periods))
                 _, _, X_volume_time_test, _, _, _, _ = create_trade_datasets(volume_time_wavelet_direction(connection, quote_name, lookback_periods))
                 _, _, X_force_test, _, _, _, _ = create_trade_datasets(price_time_wavelet_force(connection, quote_name, lookback_periods))
                 
-                if not (len(X_volume_time_test) == len(X_price_time_test) and len(X_volume_time_test) == len(X_force_test)):
+                if not (len (X_volume_time_test) == len(X_price_time_test) and len(X_volume_time_test) == len(X_force_test)):
+                    X_force_test = X_force_test.reindex(X_volume_time_test.index)
                     print(f"Data length mismatch for {quote_name}: Price-Time={len(X_price_time_test)}, Volume-Time={len(X_volume_time_test)}, Force={len(X_force_test)}. Skipping.")
-                    continue
                 else:
                     print(f"Data length match for {quote_name}: {len(X_price_time_test)} samples. Proceeding with backtest.")
                 
@@ -380,24 +519,30 @@ if __name__ == "__main__":
                         )
 
                     print(
-                        f"{stats['Ticker']}, {stats['Initial Capital']}, {stats['Final Capital']}, {stats['Total Return (%)']:.2f}, {stats['Max Drawdown (%)']:.2f}, {stats['Volatility (per step)']:.2f}, {stats['Sharpe Ratio']:.2f}, {stats['Number of Steps']}, {stats['Peak Equity']:.2f}, {stats['Final Drawdown (%)']:.2f}, {stats['Long Trades']}, {stats['Short Trades']}, {stats['Winner Longs']}, {stats['Winner Shorts']}, {stats['Loser Longs']}, {stats['Loser Shorts']}",
+                        f"{stats['Ticker']}, {stats['Initial Capital']:.2f}, {stats['Final Capital']:.2f}, {stats['Total Return (%)']:.2f}, {stats['Max Drawdown (%)']:.2f}, {stats['Volatility (per step)']:.2f}, {stats['Sharpe Ratio']:.2f}, {stats['Number of Steps']}, {stats['Peak Equity']:.2f}, {stats['Final Drawdown (%)']:.2f}, {stats['Long Trades']}, {stats['Short Trades']}, {stats['Winner Longs']}, {stats['Winner Shorts']}, {stats['Loser Longs']}, {stats['Loser Shorts']}",
                         file=f
                     )     
-          
-
-                output_file = os.path.join(os.getcwd(), "test-results", f"report-{quote_name}-transactions.csv")
-                with open(output_file, mode) as f:
-                    print(
-                        "Entry Index, Entry Price, Entry Force, Side, Quantity, Take Profit, Stop Loss, PL, Exit Index, Exit Price",
-                        file=f
-                    )    
-
+                         
+                with open(details_file, 'w') as f:
+                    transaction_list = []
                     for transaction in transactions:
-                        print(
-                            f"{transaction.entry_index}, {transaction.entry_price}, {transaction.entry_force}, {transaction.side}, {transaction.quantity}, {transaction.take_profit}, {transaction.stop_loss}, {transaction.pl}, {transaction.exit_index}, {transaction.exit_price}",
-                            file=f
-                        )             
-
+                        exit_reason = exit_reasons.get(str(transaction.exit_reason), 'Unknown')
+                        transaction = {
+                            "Entry Index": transaction.entry_index,
+                            "Entry Price": float(transaction.entry_price),
+                            "Entry Force": float(transaction.entry_force),
+                            "Side": int(transaction.side),
+                            "Quantity": int(transaction.quantity),
+                            "Take Profit": float(transaction.take_profit),
+                            "Stop Loss": float(transaction.stop_loss),
+                            "PL": float(transaction.pl),
+                            "Exit Index": int(transaction.exit_index),
+                            "Exit Price": float(transaction.exit_price),
+                            "Exit Reason": exit_reason,
+                            "position_history": [{"index": s.index, "open_price": float(s.open_price), "high_price": float(s.high_price), "low_price": float(s.low_price), "close_price": float(s.close_price), "dP": float(s.δP), "V": float(s.V), "H": float(s.H)}  for s in transaction.state]
+                        }
+                        transaction_list.append(transaction)
+                    print(json.dumps(transaction_list), file=f)
             else:
                 print(f"Skipping {quote_name} (Not Tradable or No Data)")
         connection.close()

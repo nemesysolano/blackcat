@@ -1,4 +1,4 @@
--- SELECT * FROM ANGULAR_INDICATORS('EURGBP=X') WHERE ABS("Ω⋅ΔP") > 0.00995
+-- SELECT * FROM ANGULAR_INDICATORS('AAPL') WHERE ABS("Ω⋅ΔP") > 0.00995
 -- SELECT "ω"(PI()/6, PI()/4, PI()/3, PI()/2)
 -- SELECT "Ω"(PI()/6, PI()/4, PI()/3, PI()/2)
 -- SELECT "h"(PI()/6, PI()/4)
@@ -7,12 +7,18 @@
 -- 
 
 with quote_data as (
-  SELECT "TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME", ("CLOSE" - LAG("CLOSE", 1) over (ORDER BY "TIMESTAMP")) / ("CLOSE" + LAG("CLOSE", 1) over (ORDER BY "TIMESTAMP")) "ΔP"
-  FROM QUOTE WHERE "TICKER" = 'AAPL'
-) select "TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME", "CLOSE", COALESCE(STDDEV( "ΔP") OVER(ORDER BY "TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW),0.0001) "δP" 
-from quote_data
+    SELECT "TICKER", "TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME", 
+    ("CLOSE" - LAG("CLOSE", 1) over (ORDER BY "TIMESTAMP")) / ("CLOSE" + LAG("CLOSE", 1) over (ORDER BY "TIMESTAMP")) "ΔP"  
+    FROM QUOTE WHERE "TICKER" = 'AAPL'
+) select quote_data."TICKER", quote_data."TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", 
+    COALESCE(STDDEV(quote_data."ΔP") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW),0.0001) "δP" ,
+    coalesce(POWER((AVG("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) - "VOLUME") / stddev("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW),2),0) "V",
+    AVG("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) "AV",
+    indicators."H"
+from quote_data inner join ANGULAR_INDICATORS('AAPL') indicators on quote_data."TIMESTAMP" = indicators."TIMESTAMP"
 order by "TIMESTAMP"
-
+        
+        
 CREATE OR REPLACE FUNCTION "ω" ("Θ1" DOUBLE precision, "Θ2" DOUBLE precision, "Θ3" DOUBLE precision, "Θ4" DOUBLE PRECISION)
 returns DOUBLE precision
 LANGUAGE plpgsql AS $$

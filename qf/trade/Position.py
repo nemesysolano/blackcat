@@ -11,3 +11,5 @@ class Position(NamedTuple):
     quantity: int
     take_profit: float
     stop_loss: float
+    state: list
+    is_runner: bool = False
