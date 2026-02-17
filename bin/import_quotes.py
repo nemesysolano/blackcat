@@ -12,7 +12,7 @@ if __name__ == "__main__":
     lookback_periods = 14
     connection_string, _ = db_config()
 
-    # update_structure(connection_string)
+    update_structure(connection_string)
     import_quotes(connection_string, quotes)
     
 

@@ -12,7 +12,6 @@ from sqlalchemy import create_engine
 import traceback
 from qf.trade import Position, Transaction
 import math
-
 from qf.trade.State import State
 
 OMEGA_MAX = 0.20
@@ -30,11 +29,11 @@ def get_quotes(connection, quote_name, index):
             FROM QUOTE WHERE "TICKER" = '{quote_name}'
         ) select quote_data."TICKER", quote_data."TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", 
             COALESCE(STDDEV(quote_data."ΔP") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW),0.0001) "δP" ,
-            coalesce(POWER((AVG("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) - "VOLUME") / (stddev("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW)+0.0001),2),0) "V",
+            coalesce(POWER((AVG("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) - "VOLUME") / (AVG("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) + "VOLUME" + 0.000009),2),0) "V",
             AVG("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) "AV",
             indicators."H"
         from quote_data inner join ANGULAR_INDICATORS('{quote_name}') indicators on quote_data."TIMESTAMP" = indicators."TIMESTAMP"
-        order by "TIMESTAMP"    
+        order by "TIMESTAMP" 
     """
     
     df = pd.read_sql(sql_template, connection)        
@@ -43,23 +42,6 @@ def get_quotes(connection, quote_name, index):
     df = df.sort_index()
     
     return df
-
-def check_structure(direction, row):
-    """
-    Validates the Price-Time Geometry (Angles).
-    Long: Higher Low (Θl↑) > Lower High (Θh↓)
-    Short: Lower High (Θh↓) > Higher Low (Θl↑)
-    """
-    theta_l_up = row.get("Θl↑", 0)
-    theta_h_dn = row.get("Θh↓", 0)
-    
-    # Structure Check
-    if direction > 0: # Long
-        return theta_l_up > theta_h_dn
-    elif direction < 0: # Short
-        return theta_h_dn > theta_l_up
-    return False
-
 
 def get_returns(equity_array):
     if len(equity_array) > 1:
@@ -145,11 +127,6 @@ def get_stats_params(quote_name, force_stats):
         pass
     return default_mae, default_edge
 
-import math
-
-
-import math
-
 def calculate_levels(current_price, signal, delta_p, H, V):
     """
     EXPERIMENTAL CALIBRATION (V-Adjusted):
@@ -165,9 +142,9 @@ def calculate_levels(current_price, signal, delta_p, H, V):
     v_multiplier = 1.0 + min(v_factor, 2.0) 
 
     # --- Experimental Parameters ---
-    SL_TINY_BASE = 0.25  
+    SL_TINY_BASE = 0.40 # 0.25
     TP_BASE = 1.0
-    H_SCALAR = 5.0
+    H_SCALAR = 7.5# 5.0
     
     base_move = cp * dp
     
@@ -179,22 +156,31 @@ def calculate_levels(current_price, signal, delta_p, H, V):
     tp_multiplier = (TP_BASE + (H_SCALAR * float(H))) * v_multiplier
     tp_distance = base_move * tp_multiplier
 
+    # Define the exchange tick size (usually 0.01 for US stocks)
+    tick_size = 0.01
+
     if signal == 1:  # Long
-        tp = cp + tp_distance
-        sl = cp - sl_distance
+        tp = current_price + tp_distance
+        sl = current_price - sl_distance
+        # Round TP down and SL down to be conservative
+        final_tp = math.floor(tp / tick_size) * tick_size
+        final_sl = math.floor(sl / tick_size) * tick_size
     else:            # Short
-        tp = cp - tp_distance
-        sl = cp + sl_distance
+        tp = current_price - tp_distance
+        sl = current_price + sl_distance
+        # Round TP up and SL up to be conservative
+        final_tp = math.ceil(tp / tick_size) * tick_size
+        final_sl = math.ceil(sl / tick_size) * tick_size
         
-    return float(tp), float(sl)
+    return float(final_tp), float(final_sl)
 
 def update_hybrid_exit(position, row, delta_p, v_dir, current_force, p_dir=None):
     """
-    Recommended implementation to minimize round-tri0pping:
-    1. V-Adjusted Tiny Stop: Uses volume noise to scale the 0.25*dP floor.
-    2. Break-Even Guard: Locks entry price once a 0.75*dP profit is reached.
-    3. Force Decay Exit: Quits if the Wavelet impulse weakens while in profit.
-    4. Instant Profit Exit: Captures the 'First Positive State' (covering slippage).
+    Refined implementation with Decimal Precision and Conservative Rounding:
+    1. V-Adjusted Tiny Stop: Scales based on volume-time wavelet noise.
+    2. Break-Even Guard: Snaps to the nearest tick once in profit.
+    3. Force Decay Exit: Quits if momentum (H) weakens, using quantized pricing.
+    4. Conservative Fills: Rounds against the trade to simulate the bid-ask spread.
     """
     high = float(row['HIGH'])
     low = float(row['LOW'])
@@ -202,59 +188,68 @@ def update_hybrid_exit(position, row, delta_p, v_dir, current_force, p_dir=None)
     dp = float(delta_p)
     v_val = float(row['V'])
     
-    # 5bps slippage penalty for realistic net calculation
+    # Configuration for discrete price increments
+    tick_size = 0.01
     slippage_cost = close * 0.0005 
     
     # Calculate current unrealized gain percentage
     unrealized_gain_pct = ((close - position.entry_price) / position.entry_price) * position.side
-    
+
+    # Helper function for conservative rounding
+    def snap_to_tick(price, side):
+        # Long Exit (Selling): Round DOWN to the nearest tick
+        # Short Exit (Buying back): Round UP to the nearest tick
+        if side == 1:
+            return math.floor(price / tick_size) * tick_size
+        else:
+            return math.ceil(price / tick_size) * tick_size
+
     # --- 1. FORCE DECAY (MOMENTUM EXIT) ---
-    # If we are in profit and the Wavelet Force (H) drops by 30% from entry conviction,
-    # it suggests the 'wave' has peaked. Exit early.
+    # Exit if profit exists and the Wavelet Force (H) drops by 30% from entry.
     if unrealized_gain_pct > 0.001 and current_force < (position.entry_force * 0.70):
-        exit_price = close - (slippage_cost * position.side)
-        return None, float(exit_price), 0
+        exit_price_raw = close - (slippage_cost * position.side)
+        return None, snap_to_tick(exit_price_raw, position.side), 0
 
     # --- 2. EXPERIMENTAL 'FIRST POSITIVE' EXIT ---
-    # Exit immediately if the position covers slippage (0.06% net profit).
+    # Exit immediately once slippage is covered.
     if unrealized_gain_pct > 0.0006:
-        exit_price = close - (slippage_cost * position.side)
-        return None, float(exit_price), 0
+        exit_price_raw = close - (slippage_cost * position.side)
+        return None, snap_to_tick(exit_price_raw, position.side), 0
 
-    # --- 3. DYNAMIC STOP LOSS CALCULATION ---
-    # Use V (Volume Noise) to give the 'tiny' stop slightly more room during high volume.
+    # --- 3. DYNAMIC STOP LOSS AND BOUNDARY CHECKS ---
     v_multiplier = 1.0 + min(math.sqrt(max(0, v_val)), 2.0)
     tiny_stop_dist = position.entry_price * (dp * 0.25) * v_multiplier
 
     if position.side == 1:  # LONG
-        # A. Check hard Stop/Target
+        # A. Check hard Stop/Target using the quantized levels from calculate_levels
         if low <= position.stop_loss:
-            return None, float(position.stop_loss - slippage_cost), -1
+            return None, float(position.stop_loss), -1
         elif high >= position.take_profit:
-            return None, float(position.take_profit - slippage_cost), 1
+            return None, float(position.take_profit), 1
             
         # B. Moving Stop Logic (Lock-in Profit)
-        # If profit exceeds 0.75 * standard deviation, move stop to Break-Even
-        new_sl = position.entry_price - tiny_stop_dist
+        new_sl_raw = position.entry_price - tiny_stop_dist
         if unrealized_gain_pct > (dp * 0.75):
-            new_sl = max(new_sl, position.entry_price + slippage_cost)
+            new_sl_raw = max(new_sl_raw, position.entry_price + slippage_cost)
             
-        updated_sl = max(float(position.stop_loss), new_sl)
+        # Snap the updated stop-loss to a valid exchange tick
+        updated_sl = max(float(position.stop_loss), math.floor(new_sl_raw / tick_size) * tick_size)
         return position._replace(stop_loss=updated_sl), None, 0
             
     else:  # SHORT
         # A. Check hard Stop/Target
         if high >= position.stop_loss:
-            return None, float(position.stop_loss + slippage_cost), -1
+            return None, float(position.stop_loss), -1
         elif low <= position.take_profit:
-            return None, float(position.take_profit + slippage_cost), 1
+            return None, float(position.take_profit), 1
             
-        # B. Moving Stop Logic (Lock-in Profit)
-        new_sl = position.entry_price + tiny_stop_dist
+        # B. Moving Stop Logic
+        new_sl_raw = position.entry_price + tiny_stop_dist
         if unrealized_gain_pct > (dp * 0.75):
-            new_sl = min(new_sl, position.entry_price - slippage_cost)
+            new_sl_raw = min(new_sl_raw, position.entry_price - slippage_cost)
             
-        updated_sl = min(float(position.stop_loss), new_sl)
+        # Snap the updated stop-loss up (conservative for shorts)
+        updated_sl = min(float(position.stop_loss), math.ceil(new_sl_raw / tick_size) * tick_size)
         return position._replace(stop_loss=updated_sl), None, 0
 
 def calculate_liquidity_cap(H, V, minimum):
@@ -274,7 +269,7 @@ def calculate_liquidity_cap(H, V, minimum):
     
     return int(minimum * quality)
 
-def calculate_dynamic_qty(confidence, H, V, current_capital, entry_price, minimum=10, maximum=100, max_alloc_pct=0.10):
+def calculate_dynamic_qty(confidence, H, V, current_capital, entry_price, minimum, maximum, max_alloc_pct):
     """
     Calculates quantity based on Wavelet Conviction, then caps it to 
     ensure dollar exposure does not exceed a percentage of current capital.
@@ -359,11 +354,11 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
                 # UPDATED CALL: Passing current_capital and curr_close (entry_price)
                 dynamic_qty = calculate_dynamic_qty(
                     confidence, H, V, 
-                    current_capital=current_capital, 
-                    entry_price=curr_close,
-                    minimum=10, 
-                    maximum=100,
-                    max_alloc_pct=0.10  # Limits exposure to 10% of balance
+                    current_capital, 
+                    curr_close,
+                    10, 
+                    100,
+                    0.10  # Limits exposure to 10% of balance
                 )
                 
                 # Guard clause: If capital is too low to trade the minimum/cap
@@ -439,7 +434,6 @@ def predict(quote_name, model_name, X_test):
     if not os.path.exists(checkpoint_filepath):
         print(f"Warning: Model {checkpoint_filepath} not found.")
         return np.zeros((len(X_test), 1))
-        
     model = tf.keras.models.load_model(checkpoint_filepath, custom_objects={'directional_mse': directional_mse})    
     # Ensure input shape is (N, Timesteps, 1) or (N, Features) depending on model
     # The CNN model in train_model.py expects (batch, lags, 1)
@@ -493,6 +487,10 @@ if __name__ == "__main__":
                     print(f"Data length match for {quote_name}: {len(X_price_time_test)} samples. Proceeding with backtest.")
                 
                 # Get Predictions
+                if len(X_price_time_test) == 0 or len(X_volume_time_test) == 0 or len(X_force_test) == 0:
+                    print(f"No data for {quote_name}. Skipping.")
+                    continue
+
                 price_time_predictions = predict(quote_name, "price-time-wavelet-direction", X_price_time_test)
                 volume_time_predictions = predict(quote_name, "volume-time-wavelet-direction", X_volume_time_test)
                 force_predictions = predict(quote_name, "price-time-wavelet-force", X_force_test)

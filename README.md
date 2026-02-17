@@ -168,7 +168,7 @@ $\{\overrightarrow H(t-k),...,\overrightarrow H(t-1)\}$ as input features where 
 
 The **squared standarized volume** $V(t)$ is required to calculate _liquidity cap_ in backtesting simulation.
 
-$\hat V(t) = [\frac{\hat v(t) - v(t)} {σ_v(t)}]^2 $ where
+$\hat V(t) = [\frac{\hat v(t) - v(t)} {\hat v(t) + v(t)}]^2 $ where
 
 $\hat v(t) = \frac{\sum^{k-1}_0 v(t-k)} {k}$ and
 
