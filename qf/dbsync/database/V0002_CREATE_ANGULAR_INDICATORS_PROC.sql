@@ -18,8 +18,8 @@ with quote_data as (
 from quote_data inner join ANGULAR_INDICATORS('AAPL') indicators on quote_data."TIMESTAMP" = indicators."TIMESTAMP"
 order by "TIMESTAMP"
   */      
-select COUNT(*),"TICKER" from quote group by "TICKER"
-        
+-- Active: 1761234047525@@nas@5432@qf
+select COUNT(*), "TICKER" from "QUOTE" q group by "TICKER" 
         
 CREATE OR REPLACE FUNCTION "ω" ("Θ1" DOUBLE precision, "Θ2" DOUBLE precision, "Θ3" DOUBLE precision, "Θ4" DOUBLE PRECISION)
 returns DOUBLE precision
@@ -77,7 +77,7 @@ BEGIN
         Q."CLOSE",
         Q."VOLUME",
         ROW_NUMBER() OVER (PARTITION BY Q."TICKER" ORDER BY Q."TIMESTAMP") as rn
-        FROM QUOTE Q
+        FROM "QUOTE" Q
 		WHERE Q."TICKER" = TICKER AND (Q."OPEN" > 0 AND Q."HIGH" > 0 AND Q."LOW" > 0 AND Q."CLOSE" > 0)
         ORDER BY Q."TICKER", Q."TIMESTAMP"
     ),

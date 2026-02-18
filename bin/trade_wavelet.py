@@ -9,7 +9,6 @@ import tensorflow as tf
 import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine
-import traceback
 from qf.trade import Position, Transaction
 import math
 from qf.trade.State import State
@@ -26,7 +25,7 @@ def get_quotes(connection, quote_name, index):
         with quote_data as (
             SELECT "TICKER", "TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME", 
             ("CLOSE" - LAG("CLOSE", 1) over (ORDER BY "TIMESTAMP")) / ("CLOSE" + LAG("CLOSE", 1) over (ORDER BY "TIMESTAMP")) "ΔP"  
-            FROM QUOTE WHERE "TICKER" = '{quote_name}'
+            FROM "QUOTE" WHERE "TICKER" = '{quote_name}'
         ) select quote_data."TICKER", quote_data."TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", 
             COALESCE(STDDEV(quote_data."ΔP") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW),0.0001) "δP" ,
             coalesce(POWER((AVG("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) - "VOLUME") / (AVG("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) + "VOLUME" + 0.000009),2),0) "V",
@@ -127,7 +126,7 @@ def get_stats_params(quote_name, force_stats):
         pass
     return default_mae, default_edge
 
-def calculate_levels(current_price, signal, delta_p, H, V):
+def calculate_levels(current_price, signal, delta_p, H, V, is_forex):
     """
     EXPERIMENTAL CALIBRATION (V-Adjusted):
     - Stop Loss: Tiny (0.25 * delta_p), but scaled by sqrt(V) to survive volume noise.
@@ -156,8 +155,8 @@ def calculate_levels(current_price, signal, delta_p, H, V):
     tp_multiplier = (TP_BASE + (H_SCALAR * float(H))) * v_multiplier
     tp_distance = base_move * tp_multiplier
 
-    # Define the exchange tick size (usually 0.01 for US stocks)
-    tick_size = 0.01
+    # Define the exchange tick size (usually 0.01 for US stocks and 0.0001 for FOREX)
+    tick_size = 0.0001 if is_forex else 0.01
 
     if signal == 1:  # Long
         tp = current_price + tp_distance
@@ -174,81 +173,91 @@ def calculate_levels(current_price, signal, delta_p, H, V):
         
     return float(final_tp), float(final_sl)
 
-def update_hybrid_exit(position, row, delta_p, v_dir, current_force, p_dir=None):
+        
+def update_hybrid_exit(position, row, delta_p, current_force, is_forex):
     """
-    Refined implementation with Decimal Precision and Conservative Rounding:
-    1. V-Adjusted Tiny Stop: Scales based on volume-time wavelet noise.
-    2. Break-Even Guard: Snaps to the nearest tick once in profit.
-    3. Force Decay Exit: Quits if momentum (H) weakens, using quantized pricing.
-    4. Conservative Fills: Rounds against the trade to simulate the bid-ask spread.
+    Refined implementation with JPY-aware Pip Logic and Universal Scale Support:
+    1. Scale Detection: Uses pips for FOREX and percentages for Stocks/Futures.
+    2. JPY Guard: Adjusts pip units for 2-decimal currency pairs.
+    3. Force Decay: Exits if momentum weakens relative to entry force.
+    4. Conservative Snapping: Fills round against the trade to simulate slippage.
     """
     high = float(row['HIGH'])
     low = float(row['LOW'])
     close = float(row['CLOSE'])
+    ticker = str(row['TICKER'])
     dp = float(delta_p)
     v_val = float(row['V'])
     
-    # Configuration for discrete price increments
-    tick_size = 0.01
-    slippage_cost = close * 0.0005 
+    # 1. SCALE CONFIGURATION
+    # Detect JPY pairs (e.g., AUDJPY=X) which use 0.01 instead of 0.0001
+    is_jpy = "JPY" in ticker
+    pip_unit = 0.01 if is_jpy else 0.0001
+    tick_size = pip_unit if is_forex else 0.01
     
-    # Calculate current unrealized gain percentage
-    unrealized_gain_pct = ((close - position.entry_price) / position.entry_price) * position.side
+    # Fees and Slippage
+    slippage_cost = close * 0.0005 
+    exit_fee_per_share = 0.005 if not is_forex else 0.0 # Forex usually baked into spread
+
+    # 2. PROFIT CALCULATION
+    # Absolute distance from entry
+    profit_dist = (close - position.entry_price) * position.side
+    unrealized_gain_pct = (profit_dist / position.entry_price)
 
     # Helper function for conservative rounding
     def snap_to_tick(price, side):
-        # Long Exit (Selling): Round DOWN to the nearest tick
-        # Short Exit (Buying back): Round UP to the nearest tick
-        if side == 1:
+        if side == 1: # Long Exit (Selling): Round DOWN
             return math.floor(price / tick_size) * tick_size
-        else:
+        else: # Short Exit (Buying back): Round UP
             return math.ceil(price / tick_size) * tick_size
 
-    # --- 1. FORCE DECAY (MOMENTUM EXIT) ---
-    # Exit if profit exists and the Wavelet Force (H) drops by 30% from entry.
-    if unrealized_gain_pct > 0.001 and current_force < (position.entry_force * 0.70):
-        exit_price_raw = close - (slippage_cost * position.side)
-        return None, snap_to_tick(exit_price_raw, position.side), 0
+    # 3. UNIVERSAL EXIT TRIGGERS
+    # A. FORCE DECAY (Momentum Exit)
+    # Threshold: 10 pips for Forex, 0.1% for Stocks
+    momentum_exit_trigger = (10 * pip_unit) if is_forex else (position.entry_price * 0.001)
+    
+    if profit_dist > momentum_exit_trigger and current_force < (position.entry_force * 0.70):
+        exit_price_raw = close - (slippage_cost * position.side) 
+        return None, snap_to_tick(exit_price_raw, position.side) - exit_fee_per_share, 0
 
-    # --- 2. EXPERIMENTAL 'FIRST POSITIVE' EXIT ---
-    # Exit immediately once slippage is covered.
-    if unrealized_gain_pct > 0.0006:
+    # B. 'FIRST POSITIVE' EXIT (Slippage Cover)
+    # Threshold: 6 pips for Forex, 0.06% for Stocks
+    break_even_trigger = (6 * pip_unit) if is_forex else (position.entry_price * 0.0006)
+    
+    if profit_dist > break_even_trigger:
         exit_price_raw = close - (slippage_cost * position.side)
-        return None, snap_to_tick(exit_price_raw, position.side), 0
+        return None, snap_to_tick(exit_price_raw, position.side) - exit_fee_per_share, 0
 
-    # --- 3. DYNAMIC STOP LOSS AND BOUNDARY CHECKS ---
-    v_multiplier = 1.0 + min(math.sqrt(max(0, v_val)), 2.0)
+    # 4. DYNAMIC STOP LOSS AND BOUNDARY CHECKS
+    # Use Volume scaling for Stocks, fix at 1.2x for static FOREX volume
+    v_multiplier = (1.0 + min(math.sqrt(max(0, v_val)), 2.0)) if not is_forex else 1.2
     tiny_stop_dist = position.entry_price * (dp * 0.25) * v_multiplier
 
     if position.side == 1:  # LONG
-        # A. Check hard Stop/Target using the quantized levels from calculate_levels
         if low <= position.stop_loss:
-            return None, float(position.stop_loss), -1
+            return None, float(position.stop_loss) - exit_fee_per_share, -1
         elif high >= position.take_profit:
-            return None, float(position.take_profit), 1
+            return None, float(position.take_profit) - exit_fee_per_share, 1
             
-        # B. Moving Stop Logic (Lock-in Profit)
+        # Moving Stop Logic
         new_sl_raw = position.entry_price - tiny_stop_dist
-        if unrealized_gain_pct > (dp * 0.75):
-            new_sl_raw = max(new_sl_raw, position.entry_price + slippage_cost)
+        if profit_dist > (dp * position.entry_price * 0.75):
+            new_sl_raw = max(new_sl_raw, position.entry_price + (tick_size * 2))
             
-        # Snap the updated stop-loss to a valid exchange tick
         updated_sl = max(float(position.stop_loss), math.floor(new_sl_raw / tick_size) * tick_size)
         return position._replace(stop_loss=updated_sl), None, 0
             
     else:  # SHORT
-        # A. Check hard Stop/Target
         if high >= position.stop_loss:
-            return None, float(position.stop_loss), -1
+            return None, float(position.stop_loss) - exit_fee_per_share, -1
         elif low <= position.take_profit:
-            return None, float(position.take_profit), 1
+            return None, float(position.take_profit) - exit_fee_per_share, 1
             
-        # B. Moving Stop Logic
+        # Moving Stop Logic
         new_sl_raw = position.entry_price + tiny_stop_dist
-        if unrealized_gain_pct > (dp * 0.75):
-            new_sl_raw = min(new_sl_raw, position.entry_price - slippage_cost)
+        if profit_dist > (dp * position.entry_price * 0.75):
+            new_sl_raw = min(new_sl_raw, position.entry_price - (tick_size * 2))
             
-        # Snap the updated stop-loss up (conservative for shorts)
         updated_sl = min(float(position.stop_loss), math.ceil(new_sl_raw / tick_size) * tick_size)
         return position._replace(stop_loss=updated_sl), None, 0
 
@@ -275,7 +284,7 @@ def calculate_dynamic_qty(confidence, H, V, current_capital, entry_price, minimu
     ensure dollar exposure does not exceed a percentage of current capital.
     """
     # 1. Calculate Conviction Score (Geometric Edge)
-    conviction = (confidence * 0.6) + (H * 0.2) + (abs(V) * 0.2)
+    conviction = (confidence * 0.6) + (H * 0.2) + (abs(V) * 0.2) if H > 0 and V > 0 else confidence
     conviction = max(0.0, min(1.0, conviction))
     
     # 2. Determine "Ideal" Quantity from Model
@@ -305,6 +314,9 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
     winner_longs, winner_shorts = 0, 0
     loser_longs, loser_shorts = 0, 0
     equity_curve = []
+    is_forex = quote_name.endswith("=X")
+    current_floor = FLOOR * 0.9 if is_forex else FLOOR
+    current_ceiling = CEILING * 1.1 if is_forex else CEILING
 
     for i in range(len(df)):
         row = df.iloc[i]
@@ -314,8 +326,10 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
         f_val = force_predictions[i][0]
         close_series = row['CLOSE']
         H = row['H']
-        V = row['V']
-        avg_volume = row['AV']
+        V = row['V']        
+        effective_dir =  p_dir if is_forex else (v_dir if v_dir != p_dir else 0)
+        effective_V = V if not is_forex else 0        
+        effective_H = H if not is_forex else 0        
         curr_close = float(close_series.to_numpy()[0] if hasattr(close_series, 'to_numpy') else close_series)
 
         # --- 1. EXIT LOGIC (Trailing Stop Update) ---
@@ -324,9 +338,8 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
                 active_position, 
                 row, 
                 curr_dp, 
-                v_dir, 
-                f_val, # <--- NEW
-                p_dir
+                f_val,
+                is_forex
             )
             
             if not (exit_price is None):
@@ -341,19 +354,23 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
                     short_trades += 1
                     if pl_total > 0: winner_shorts += 1
                     else: loser_shorts += 1
-                
+
+                total_commission = active_position.quantity * 0.01
+                pl_total -= total_commission
                 transactions.append(Transaction.from_position(active_position, pl_total, i, exit_price, exit_reason))
                 active_position = None
             else:
                 active_position = updated_pos
 
         # --- 2. ENTRY LOGIC (Force Scaling) ---
-        if active_position is None:
-            confidence = (f_val - FLOOR) / (CEILING - FLOOR)
-            if v_dir != p_dir:
-                # UPDATED CALL: Passing current_capital and curr_close (entry_price)
+        if (active_position is None) and ((not is_forex) or (is_forex and current_floor < f_val < current_ceiling)):
+            confidence = (f_val - current_floor) / (current_ceiling - current_floor)
+
+            if effective_dir != 0:
                 dynamic_qty = calculate_dynamic_qty(
-                    confidence, H, V, 
+                    confidence,
+                    effective_H, # Pass H first
+                    effective_V,  # Pass V second
                     current_capital, 
                     curr_close,
                     10, 
@@ -364,23 +381,25 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
                 # Guard clause: If capital is too low to trade the minimum/cap
                 if dynamic_qty == 0:
                     continue 
-
-                tp_base, sl = calculate_levels(curr_close, v_dir, curr_dp, V, H)
+                
+                tp_base, sl = calculate_levels(curr_close, effective_dir, curr_dp, effective_H, effective_V, is_forex)
                 tp_dist = abs(tp_base - curr_close) * (1.0 + 0.5 * confidence)
-                final_tp = curr_close + (tp_dist * v_dir)
+                final_tp = curr_close + (tp_dist * effective_dir)
 
                 active_position = Position(
                     ticker = quote_name,
                     entry_index = i,
                     entry_price =curr_close,
                     entry_force = f_val,
-                    side = v_dir,
+                    side = effective_dir,
                     quantity = dynamic_qty,
                     take_profit = float(final_tp),
                     stop_loss = float(sl),
                     state = []
                 )
 
+                commission = dynamic_qty * 0.005
+                current_capital -= commission   
         # --- 3. EQUITY TRACKING ---
         unrealized = 0.0
         if active_position:
@@ -393,7 +412,7 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
                     low_price = float(row['LOW']),
                     close_price = curr_close,
                     δP = curr_dp,
-                    V = V,
+                    V = effective_V,
                     H = H
                 )
             )

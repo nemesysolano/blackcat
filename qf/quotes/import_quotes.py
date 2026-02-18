@@ -3,17 +3,21 @@ import traceback
 import psycopg2
 import yfinance as yf
 
+def table_name(quote_name):
+    return "QUOTE_FOREX" if quote_name.endswith("=X") else "QUOTE_STOCKS"
+
 def quote_exists(connection, quote_name):
     cursor = connection.cursor()
-    cursor.execute("SELECT COUNT(*) FROM quote WHERE \"TICKER\" = %s", (quote_name,))
+    cursor.execute(f"SELECT COUNT(*) FROM \"{table_name(quote_name)}\" WHERE \"TICKER\" = %s", (quote_name,))
     records = cursor.fetchall()
     count = records[0][0]
     cursor.close()
     return count > 0
 
 def import_historical_data(connection, historical_data, quote_name):
+        
     cursor = connection.cursor();
-    statement = "PREPARE INSERT_QUOTE AS INSERT INTO quote (\"TICKER\", \"TIMESTAMP\", \"OPEN\", \"HIGH\", \"LOW\", \"CLOSE\", \"VOLUME\") VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (\"TICKER\", \"TIMESTAMP\") DO NOTHING;"
+    statement = f"PREPARE INSERT_QUOTE AS INSERT INTO \"{table_name(quote_name)}\" (\"TICKER\", \"TIMESTAMP\", \"OPEN\", \"HIGH\", \"LOW\", \"CLOSE\", \"VOLUME\") VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (\"TICKER\", \"TIMESTAMP\") DO NOTHING;"
     cursor.execute(statement)
     count = 0
     for index, row in historical_data.iterrows():
@@ -34,7 +38,7 @@ def import_last_10_years(connection, quote_name):
 
 def get_last_quote(connection, quote_name):
     cursor = connection.cursor()
-    cursor.execute("SELECT MAX(\"TIMESTAMP\") FROM quote WHERE \"TICKER\" = %s", (quote_name,))
+    cursor.execute(f"SELECT MAX(\"TIMESTAMP\") FROM \"{table_name(quote_name)}\" WHERE \"TICKER\" = %s", (quote_name,))
     records = cursor.fetchall()
     last_quote = records[0][0]
     cursor.close()
