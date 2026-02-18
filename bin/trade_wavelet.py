@@ -126,7 +126,7 @@ def get_stats_params(quote_name, force_stats):
         pass
     return default_mae, default_edge
 
-def calculate_levels(current_price, signal, delta_p, H, V, is_forex):
+def calculate_levels(current_price, signal, delta_p, H, V, is_forex, is_jpy):
     """
     EXPERIMENTAL CALIBRATION (V-Adjusted):
     - Stop Loss: Tiny (0.25 * delta_p), but scaled by sqrt(V) to survive volume noise.
@@ -156,7 +156,7 @@ def calculate_levels(current_price, signal, delta_p, H, V, is_forex):
     tp_distance = base_move * tp_multiplier
 
     # Define the exchange tick size (usually 0.01 for US stocks and 0.0001 for FOREX)
-    tick_size = 0.0001 if is_forex else 0.01
+    tick_size = 0.01 if is_jpy else (0.0001 if is_forex else 0.01)
 
     if signal == 1:  # Long
         tp = current_price + tp_distance
@@ -190,11 +190,13 @@ def update_hybrid_exit(position, row, delta_p, current_force, is_forex):
     v_val = float(row['V'])
     
     # 1. SCALE CONFIGURATION
-    # Detect JPY pairs (e.g., AUDJPY=X) which use 0.01 instead of 0.0001
-    is_jpy = "JPY" in ticker
-    pip_unit = 0.01 if is_jpy else 0.0001
-    tick_size = pip_unit if is_forex else 0.01
     
+    # Check if the ticker contains JPY to adjust pip scale
+    is_jpy = "JPY" in ticker    
+    # JPY pairs use 0.01. Other Forex uses 0.0001. Stocks use 0.01.
+    pip_unit = 0.01 if is_jpy else (0.0001 if is_forex else 0.01)
+    tick_size = pip_unit
+
     # Fees and Slippage
     slippage_cost = close * 0.0005 
     exit_fee_per_share = 0.005 if not is_forex else 0.0 # Forex usually baked into spread
@@ -202,7 +204,6 @@ def update_hybrid_exit(position, row, delta_p, current_force, is_forex):
     # 2. PROFIT CALCULATION
     # Absolute distance from entry
     profit_dist = (close - position.entry_price) * position.side
-    unrealized_gain_pct = (profit_dist / position.entry_price)
 
     # Helper function for conservative rounding
     def snap_to_tick(price, side):
@@ -315,7 +316,8 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
     loser_longs, loser_shorts = 0, 0
     equity_curve = []
     is_forex = quote_name.endswith("=X")
-    current_floor = FLOOR * 0.9 if is_forex else FLOOR
+    is_jpy = "JPY" in quote_name
+    current_floor = FLOOR * 0.9 if is_forex else FLOOR + 0.02
     current_ceiling = CEILING * 1.1 if is_forex else CEILING
 
     for i in range(len(df)):
@@ -382,7 +384,7 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
                 if dynamic_qty == 0:
                     continue 
                 
-                tp_base, sl = calculate_levels(curr_close, effective_dir, curr_dp, effective_H, effective_V, is_forex)
+                tp_base, sl = calculate_levels(curr_close, effective_dir, curr_dp, effective_H, effective_V, is_forex, is_jpy)
                 tp_dist = abs(tp_base - curr_close) * (1.0 + 0.5 * confidence)
                 final_tp = curr_close + (tp_dist * effective_dir)
 
@@ -449,11 +451,17 @@ def get_model_stats(current_dir, filename):
     return model_stats
 
 def predict(quote_name, model_name, X_test):
-    checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{quote_name}-{model_name}.keras')
-    if not os.path.exists(checkpoint_filepath):
-        print(f"Warning: Model {checkpoint_filepath} not found.")
-        return np.zeros((len(X_test), 1))
-    model = tf.keras.models.load_model(checkpoint_filepath, custom_objects={'directional_mse': directional_mse})    
+    checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{quote_name}-{model_name}.keras')    
+    try:
+        if not os.path.exists(checkpoint_filepath):
+            print(f"Warning: Model {checkpoint_filepath} not found.")
+            return None
+
+        model = tf.keras.models.load_model(checkpoint_filepath, custom_objects={'directional_mse': directional_mse})    
+    except Exception as e:        
+        print(f"Error loading model: {e}")
+        return None
+    
     # Ensure input shape is (N, Timesteps, 1) or (N, Features) depending on model
     # The CNN model in train_model.py expects (batch, lags, 1)
     X_input = X_test.to_numpy().reshape((X_test.shape[0], X_test.shape[1], 1))    
@@ -474,7 +482,7 @@ if __name__ == "__main__":
         print(f"Error reading quotes: {e}")
         quotes = []
 
-    # Load Reports
+    # Load Reports.
     price_direction_stats = get_model_stats(os.getcwd(), "report-price-time-wavelet-direction.csv")
     volume_direction_stats = get_model_stats(os.getcwd(), "report-volume-time-wavelet-direction.csv")
     force_stats = get_model_stats(os.getcwd(), "report-price-time-wavelet-force.csv")
@@ -513,6 +521,10 @@ if __name__ == "__main__":
                 price_time_predictions = predict(quote_name, "price-time-wavelet-direction", X_price_time_test)
                 volume_time_predictions = predict(quote_name, "volume-time-wavelet-direction", X_volume_time_test)
                 force_predictions = predict(quote_name, "price-time-wavelet-force", X_force_test)
+
+                if price_time_predictions is None or volume_time_predictions is None or force_predictions is None:
+                    print(f"No predictions for {quote_name}. Skipping.")
+                    continue
 
                 # Get Quotes
                 quotes = get_quotes(connection, quote_name, X_price_time_test.index)

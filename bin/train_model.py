@@ -66,6 +66,11 @@ if __name__ == "__main__":
 
     with engine.connect() as connection:
         print(f"Training {quote_name} with {indicator_name} indicator")
+        checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{quote_name}-{indicator_name}.keras')
+        if os.path.exists(checkpoint_filepath):
+            print(f"Model already exists for {quote_name}, skipping training")
+            exit(0)
+
         X_train, X_val, X_test, Y_train, Y_val, Y_test, _ = create_datasets(indicator(connection, quote_name, lookback_periods))
         X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
         X_val = X_val.reshape((X_val.shape[0], X_val.shape[1], 1))
@@ -76,8 +81,7 @@ if __name__ == "__main__":
         epochs = 100
         batch_size = 50
         model.summary()
-        checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{quote_name}-{indicator_name}.keras')
-
+        
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_filepath,
             save_best_only=True,

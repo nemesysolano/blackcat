@@ -19,7 +19,7 @@ from quote_data inner join ANGULAR_INDICATORS('AAPL') indicators on quote_data."
 order by "TIMESTAMP"
   */      
 -- Active: 1761234047525@@nas@5432@qf
-select COUNT(*), "TICKER" from "QUOTE" q group by "TICKER" 
+
         
 CREATE OR REPLACE FUNCTION "ω" ("Θ1" DOUBLE precision, "Θ2" DOUBLE precision, "Θ3" DOUBLE precision, "Θ4" DOUBLE PRECISION)
 returns DOUBLE precision
