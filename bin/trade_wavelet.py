@@ -378,66 +378,84 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
                 active_position = None
             else:
                 active_position = updated_pos
+        elif (active_position is None) and ((not is_forex) or (is_forex and current_floor < f_val < current_ceiling)):
+            # --- DYNAMIC FLOOR/CEILING CALIBRATION ---
+            # alpha, beta, gamma are sensitivity coefficients
+            h_shift = (0.5 - H) * 0.10     # Stricter if H < 0.5 (noise)
+            v_shift = curr_dp * 2.0            # Stricter if Volatility is high
+            e_shift = V * 0.05            # Relaxed if Energy is high
+            
+            # Calculate base dynamic bounds
+            dynamic_floor_base = FLOOR + h_shift + v_shift - e_shift
+            dynamic_ceiling_base = CEILING + h_shift + v_shift - e_shift
 
-        # --- 2. ENTRY LOGIC (Force Scaling) ---
-        if (active_position is None) and ((not is_forex) or (is_forex and current_floor < f_val < current_ceiling)):
-            confidence = (f_val - current_floor) / (current_ceiling - current_floor)
+            # Preserve your original Forex/Stock logic on top of the dynamic base
+            if is_forex:
+                current_floor = max(0.08, dynamic_floor_base * 0.9)
+                current_ceiling = min(0.30, dynamic_ceiling_base * 1.1)
+            else:
+                current_floor = max(0.10, dynamic_floor_base + 0.02)
+                current_ceiling = min(0.35, dynamic_ceiling_base)
 
-            if effective_dir != 0:
-                # 1. Calculate Levels FIRST to get the Stop Loss (Volatility metric)
-                tp_base, sl = calculate_levels(curr_close, effective_dir, curr_dp, effective_H, effective_V, is_forex, is_jpy)
-                
-                # 2. Calculate Quantity SECOND (Using the compounding risk logic)
-                dynamic_qty = calculate_dynamic_qty(
-                    confidence,
-                    effective_H, 
-                    effective_V,  
-                    current_capital, 
-                    curr_close,
-                    sl,               # Pass the calculated stop loss
-                    is_forex
+            # --- 2. ENTRY LOGIC (Force Scaling) ---
+            if (active_position is None) and ((not is_forex) or (is_forex and current_floor < f_val < current_ceiling)):
+                confidence = (f_val - current_floor) / (current_ceiling - current_floor)
+
+                if effective_dir != 0:
+                    # 1. Calculate Levels FIRST to get the Stop Loss (Volatility metric)
+                    tp_base, sl = calculate_levels(curr_close, effective_dir, curr_dp, effective_H, effective_V, is_forex, is_jpy)
+                    
+                    # 2. Calculate Quantity SECOND (Using the compounding risk logic)
+                    dynamic_qty = calculate_dynamic_qty(
+                        confidence,
+                        effective_H, 
+                        effective_V,  
+                        current_capital, 
+                        curr_close,
+                        sl,               # Pass the calculated stop loss
+                        is_forex
+                    )
+                    
+                    # Guard clause
+                    if dynamic_qty == 0:
+                        continue 
+                    
+                    # 3. Finalize TP based on conviction
+                    tp_dist = abs(tp_base - curr_close) * (1.0 + 0.5 * confidence)
+                    final_tp = curr_close + (tp_dist * effective_dir)
+
+                    active_position = Position(
+                        ticker = quote_name,
+                        entry_index = i,
+                        entry_price =curr_close,
+                        entry_force = f_val,
+                        side = effective_dir,
+                        quantity = dynamic_qty,
+                        take_profit = float(final_tp),
+                        stop_loss = float(sl),
+                        state = []
+                    )
+
+                    commission = dynamic_qty * 0.005
+                    current_capital -= commission   
+            # --- 3. EQUITY TRACKING ---
+            unrealized = 0.0
+            if active_position:
+                unrealized = float((curr_close - active_position.entry_price) * active_position.side * active_position.quantity)
+                active_position.state.append(
+                    State(
+                        index = i,
+                        open_price = float(row['OPEN']),
+                        high_price = float(row['HIGH']),
+                        low_price = float(row['LOW']),
+                        close_price = curr_close,
+                        δP = curr_dp,
+                        V = effective_V,
+                        H = H
+                    )
                 )
-                
-                # Guard clause
-                if dynamic_qty == 0:
-                    continue 
-                
-                # 3. Finalize TP based on conviction
-                tp_dist = abs(tp_base - curr_close) * (1.0 + 0.5 * confidence)
-                final_tp = curr_close + (tp_dist * effective_dir)
 
-                active_position = Position(
-                    ticker = quote_name,
-                    entry_index = i,
-                    entry_price =curr_close,
-                    entry_force = f_val,
-                    side = effective_dir,
-                    quantity = dynamic_qty,
-                    take_profit = float(final_tp),
-                    stop_loss = float(sl),
-                    state = []
-                )
-
-                commission = dynamic_qty * 0.005
-                current_capital -= commission   
-        # --- 3. EQUITY TRACKING ---
-        unrealized = 0.0
-        if active_position:
-            unrealized = float((curr_close - active_position.entry_price) * active_position.side * active_position.quantity)
-            active_position.state.append(
-                State(
-                    index = i,
-                    open_price = float(row['OPEN']),
-                    high_price = float(row['HIGH']),
-                    low_price = float(row['LOW']),
-                    close_price = curr_close,
-                    δP = curr_dp,
-                    V = effective_V,
-                    H = H
-                )
-            )
-
-        equity_curve.append(float(current_capital + unrealized))
+            equity_curve.append(float(current_capital + unrealized))
 
     return create_backtest_stats(
         quote_name, equity_curve, long_trades, short_trades, 
@@ -525,9 +543,12 @@ if __name__ == "__main__":
                 _, _, X_volume_time_test, _, _, _, _ = create_trade_datasets(volume_time_wavelet_direction(connection, quote_name, lookback_periods))
                 _, _, X_force_test, _, _, _, _ = create_trade_datasets(price_time_wavelet_force(connection, quote_name, lookback_periods))
                 
-                if not (len (X_volume_time_test) == len(X_price_time_test) and len(X_volume_time_test) == len(X_force_test)):
+                if len(X_force_test) < 60:
+                    print(f"Insufficient data for trading with {quote_name}. Skipping.")
+                    continue
+                elif not (len (X_volume_time_test) == len(X_price_time_test) and len(X_volume_time_test) == len(X_force_test)):
                     X_force_test = X_force_test.reindex(X_volume_time_test.index)
-                    print(f"Data length mismatch for {quote_name}: Price-Time={len(X_price_time_test)}, Volume-Time={len(X_volume_time_test)}, Force={len(X_force_test)}. Skipping.")
+                    print(f"Data length mismatch for {quote_name}: Price-Time={len(X_price_time_test)}, Volume-Time={len(X_volume_time_test)}, Force={len(X_force_test)}. Adju.")
                 else:
                     print(f"Data length match for {quote_name}: {len(X_price_time_test)} samples. Proceeding with backtest.")
                 
