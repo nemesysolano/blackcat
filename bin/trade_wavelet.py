@@ -170,7 +170,16 @@ def calculate_levels(current_price, signal, delta_p, H, V, is_forex, is_jpy):
     return float(final_tp), float(final_sl)
 
         
+import math
+
 def update_hybrid_exit(position, row, delta_p, current_force, is_forex):
+    """
+    Consolidated Exit Logic:
+    1. Removes quantity loophole via Structural Risk Floor.
+    2. Syncs multipliers with calculate_levels (SL_TINY_BASE = 0.40).
+    3. Implements Dynamic Slippage based on volatility (dp).
+    4. Preserves Early Stops (Momentum Decay & Break-even).
+    """
     high = float(row['HIGH'])
     low = float(row['LOW'])
     close = float(row['CLOSE'])
@@ -181,7 +190,9 @@ def update_hybrid_exit(position, row, delta_p, current_force, is_forex):
     is_jpy = "JPY" in ticker    
     tick_size = 0.01 if is_jpy else (0.0001 if is_forex else 0.01)
 
-    slippage_cost = close * 0.0005 
+    # REFINEMENT: Dynamic Slippage & Fees
+    # Scales slippage based on 10% of the current standard deviation (dp)
+    slippage_cost = close * dp * 0.1 
     exit_fee_per_share = 0.005 if not is_forex else 0.0 
     profit_dist = (close - position.entry_price) * position.side
 
@@ -189,46 +200,56 @@ def update_hybrid_exit(position, row, delta_p, current_force, is_forex):
         if side == 1: return math.floor(price / tick_size) * tick_size
         else: return math.ceil(price / tick_size) * tick_size
 
-    # BENEFIT PRESERVED: Force Decay (Momentum Exit)
-    momentum_exit_trigger = (10 * tick_size) if is_forex else (position.entry_price * 0.001)
-    if profit_dist > momentum_exit_trigger and current_force < (position.entry_force * 0.70):
+    # BENEFIT 1: Momentum Decay Exit (Early Stop)
+    # If in profit and Force drops 30% from entry, exit immediately.
+    momentum_trigger = (10 * tick_size) if is_forex else (position.entry_price * 0.001)
+    if profit_dist > momentum_trigger and current_force < (position.entry_force * 0.70):
         exit_price_raw = close - (slippage_cost * position.side) 
         return None, snap_to_tick(exit_price_raw, position.side) - exit_fee_per_share, 0
 
-    # BENEFIT PRESERVED: Break-even Logic
-    break_even_trigger = (6 * tick_size) if is_forex else (position.entry_price * 0.0006)
-    if profit_dist > break_even_trigger:
+    # BENEFIT 2: Break-even Protection
+    # Locks in minor profit if the price moves significantly in our favor
+    be_trigger = (6 * tick_size) if is_forex else (position.entry_price * 0.0006)
+    if profit_dist > be_trigger:
         exit_price_raw = close - (slippage_cost * position.side)
+        # Note: '0' maps to 'Early Stop' in your report dictionary
         return None, snap_to_tick(exit_price_raw, position.side) - exit_fee_per_share, 0
 
-    # LOOPHOLE FIX: Sync Trailing Distance with Structural Floor
-    v_multiplier = (1.0 + min(math.sqrt(max(0, v_val)), 2.0)) if not is_forex else 1.2
+    # LOOPHOLE FIX: Synchronize Trailing Logic with Entry Floor
+    # Use the exact same multipliers as calculate_levels
+    v_multiplier = 1.0 + min(math.sqrt(max(0, v_val)), 2.0)
     sl_floor_pct = 0.001 if is_forex else 0.005
     
-    vol_stop_dist = position.entry_price * dp * 0.40 * v_multiplier
-    floor_stop_dist = position.entry_price * sl_floor_pct
-    safe_stop_dist = max(vol_stop_dist, floor_stop_dist)
+    # Calculate the minimum safe trailing distance
+    vol_stop_dist = close * dp * 0.40 * v_multiplier
+    floor_stop_dist = close * sl_floor_pct
+    safe_trailing_dist = max(vol_stop_dist, floor_stop_dist)
 
     if position.side == 1:  # LONG
+        # Check Hard Stops First
         if low <= position.stop_loss:
             return None, float(position.stop_loss) - exit_fee_per_share, -1
         elif high >= position.take_profit:
             return None, float(position.take_profit) - exit_fee_per_share, 1
             
-        new_sl_raw = position.entry_price - safe_stop_dist
+        # Update Trailing Stop
+        new_sl_raw = close - safe_trailing_dist
+        # Optional: Aggressive trail if deep in profit
         if profit_dist > (dp * position.entry_price * 0.75):
             new_sl_raw = max(new_sl_raw, position.entry_price + (tick_size * 2))
             
         updated_sl = max(float(position.stop_loss), math.floor(new_sl_raw / tick_size) * tick_size)
-        return position._replace(stop_loss=updated_sl), None, 0 # Returns updated NamedTuple
+        return position._replace(stop_loss=updated_sl), None, 0
             
     else:  # SHORT
+        # Check Hard Stops First
         if high >= position.stop_loss:
             return None, float(position.stop_loss) - exit_fee_per_share, -1
         elif low <= position.take_profit:
             return None, float(position.take_profit) - exit_fee_per_share, 1
             
-        new_sl_raw = position.entry_price + safe_stop_dist
+        # Update Trailing Stop
+        new_sl_raw = close + safe_trailing_dist
         if profit_dist > (dp * position.entry_price * 0.75):
             new_sl_raw = min(new_sl_raw, position.entry_price - (tick_size * 2))
             
@@ -353,8 +374,6 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
                     if pl_total > 0: winner_shorts += 1
                     else: loser_shorts += 1
 
-                total_commission = active_position.quantity * 0.01
-                pl_total -= total_commission
                 transactions.append(Transaction.from_position(active_position, pl_total, i, exit_price, exit_reason))
                 active_position = None
             else:
