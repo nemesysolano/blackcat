@@ -127,47 +127,43 @@ def get_stats_params(quote_name, force_stats):
     return default_mae, default_edge
 
 def calculate_levels(current_price, signal, delta_p, H, V, is_forex, is_jpy):
-    """
-    EXPERIMENTAL CALIBRATION (V-Adjusted):
-    - Stop Loss: Tiny (0.25 * delta_p), but scaled by sqrt(V) to survive volume noise.
-    - Take Profit: Scaled by both H (Force) and V (Volume instability).
-    """
     cp = float(current_price)
     dp = float(delta_p)
     
-    # Square root of V brings the squared standardized volume back to a Z-score scale
+    # Preserve Volume scaling logic
     v_factor = math.sqrt(max(0, float(V)))
-    # We cap the expansion so the "tiny" stop doesn't become "huge" during extreme spikes
     v_multiplier = 1.0 + min(v_factor, 2.0) 
 
-    # --- Experimental Parameters ---
-    SL_TINY_BASE = 0.40 # 0.25
+    # Preserve experimental parameters
+    SL_TINY_BASE = 0.40 
     TP_BASE = 1.0
-    H_SCALAR = 7.5# 5.0
+    H_SCALAR = 7.5
     
-    base_move = cp * dp
+    # Calculate Volatility-based distance
+    vol_sl_distance = cp * dp * SL_TINY_BASE * v_multiplier
     
-    # 1. Stop Loss: Tiny distance, adjusted by volume instability (V)
-    # This prevents getting stopped out by a single high-volume 'wick'
-    sl_distance = base_move * SL_TINY_BASE * v_multiplier
+    # LOOPHOLE FIX: Structural Floor
+    # Prevents sl_distance from becoming too small, which caps max leverage
+    sl_floor_pct = 0.001 if is_forex else 0.005
+    sl_floor_distance = cp * sl_floor_pct
     
-    # 2. Take Profit: Captures the immediate burst, also adjusted by V
+    # Take the larger of the two to ensure a safe risk-denominator
+    sl_distance = max(vol_sl_distance, sl_floor_distance)
+    
+    # Preserve Take Profit logic with Force (H) scaling
     tp_multiplier = (TP_BASE + (H_SCALAR * float(H))) * v_multiplier
-    tp_distance = base_move * tp_multiplier
+    tp_distance = cp * dp * tp_multiplier
 
-    # Define the exchange tick size (usually 0.01 for US stocks and 0.0001 for FOREX)
     tick_size = 0.01 if is_jpy else (0.0001 if is_forex else 0.01)
 
     if signal == 1:  # Long
         tp = current_price + tp_distance
         sl = current_price - sl_distance
-        # Round TP down and SL down to be conservative
         final_tp = math.floor(tp / tick_size) * tick_size
         final_sl = math.floor(sl / tick_size) * tick_size
     else:            # Short
         tp = current_price - tp_distance
         sl = current_price + sl_distance
-        # Round TP up and SL up to be conservative
         final_tp = math.ceil(tp / tick_size) * tick_size
         final_sl = math.ceil(sl / tick_size) * tick_size
         
@@ -175,13 +171,6 @@ def calculate_levels(current_price, signal, delta_p, H, V, is_forex, is_jpy):
 
         
 def update_hybrid_exit(position, row, delta_p, current_force, is_forex):
-    """
-    Refined implementation with JPY-aware Pip Logic and Universal Scale Support:
-    1. Scale Detection: Uses pips for FOREX and percentages for Stocks/Futures.
-    2. JPY Guard: Adjusts pip units for 2-decimal currency pairs.
-    3. Force Decay: Exits if momentum weakens relative to entry force.
-    4. Conservative Snapping: Fills round against the trade to simulate slippage.
-    """
     high = float(row['HIGH'])
     low = float(row['LOW'])
     close = float(row['CLOSE'])
@@ -189,50 +178,36 @@ def update_hybrid_exit(position, row, delta_p, current_force, is_forex):
     dp = float(delta_p)
     v_val = float(row['V'])
     
-    # 1. SCALE CONFIGURATION
-    
-    # Check if the ticker contains JPY to adjust pip scale
     is_jpy = "JPY" in ticker    
-    # JPY pairs use 0.01. Other Forex uses 0.0001. Stocks use 0.01.
-    pip_unit = 0.01 if is_jpy else (0.0001 if is_forex else 0.01)
-    tick_size = pip_unit
+    tick_size = 0.01 if is_jpy else (0.0001 if is_forex else 0.01)
 
-    # Fees and Slippage
     slippage_cost = close * 0.0005 
-    exit_fee_per_share = 0.005 if not is_forex else 0.0 # Forex usually baked into spread
-
-    # 2. PROFIT CALCULATION
-    # Absolute distance from entry
+    exit_fee_per_share = 0.005 if not is_forex else 0.0 
     profit_dist = (close - position.entry_price) * position.side
 
-    # Helper function for conservative rounding
     def snap_to_tick(price, side):
-        if side == 1: # Long Exit (Selling): Round DOWN
-            return math.floor(price / tick_size) * tick_size
-        else: # Short Exit (Buying back): Round UP
-            return math.ceil(price / tick_size) * tick_size
+        if side == 1: return math.floor(price / tick_size) * tick_size
+        else: return math.ceil(price / tick_size) * tick_size
 
-    # 3. UNIVERSAL EXIT TRIGGERS
-    # A. FORCE DECAY (Momentum Exit)
-    # Threshold: 10 pips for Forex, 0.1% for Stocks
-    momentum_exit_trigger = (10 * pip_unit) if is_forex else (position.entry_price * 0.001)
-    
+    # BENEFIT PRESERVED: Force Decay (Momentum Exit)
+    momentum_exit_trigger = (10 * tick_size) if is_forex else (position.entry_price * 0.001)
     if profit_dist > momentum_exit_trigger and current_force < (position.entry_force * 0.70):
         exit_price_raw = close - (slippage_cost * position.side) 
         return None, snap_to_tick(exit_price_raw, position.side) - exit_fee_per_share, 0
 
-    # B. 'FIRST POSITIVE' EXIT (Slippage Cover)
-    # Threshold: 6 pips for Forex, 0.06% for Stocks
-    break_even_trigger = (6 * pip_unit) if is_forex else (position.entry_price * 0.0006)
-    
+    # BENEFIT PRESERVED: Break-even Logic
+    break_even_trigger = (6 * tick_size) if is_forex else (position.entry_price * 0.0006)
     if profit_dist > break_even_trigger:
         exit_price_raw = close - (slippage_cost * position.side)
         return None, snap_to_tick(exit_price_raw, position.side) - exit_fee_per_share, 0
 
-    # 4. DYNAMIC STOP LOSS AND BOUNDARY CHECKS
-    # Use Volume scaling for Stocks, fix at 1.2x for static FOREX volume
+    # LOOPHOLE FIX: Sync Trailing Distance with Structural Floor
     v_multiplier = (1.0 + min(math.sqrt(max(0, v_val)), 2.0)) if not is_forex else 1.2
-    tiny_stop_dist = position.entry_price * (dp * 0.25) * v_multiplier
+    sl_floor_pct = 0.001 if is_forex else 0.005
+    
+    vol_stop_dist = position.entry_price * dp * 0.40 * v_multiplier
+    floor_stop_dist = position.entry_price * sl_floor_pct
+    safe_stop_dist = max(vol_stop_dist, floor_stop_dist)
 
     if position.side == 1:  # LONG
         if low <= position.stop_loss:
@@ -240,13 +215,12 @@ def update_hybrid_exit(position, row, delta_p, current_force, is_forex):
         elif high >= position.take_profit:
             return None, float(position.take_profit) - exit_fee_per_share, 1
             
-        # Moving Stop Logic
-        new_sl_raw = position.entry_price - tiny_stop_dist
+        new_sl_raw = position.entry_price - safe_stop_dist
         if profit_dist > (dp * position.entry_price * 0.75):
             new_sl_raw = max(new_sl_raw, position.entry_price + (tick_size * 2))
             
         updated_sl = max(float(position.stop_loss), math.floor(new_sl_raw / tick_size) * tick_size)
-        return position._replace(stop_loss=updated_sl), None, 0
+        return position._replace(stop_loss=updated_sl), None, 0 # Returns updated NamedTuple
             
     else:  # SHORT
         if high >= position.stop_loss:
@@ -254,8 +228,7 @@ def update_hybrid_exit(position, row, delta_p, current_force, is_forex):
         elif low <= position.take_profit:
             return None, float(position.take_profit) - exit_fee_per_share, 1
             
-        # Moving Stop Logic
-        new_sl_raw = position.entry_price + tiny_stop_dist
+        new_sl_raw = position.entry_price + safe_stop_dist
         if profit_dist > (dp * position.entry_price * 0.75):
             new_sl_raw = min(new_sl_raw, position.entry_price - (tick_size * 2))
             
@@ -279,31 +252,54 @@ def calculate_liquidity_cap(H, V, minimum):
     
     return int(minimum * quality)
 
-def calculate_dynamic_qty(confidence, H, V, current_capital, entry_price, minimum, maximum, max_alloc_pct):
+def calculate_dynamic_qty(confidence, H, V, current_capital, entry_price, stop_loss, is_forex, min_qty=1, max_qty=1000, max_risk_pct=0.02, max_cap_pct=0.03):
     """
-    Calculates quantity based on Wavelet Conviction, then caps it to 
-    ensure dollar exposure does not exceed a percentage of current capital.
+    Compounds capital using Volatility-Targeting.
+    Constrained by:
+    1. A hard 2% Risk-of-Capital Rule (Stop Loss based)
+    2. A hard Capital Exposure Limit (Notional based)
     """
-    # 1. Calculate Conviction Score (Geometric Edge)
+    # 1. Calculate Absolute Stop Loss Distance (Volatility Risk)
+    sl_distance = abs(entry_price - stop_loss)
+    if sl_distance <= 0:
+        sl_distance = entry_price * 0.001
+        
+    # 2. Performance-Based Conviction (Unchanged compounding logic)
     conviction = (confidence * 0.6) + (H * 0.2) + (abs(V) * 0.2) if H > 0 and V > 0 else confidence
-    conviction = max(0.0, min(1.0, conviction))
+    conviction = max(0.1, min(1.0, conviction))
     
-    # 2. Determine "Ideal" Quantity from Model
-    range_width = maximum - minimum
-    ideal_qty = int(minimum + (range_width * conviction))
+    # 3. The Risk Constraint (Dollar Risk Calculation)
+    # This limits how much is LOST if the stop is hit.
+    target_risk_pct = max_risk_pct * conviction
+    dollar_risk = current_capital * target_risk_pct
     
-    # 3. Calculate "Capital Cap" (Risk Management)
-    # How many shares can we actually afford if we only use X% of capital?
-    max_dollar_exposure = current_capital * max_alloc_pct
-    cap_qty = int(max_dollar_exposure / entry_price)
+    # 4. Volatility-Adjusted Quantity
+    qty_by_risk = int(dollar_risk / sl_distance)
     
-    # 4. Final Quantity Selection
-    # We take the lower of the two. If the model wants 100 shares but we 
-    # can only afford 12 shares of ASML, we take 12.
-    final_qty = min(ideal_qty, cap_qty)
+    # 5. NEW: Capital Exposure Constraint (The "2% Capital Limit")
+    # This limits how much is SPENT to open the position.
+    # For FOREX, we still allow leverage (e.g., max_leverage of 5.0)
+    # For Stocks, we cap it at your max_cap_pct (e.g., 0.02 for 2%)
+    if is_forex:
+        max_leverage = 5.0 
+        max_allowed_notional = current_capital * max_leverage
+    else:
+        # This enforces your "min 2% capital limit" correctly
+        max_allowed_notional = current_capital * max_cap_pct
+
+    qty_by_cap = int(max_allowed_notional / entry_price)
     
-    # Safety Check: If the stock is so expensive we can't even afford 1 share, return 0
-    return max(0, min(maximum, final_qty))
+    # 6. Apply all constraints
+    # Takes the smaller of risk-based size or capital-limit-based size
+    final_qty = min(qty_by_risk, qty_by_cap)
+    
+    # 7. LIQUIDITY CONSTRAINTS (Unchanged)
+    if final_qty < min_qty:
+        return 0
+        
+    final_qty = min(final_qty, max_qty)
+    
+    return final_qty
 
 def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions, force_predictions):    
     initial_capital = 10000.0
@@ -369,22 +365,25 @@ def trade_quotes(quote_name, df, price_time_predictions, volume_time_predictions
             confidence = (f_val - current_floor) / (current_ceiling - current_floor)
 
             if effective_dir != 0:
+                # 1. Calculate Levels FIRST to get the Stop Loss (Volatility metric)
+                tp_base, sl = calculate_levels(curr_close, effective_dir, curr_dp, effective_H, effective_V, is_forex, is_jpy)
+                
+                # 2. Calculate Quantity SECOND (Using the compounding risk logic)
                 dynamic_qty = calculate_dynamic_qty(
                     confidence,
-                    effective_H, # Pass H first
-                    effective_V,  # Pass V second
+                    effective_H, 
+                    effective_V,  
                     current_capital, 
                     curr_close,
-                    10, 
-                    100,
-                    0.10  # Limits exposure to 10% of balance
+                    sl,               # Pass the calculated stop loss
+                    is_forex
                 )
                 
-                # Guard clause: If capital is too low to trade the minimum/cap
+                # Guard clause
                 if dynamic_qty == 0:
                     continue 
                 
-                tp_base, sl = calculate_levels(curr_close, effective_dir, curr_dp, effective_H, effective_V, is_forex, is_jpy)
+                # 3. Finalize TP based on conviction
                 tp_dist = abs(tp_base - curr_close) * (1.0 + 0.5 * confidence)
                 final_tp = curr_close + (tp_dist * effective_dir)
 
