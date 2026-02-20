@@ -176,3 +176,4 @@ $σ_v(t) = \sqrt {\frac{\sum^{k-1}_0  (\hat v(t)-v(t-k))^2}{k-1}}$
 
 # References #
 [The deep learning book](https://www.deeplearningbook.org)
+[Fractional Derivatives](https://www.sciencedirect.com/science/article/pii/S0377042714000065)

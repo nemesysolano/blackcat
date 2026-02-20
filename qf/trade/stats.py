@@ -6,11 +6,8 @@ def get_returns(equity_array):
         return np.diff(equity_array) / equity_array[:-1]
     else:
         return np.array([0])
-
-def create_backtest_stats(results):
-    # cash, longs, shorts, winner_longs, winner_shorts, loser_longs, loser_shorts, transaction_log
-    (ticker, equity_curve, long_trades, short_trades, winner_longs, winner_shorts, loser_longs, loser_shorts, _) = results
     
+def create_backtest_stats(quote_name, equity_curve, long_trades, short_trades, winner_longs, winner_shorts, loser_longs, loser_shorts, transactions):
     equity_array = np.ravel(equity_curve)
     prev_equity = equity_array[:-1]    
 
@@ -23,10 +20,10 @@ def create_backtest_stats(results):
     
     volatility = np.std(returns) if len(returns) > 0 else 0
     # If final_capital was an array due to the previous bug, take the first value
-    f_cap = float(np.ravel(equity_curve)[0]) if np.ndim(equity_curve) > 0 else equity_curve
+    f_cap = equity_array[-1]
     
     initial_capital = equity_array[0]
-    total_return_pct = (equity_array[-1] - initial_capital) / initial_capital
+    total_return_pct = (f_cap - initial_capital) / initial_capital
     
     # Now np.diff will produce a simple 1D vector
     returns = get_returns(equity_array)
@@ -46,9 +43,9 @@ def create_backtest_stats(results):
 
     # 4. Summary Statistics
     stats = {
-        "Ticker": ticker,
+        "Ticker": quote_name,
         "Initial Capital": initial_capital,
-        "Final Capital": equity_curve[-1],
+        "Final Capital": f_cap,
         "Total Return (%)": total_return_pct * 100,
         "Max Drawdown (%)": max_drawdown * 100,
         "Volatility (per step)": volatility,
@@ -63,4 +60,4 @@ def create_backtest_stats(results):
         "Loser Longs": loser_longs,
         "Loser Shorts": loser_shorts
     }
-    return stats
+    return stats, transactions

@@ -23,8 +23,6 @@ def directional_mse(y_true, y_pred):
     
     return tf.reduce_mean(mse * (1.0 + total_penalty))
 
-dynamic_penalty_weight = tf.Variable(2.0, trainable=False, dtype=tf.float32, name="dynamic_penalty_weight")
-
 class PenaltyScheduler(tf.keras.callbacks.Callback):
     def __init__(self, start_val=2.0, end_val=20.0, total_epochs=75):
         super().__init__()
