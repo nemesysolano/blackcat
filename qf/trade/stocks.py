@@ -1,6 +1,6 @@
 import numpy as np
 from qf.trade import create_backtest_stats
-from qf.trade import calculate_dynamic_qty, update_hybrid_exit, FLOOR, CEILING, calculate_levels
+from qf.trade import calculate_dynamic_qty, update_position, FLOOR, CEILING, calculate_levels
 from qf.trade.model import Position
 from qf.trade.model import Transaction
 from qf.trade.model import State
@@ -42,7 +42,7 @@ def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions
             leeway = (0.5 - effective_H) * 0.15
             decay = max(0, (5 - steps_held) / 5)
             buffered_floor = current_floor - (leeway * decay)
-            updated_pos, exit_price , exit_reason = update_hybrid_exit(
+            updated_pos, exit_price , exit_reason = update_position(
                 active_position, 
                 row, 
                 curr_dp, 

@@ -48,7 +48,7 @@ def calculate_levels(current_price, signal, delta_p, H, V, is_forex, is_jpy):
         
     return float(final_tp), float(final_sl)
         
-def update_hybrid_exit(position, row, delta_p, current_force, is_forex, buffered_floor):
+def update_position(position, row, delta_p, current_force, is_forex, buffered_floor):
     """
     Consolidated Exit Logic:
     1. Removes quantity loophole via Structural Risk Floor.

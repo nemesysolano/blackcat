@@ -5,7 +5,7 @@ import os
 from qf.dbsync import read_quote_names, db_config
 from qf.nn import directional_mse
 from qf.nn import create_trade_datasets
-from qf.trade import trade_forex, trade_stocks
+from qf.trade import trade_forex, trade_stocks, write_results
 import tensorflow as tf
 import pandas as pd
 from sqlalchemy import create_engine
@@ -98,7 +98,6 @@ if __name__ == "__main__":
     force_stats = get_model_stats(os.getcwd(), "report-price-time-wavelet-force.csv")
     lookback_periods = 14
     engine = create_engine(sqlalchemy_url)
-    exit_reasons = { '-1': 'Stop Loss', '0': 'Early Stop', '1': 'Take Profit'}
 
     with engine.connect() as connection:
         for quote_name in quotes:
@@ -108,6 +107,7 @@ if __name__ == "__main__":
             tradable = check_if_tradable(price_direction) and check_if_tradable(volume_direction)
             
             if tradable:
+                output_file = os.path.join(os.getcwd(), "test-results", f"report-backtest.csv")
                 details_file = os.path.join(os.getcwd(), "test-results", f"report-{quote_name}-transactions.json")
                 if os.path.exists(details_file):
                     continue
@@ -161,41 +161,8 @@ if __name__ == "__main__":
                         volume_time_predictions, 
                         force_predictions
                     )
-                    
-                output_file = os.path.join(os.getcwd(), "test-results", f"report-backtest.csv")
-                mode = 'a' if os.path.exists(output_file) else 'w'
-                with open(output_file, mode) as f:
-                    if mode == 'w':
-                        print(
-                            "Ticker, Initial Capital, Final Capital, Total Return (%), Max Drawdown (%), Volatility (per step), Sharpe Ratio, Number of Steps, Peak Equity, Final Drawdown (%), Long Trades, Short Trades, Winner Longs, Winner Shorts, Loser Longs, Loser Shorts",
-                            file=f
-                        )
-
-                    print(
-                        f"{stats['Ticker']}, {stats['Initial Capital']:.2f}, {stats['Final Capital']:.2f}, {stats['Total Return (%)']:.2f}, {stats['Max Drawdown (%)']:.2f}, {stats['Volatility (per step)']:.2f}, {stats['Sharpe Ratio']:.2f}, {stats['Number of Steps']}, {stats['Peak Equity']:.2f}, {stats['Final Drawdown (%)']:.2f}, {stats['Long Trades']}, {stats['Short Trades']}, {stats['Winner Longs']}, {stats['Winner Shorts']}, {stats['Loser Longs']}, {stats['Loser Shorts']}",
-                        file=f
-                    )     
-                         
-                with open(details_file, 'w') as f:
-                    transaction_list = []
-                    for transaction in transactions:
-                        exit_reason = exit_reasons.get(str(transaction.exit_reason), 'Unknown')
-                        transaction = {
-                            "Entry Index": transaction.entry_index,
-                            "Entry Price": float(transaction.entry_price),
-                            "Entry Force": float(transaction.entry_force),
-                            "Side": int(transaction.side),
-                            "Quantity": int(transaction.quantity),
-                            "Take Profit": float(transaction.take_profit),
-                            "Stop Loss": float(transaction.stop_loss),
-                            "PL": float(transaction.pl),
-                            "Exit Index": int(transaction.exit_index),
-                            "Exit Price": float(transaction.exit_price),
-                            "Exit Reason": exit_reason,
-                            "position_history": [{"index": s.index, "open_price": float(s.open_price), "high_price": float(s.high_price), "low_price": float(s.low_price), "close_price": float(s.close_price), "dP": float(s.δP), "V": float(s.V), "H": float(s.H), "previous_force": float(s.previous_force), "current_force": float(s.current_force)} for s in transaction.state]
-                        }
-                        transaction_list.append(transaction)
-                    print(json.dumps(transaction_list), file=f)
+            
+                write_results(output_file, details_file, stats, transactions)
             else:
                 print(f"Skipping {quote_name} (Not Tradable or No Data)")
         connection.close()
