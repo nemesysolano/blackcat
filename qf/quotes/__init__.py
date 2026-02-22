@@ -1,1 +1,1 @@
-from .import_quotes import import_quotes
+from .import_quotes import import_yfinace_quotes

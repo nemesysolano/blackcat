@@ -151,7 +151,7 @@ def calculate_liquidity_cap(H, V, minimum):
     
     return int(minimum * quality)
 
-def calculate_dynamic_qty(confidence, H, V, current_capital, entry_price, stop_loss, is_forex, min_qty=1, max_qty=1000, max_risk_pct=0.02, max_cap_pct=0.03):
+def calculate_dynamic_qty(confidence, H, V, current_capital, entry_price, stop_loss, is_forex, min_qty=1, max_qty=1000, max_risk_pct=0.02, max_cap_pct=0.03, max_leverage = 5): # 
     """
     Compounds capital using Volatility-Targeting.
     Constrained by:
@@ -176,20 +176,22 @@ def calculate_dynamic_qty(confidence, H, V, current_capital, entry_price, stop_l
     qty_by_risk = int(dollar_risk / sl_distance)
     
     # 5. NEW: Capital Exposure Constraint (The "2% Capital Limit")
-    # This limits how much is SPENT to open the position.
-    # For FOREX, we still allow leverage (e.g., max_leverage of 5.0)
-    # For Stocks, we cap it at your max_cap_pct (e.g., 0.02 for 2%)
     if is_forex:
-        max_leverage = 5.0 
-        max_allowed_notional = current_capital * max_leverage
+        # Calculate Notional based on Leverage (e.g., 5.0x capital)
+        leverage_notional = current_capital * float(max_leverage)
+        # Calculate Notional based on Portfolio Cap (e.g., 20% of total buying power)
+        cap_notional = current_capital * max_cap_pct
+        
+        # Take the smaller of the two to prevent over-leveraging a single pair
+        max_allowed_notional = min(leverage_notional, cap_notional)
     else:
-        # This enforces your "min 2% capital limit" correctly
+        # Standard Stock capping
         max_allowed_notional = current_capital * max_cap_pct
 
+    # 6. Final Quantity Selection
     qty_by_cap = int(max_allowed_notional / entry_price)
     
-    # 6. Apply all constraints
-    # Takes the smaller of risk-based size or capital-limit-based size
+    # Final qty is the most restrictive of Risk vs. Capital Cap
     final_qty = min(qty_by_risk, qty_by_cap)
     
     # 7. LIQUIDITY CONSTRAINTS (Unchanged)

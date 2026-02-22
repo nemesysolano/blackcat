@@ -1,13 +1,10 @@
 def create_datasets(args):     
-    X_train, X_val, X_test, Y_train, Y_val, Y_test, test_data = create_trade_datasets(args)
+    X_train, X_val, X_test, Y_train, Y_val, Y_test, test_data = create_local_datasets(args)
     return X_train.to_numpy(), X_val.to_numpy(), X_test.to_numpy(), Y_train.to_numpy(), Y_val.to_numpy(), Y_test.to_numpy(), test_data
  
 
-def create_trade_datasets(args): 
+def create_local_datasets(args): 
     (dataset, features, target) = args
-    # print(dataset)
-    # print(features)
-    # print(target)
     n = len(dataset)
 
     # Define split points for a 65/20/15 split
@@ -35,3 +32,6 @@ def create_trade_datasets(args):
 
     return X_train, X_val, X_test, Y_train, Y_val, Y_test, test_data
  
+def create_global_datasets(args):
+    X_train, X_val, X_test, Y_train, Y_val, Y_test, test_data = create_local_datasets(args)
+    return X_train, X_val, X_test, Y_train, Y_val, Y_test, test_data

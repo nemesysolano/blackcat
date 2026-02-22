@@ -9,3 +9,4 @@ tensorflow-metal
 xgboost
 psycopg2-binary
 sqlalchemy
+requests

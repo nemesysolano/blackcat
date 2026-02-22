@@ -63,7 +63,8 @@ RETURNS TABLE (
 	"Ω" DOUBLE PRECISION,
 	"H" DOUBLE PRECISION,
 	"Ω⋅ΔP" DOUBLE PRECISION,
-	"H⋅ΔP" DOUBLE PRECISION
+	"H⋅ΔP" DOUBLE precision,
+	
 )
 LANGUAGE plpgsql AS $$
 BEGIN

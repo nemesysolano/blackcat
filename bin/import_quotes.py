@@ -3,7 +3,7 @@ import json
 import os
 import sys
 from qf.dbsync import update_structure, read_quote_names, db_config
-from qf.quotes import import_quotes
+from qf.quotes import import_yfinace_quotes
 
 
 if __name__ == "__main__":
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     connection_string, _ = db_config()
 
     update_structure(connection_string)
-    import_quotes(connection_string, quotes)
+    import_yfinace_quotes(connection_string, quotes)
     
 
     

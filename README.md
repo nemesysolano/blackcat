@@ -174,6 +174,33 @@ $\hat v(t) = \frac{\sum^{k-1}_0 v(t-k)} {k}$ and
 
 $σ_v(t) = \sqrt {\frac{\sum^{k-1}_0  (\hat v(t)-v(t-k))^2}{k-1}}$
 
+## Time invariant features ##
+
+These are features which do not depend on time and enhance feature sets used to train our models.
+
+### Scaled Market Cap ###
+
+The **scaled market cap** is defined as
+
+$\hat K = \begin{cases}
+    \frac{\log_{10}(\text{K})}{13},\:\textit{for stocks} \\
+    0,\:\textit{otherwise}
+\end{cases}$
+
+where $K$ is the market cap for stocks.
+
+### Scaled Beta ###
+
+The **scaled beta** is defined as 
+
+$\hat B = \begin{cases}
+    \log(b+1),\:\textit{for stocks} \\ \\
+    0,\:\textit{otherwise}
+\end{cases}$
+
+where $b$ is stock beta.
+
+
 # References #
 [The deep learning book](https://www.deeplearningbook.org)
 [Fractional Derivatives](https://www.sciencedirect.com/science/article/pii/S0377042714000065)
