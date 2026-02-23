@@ -28,6 +28,7 @@ def trade_forex(quote_name, df, price_time_predictions, volume_time_predictions,
     current_floor = FX_FLOOR
     current_ceiling = FX_CEILING
     f_val0 = force_predictions[0][0]
+    is_jpy = "JPY" in quote_name
 
     for i in range(len(df)):
         row = df.iloc[i]
@@ -89,7 +90,7 @@ def trade_forex(quote_name, df, price_time_predictions, volume_time_predictions,
              # Forex Modification: Structural Gate
              # Only enter if the move is structurally sound (Low Instability)
              # V threshold is strictly 0.05 for Forex to avoid "whipsaws"
-             if effective_V < 0.05:
+             if curr_dp >= 0.001:
                 
                 # Force Gradient is OPTIONAL for Forex Mean Reversion 
                 # (sometimes we fade the move, but here we stick to trend following for safety)
@@ -99,7 +100,7 @@ def trade_forex(quote_name, df, price_time_predictions, volume_time_predictions,
                     
                     # 1. Levels (Wider Stops for Forex)
                     # We pass is_forex=True, is_jpy=False (standard pairs)
-                    tp_base, sl = calculate_levels(curr_close, effective_dir, curr_dp, effective_H, effective_V, True, False)
+                    tp_base, sl = calculate_levels(curr_close, effective_dir, curr_dp, effective_H, effective_V, True, is_jpy)
                     
                     # 2. Quantity (Higher Leverage allowed)
                     # calculate_dynamic_qty handles the 5x leverage logic internally for is_forex=True
@@ -119,10 +120,11 @@ def trade_forex(quote_name, df, price_time_predictions, volume_time_predictions,
                             entry_index = i,
                             entry_price = curr_close,
                             entry_force = f_val,
+                            entry_dp =curr_dp,
                             side = effective_dir,
                             quantity = dynamic_qty,
                             take_profit = float(final_tp),
-                            stop_loss = float(sl),
+                            stop_loss = float(sl),                            
                             state = []
                         )
                         # No commission for Forex (usually spread-based, modeled in exit price if needed)

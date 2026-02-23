@@ -120,6 +120,7 @@ def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions
                             entry_index = i,
                             entry_price =curr_close,
                             entry_force = f_val,
+                            entry_dp = curr_dp,
                             side = effective_dir,
                             quantity = dynamic_qty,
                             take_profit = float(final_tp),

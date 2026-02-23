@@ -95,6 +95,7 @@ def write_results(output_file, details_file, stats, transactions):
                     "Exit Index": int(transaction.exit_index),
                     "Exit Price": float(transaction.exit_price),
                     "Exit Reason": exit_reason,
+                    "Entry DP": float(transaction.entry_dp),
                     "position_history": [{"index": s.index, "open_price": float(s.open_price), "high_price": float(s.high_price), "low_price": float(s.low_price), "close_price": float(s.close_price), "dP": float(s.δP), "V": float(s.V), "H": float(s.H), "previous_force": float(s.previous_force), "current_force": float(s.current_force)} for s in transaction.state]
                 }
                 transaction_list.append(transaction)

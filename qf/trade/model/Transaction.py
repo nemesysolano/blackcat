@@ -5,6 +5,7 @@ class Transaction(NamedTuple):
     ticker: str
     entry_index: int
     entry_price: float
+    entry_dp: float
     entry_force: float
     side: int # 1 or -1
     quantity: int
@@ -21,7 +22,8 @@ class Transaction(NamedTuple):
             ticker=position.ticker,
             entry_index=position.entry_index,
             entry_price=position.entry_price,
-            entry_force=position.entry_force,
+            entry_dp = position.entry_dp,
+            entry_force=position.entry_force,            
             side=position.side,
             quantity=position.quantity,
             take_profit=position.take_profit,

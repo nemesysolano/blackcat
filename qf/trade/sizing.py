@@ -23,7 +23,12 @@ def calculate_levels(current_price, signal, delta_p, H, V, is_forex, is_jpy):
     
     # LOOPHOLE FIX: Structural Floor
     # Prevents sl_distance from becoming too small, which caps max leverage
-    sl_floor_pct = 0.001 if is_forex else 0.005
+    if is_jpy:
+        sl_floor_pct = 0.0012 # Tight floor for high-price JPY
+    elif is_forex:
+        sl_floor_pct = 0.0025 # Roomier floor for low-vol EUR pairs
+    else:
+        sl_floor_pct = 0.005  # Standard stock floor
     sl_floor_distance = cp * sl_floor_pct
     
     # Take the larger of the two to ensure a safe risk-denominator

@@ -7,6 +7,7 @@ class Position(NamedTuple):
     entry_index: int
     entry_price: float
     entry_force: float
+    entry_dp: float
     side: int # 1 or -1
     quantity: int
     take_profit: float
