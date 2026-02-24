@@ -11,6 +11,5 @@ class State(NamedTuple):
     δP: float
     V: float
     H: float
-    previous_force: float
-    current_force: float
+    fval_delta: float
     

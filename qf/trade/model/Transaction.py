@@ -6,7 +6,7 @@ class Transaction(NamedTuple):
     entry_index: int
     entry_price: float
     entry_dp: float
-    entry_force: float
+    fval_delta: float
     side: int # 1 or -1
     quantity: int
     take_profit: float
@@ -14,7 +14,9 @@ class Transaction(NamedTuple):
     pl: float
     exit_index: int
     exit_price: float
-    exit_reason: str
+    exit_reason: str    
+    V: float
+    H: float
     state: list
     @staticmethod
     def from_position(position: Position, pl: float, exit_index: int, exit_price: float, exit_reason: int):
@@ -23,7 +25,7 @@ class Transaction(NamedTuple):
             entry_index=position.entry_index,
             entry_price=position.entry_price,
             entry_dp = position.entry_dp,
-            entry_force=position.entry_force,            
+            fval_delta=position.fval_delta,            
             side=position.side,
             quantity=position.quantity,
             take_profit=position.take_profit,
@@ -32,6 +34,8 @@ class Transaction(NamedTuple):
             exit_index=exit_index,
             exit_price=exit_price,
             exit_reason=exit_reason,
+            V=position.V,
+            H=position.H,
             state = position.state
         )
 

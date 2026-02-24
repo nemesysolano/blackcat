@@ -5,12 +5,12 @@ import os
 from qf.dbsync import read_quote_names, db_config
 from qf.nn import directional_mse
 from qf.nn import create_local_datasets
-from qf.trade import trade_forex, trade_stocks, write_results
+from qf.trade import trade_forex, write_results
 import tensorflow as tf
 import pandas as pd
 from sqlalchemy import create_engine
 from qf.trade import trade_forex
-from qf.trade import trade_stocks
+from qf.trade.stocks import trade_stocks
 
 def get_quotes(connection, quote_name, index):
     # Fetch OHLC + Volume to match X_test timestamps

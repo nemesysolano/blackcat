@@ -26,7 +26,7 @@ def create_backtest_stats(quote_name, equity_curve, long_trades, short_trades, w
     f_cap = equity_array[-1]
     
     initial_capital = equity_array[0]
-    total_return_pct = (f_cap - initial_capital) / initial_capital
+    total_return_pct = (f_cap - initial_capital) / initial_capital if initial_capital != 0 else 0
     
     # Now np.diff will produce a simple 1D vector
     returns = get_returns(equity_array)
@@ -41,7 +41,7 @@ def create_backtest_stats(quote_name, equity_curve, long_trades, short_trades, w
     # 3. Drawdown Analysis
     # Peak equity reached up to each point in time
     running_max = np.maximum.accumulate(equity_array)
-    drawdowns = (equity_array - running_max) / running_max
+    drawdowns = (equity_array - running_max) / running_max if len(running_max) > 0 else np.array([0])
     max_drawdown = np.min(drawdowns)
 
     # 4. Summary Statistics
@@ -86,7 +86,7 @@ def write_results(output_file, details_file, stats, transactions):
                 transaction = {
                     "Entry Index": transaction.entry_index,
                     "Entry Price": float(transaction.entry_price),
-                    "Entry Force": float(transaction.entry_force),
+                    "Force Delta": float(transaction.fval_delta),
                     "Side": int(transaction.side),
                     "Quantity": int(transaction.quantity),
                     "Take Profit": float(transaction.take_profit),
@@ -96,7 +96,9 @@ def write_results(output_file, details_file, stats, transactions):
                     "Exit Price": float(transaction.exit_price),
                     "Exit Reason": exit_reason,
                     "Entry DP": float(transaction.entry_dp),
-                    "position_history": [{"index": s.index, "open_price": float(s.open_price), "high_price": float(s.high_price), "low_price": float(s.low_price), "close_price": float(s.close_price), "dP": float(s.δP), "V": float(s.V), "H": float(s.H), "previous_force": float(s.previous_force), "current_force": float(s.current_force)} for s in transaction.state]
+                    "H": float(transaction.H),
+                    "V": float(transaction.V),
+                    "position_history": [{"index": s.index, "open_price": float(s.open_price), "high_price": float(s.high_price), "low_price": float(s.low_price), "close_price": float(s.close_price), "dP": float(s.δP), "V": float(s.V), "H": float(s.H), "Force Delta": float(s.fval_delta), "H": float(s.H), "V": float(s.V)} for s in transaction.state]
                 }
                 transaction_list.append(transaction)
             print(json.dumps(transaction_list), file=f)        
