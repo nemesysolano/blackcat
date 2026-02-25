@@ -8,7 +8,7 @@ MAX_LEVEL = 0.08       # 5% Hard Cap on Stop Loss (Fixes PTGX/NVTS blowouts)
 MIN_LEVEL = 0.015      # 1.5% Minimum Stop (Prevents noise shakeouts)
 TRAIL_START = 0.02     # Start trailing after 2% profit
 TRAIL_DIST = 0.015     # Trail price by 1.5%
-RISK_PER_TRADE = 0.03  # Risk 3% of capital per trade
+RISK_PER_TRADE = 0.05  # Risk 3% of capital per trade
 
 # Fields available in df dataframe passed to `calculate_stock_levels`
 # ----------------+------------------------------+
