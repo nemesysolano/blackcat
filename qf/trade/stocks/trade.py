@@ -8,11 +8,17 @@ from .sizing import calculate_stock_levels, update_stock_position, calculate_sto
 
 # trade.py
 
-def short_delta_filter(δP, δf, effective_direction):
-    return effective_direction == -1
+def short_delta_filter(δP, δf, H, V, effective_direction):
+    return (effective_direction == -1 and 
+            δf > 0.0005 and 
+            δP > 0.005 and 
+            V < 0.2)
 
-def long_delta_filter(δP, δf, effective_direction):
-    return effective_direction == 1
+def long_delta_filter(δP, δf, H, V, effective_direction):
+    return (effective_direction == 1 and 
+            δf > 0.0005 and 
+            δP > 0.005 and 
+            V < 0.2)
 
 def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions, force_predictions):    
     initial_capital = 10000.0
@@ -63,12 +69,12 @@ def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions
         if active_position is None and \
             δf > 0 and \
             (
-                short_delta_filter(δP, df, effective_dir) or \
-                long_delta_filter(δP, df, effective_dir)
+                short_delta_filter(δP, δf, row['H'], row['V'], effective_dir) or \
+                long_delta_filter(δP, δf, row['H'], row['V'],effective_dir)
             ):
             
             take_profit, stop_loss = calculate_stock_levels(i, df, current_price, effective_dir, δf)   # In this line, δf ranges in (0,1]                   
-            dynamic_qty = calculate_stock_dynamic_qty(i, df, current_capital, current_price, stop_loss, risk, δf)# In this line, δf ranges in (0,1]      
+            dynamic_qty = calculate_stock_dynamic_qty(i, df, current_capital, current_price, stop_loss,  δf)# In this line, δf ranges in (0,1]      
             
             if dynamic_qty > 0:
                 # 3. Finalize TP based on conviction
