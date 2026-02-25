@@ -96,7 +96,7 @@ def write_results(output_file, details_file, stats, transactions):
                     "Exit Reason": exit_reason,
                     "δf": float(transaction.δf),
                     "δP": float(transaction.δP),
-                    "H": float(transaction.H),
+                    "δP": float(transaction.H),
                     "V": float(transaction.V),
                     "position_history": [{"index": s.index, "open_price": float(s.open_price), "high_price": float(s.high_price), "low_price": float(s.low_price), "close_price": float(s.close_price), "δP": float(s.δP), "V": float(s.V), "H": float(s.H), "δf": float(s.δf), "H": float(s.H), "V": float(s.V)} for s in transaction.state]
                 }

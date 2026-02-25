@@ -8,7 +8,7 @@ MAX_LEVEL = 0.08       # 5% Hard Cap on Stop Loss (Fixes PTGX/NVTS blowouts)
 MIN_LEVEL = 0.015      # 1.5% Minimum Stop (Prevents noise shakeouts)
 TRAIL_START = 0.02     # Start trailing after 2% profit
 TRAIL_DIST = 0.015     # Trail price by 1.5%
-RISK_PER_TRADE = 0.03  # Risk 2% of capital per trade
+RISK_PER_TRADE = 0.03  # Risk 3% of capital per trade
 
 # Fields available in df dataframe passed to `calculate_stock_levels`
 # ----------------+------------------------------+
@@ -136,7 +136,7 @@ def update_stock_position(current_step_index, df, position, δf):
     else:
         return position, None, 0
 
-def calculate_stock_dynamic_qty(current_step_index, df, current_capital, entry_price, stop_loss, risk, δf):
+def calculate_stock_dynamic_qty(current_step_index, df, current_capital, entry_price, stop_loss,  δf):
     """
     Calculates position size based on Risk Percentage and conviction δf.
     Higher δf → larger fraction of capital risked (up to a cap).

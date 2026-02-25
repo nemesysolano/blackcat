@@ -12,13 +12,15 @@ def short_delta_filter(δP, δf, H, V, effective_direction):
     return (effective_direction == -1 and 
             δf > 0.0005 and 
             δP > 0.005 and 
-            V < 0.2)
+            V < 0.2 and 
+            H > 0.4) 
 
 def long_delta_filter(δP, δf, H, V, effective_direction):
     return (effective_direction == 1 and 
             δf > 0.0005 and 
             δP > 0.005 and 
-            V < 0.2)
+            V < 0.2 and 
+            H > 0.4)
 
 def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions, force_predictions):    
     initial_capital = 10000.0
@@ -31,8 +33,7 @@ def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions
     loser_longs, loser_shorts = 0, 0
     equity_curve = []
     f_val0 = force_predictions[0][0]
-    risk = 0.03
-
+  
     for i in range(len(df)):
         row = df.iloc[i]
         δP = float(row['δP'])
