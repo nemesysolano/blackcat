@@ -6,8 +6,8 @@ class Position(NamedTuple):
     ticker: str
     entry_index: int
     entry_price: float
-    fval_delta: float
-    entry_dp: float
+    δf: float
+    δP: float
     side: int # 1 or -1
     quantity: int
     take_profit: float

@@ -11,5 +11,5 @@ class State(NamedTuple):
     δP: float
     V: float
     H: float
-    fval_delta: float
+    δf: float
     

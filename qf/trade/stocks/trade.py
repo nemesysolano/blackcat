@@ -8,10 +8,10 @@ from .sizing import calculate_stock_levels, update_stock_position, calculate_sto
 
 # trade.py
 
-def short_delta_filter(current_index, df, effective_direction):
+def short_delta_filter(δP, δf, effective_direction):
     return effective_direction == -1
 
-def long_delta_filter(current_index, df, effective_direction):
+def long_delta_filter(δP, δf, effective_direction):
     return effective_direction == 1
 
 def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions, force_predictions):    
@@ -29,7 +29,7 @@ def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions
 
     for i in range(len(df)):
         row = df.iloc[i]
-        curr_dp = float(row['δP'])
+        δP = float(row['δP'])
         p_dir = int(np.sign(price_time_predictions[i][0]))
         v_dir = int(np.sign(volume_time_predictions[i][0])) 
         f_val = force_predictions[i][0]
@@ -63,8 +63,8 @@ def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions
         if active_position is None and \
             δf > 0 and \
             (
-                short_delta_filter(i, df, effective_dir) or \
-                long_delta_filter(i, df, effective_dir)
+                short_delta_filter(δP, df, effective_dir) or \
+                long_delta_filter(δP, df, effective_dir)
             ):
             
             take_profit, stop_loss = calculate_stock_levels(i, df, current_price, effective_dir, δf)   # In this line, δf ranges in (0,1]                   
@@ -76,8 +76,8 @@ def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions
                     ticker = quote_name,
                     entry_index = i,
                     entry_price =current_price,
-                    fval_delta = δf,
-                    entry_dp = curr_dp,
+                    δf = δf,
+                    δP = δP,
                     side = effective_dir,
                     quantity = dynamic_qty,
                     take_profit = float(take_profit),
@@ -100,10 +100,10 @@ def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions
                         high_price = float(row['HIGH']),
                         low_price = float(row['LOW']),
                         close_price = current_price,
-                        δP = curr_dp,
+                        δP = δP,
                         V = row['V'],
                         H = row['H'],
-                        fval_delta = δf
+                        δf = δf
                     )
                 )
 

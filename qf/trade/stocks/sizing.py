@@ -4,11 +4,11 @@ import math
 import numpy as np
 
 # --- STRATEGY CONSTANTS ---
-MAX_LEVEL = 0.05       # 5% Hard Cap on Stop Loss (Fixes PTGX/NVTS blowouts)
+MAX_LEVEL = 0.08       # 5% Hard Cap on Stop Loss (Fixes PTGX/NVTS blowouts)
 MIN_LEVEL = 0.015      # 1.5% Minimum Stop (Prevents noise shakeouts)
 TRAIL_START = 0.02     # Start trailing after 2% profit
 TRAIL_DIST = 0.015     # Trail price by 1.5%
-RISK_PER_TRADE = 0.02  # Risk 2% of capital per trade
+RISK_PER_TRADE = 0.03  # Risk 2% of capital per trade
 
 # Fields available in df dataframe passed to `calculate_stock_levels`
 # ----------------+------------------------------+
@@ -27,32 +27,32 @@ RISK_PER_TRADE = 0.02  # Risk 2% of capital per trade
 
 def calculate_stock_levels(current_index, df, current_price, effective_dir, δf):
     """
-    Calculates Stop Loss and Take Profit levels based on Volatility (V),
-    but constrained by strict percentage caps to prevent large drawdowns.
+    Calculates Stop Loss and Take Profit levels based on Volatility (V)
+    and conviction δf (0..1). Higher δf → tighter stop (more confidence).
     """
     row = df.iloc[current_index]
     
-    # 1. Use Volatility (V) to gauge "noise" width
-    # If V is missing or 0, default to a standard 2% width
+    # 1. Base stop from volatility
     volatility = float(row['V']) if 'V' in row and row['V'] > 0 else 0.01
-    
-    # 2. Dynamic Stop Width: 
-    # High Volatility -> Wider Stop (up to MAX_LEVEL)
-    # Low Volatility  -> Tighter Stop (down to MIN_LEVEL)
-    # We use a multiplier (e.g., 3x Volatility) to estimate a safe buffer
     raw_stop_dist = volatility * 3.0
+    raw_stop_dist = max(MIN_LEVEL, min(raw_stop_dist, MAX_LEVEL))   # clamp initially
     
-    # 3. Apply Hard Clamps (The "Safety Net")
-    stop_pct = max(MIN_LEVEL, min(raw_stop_dist, MAX_LEVEL))
+    # 2. Scale stop by conviction: δf=0 → use MAX_LEVEL, δf=1 → use MIN_LEVEL
+    # Linear interpolation: stop_pct = MAX_LEVEL - δf * (MAX_LEVEL - MIN_LEVEL)
+    stop_pct = MAX_LEVEL - δf * (MAX_LEVEL - MIN_LEVEL)
+    # But also respect the volatility-based raw stop – take the smaller of the two?
+    # Better: blend volatility and conviction – here we let conviction override only if it demands a tighter stop.
+    stop_pct = min(raw_stop_dist, stop_pct)   # conviction can only tighten, not widen beyond volatility estimate
+    stop_pct = max(MIN_LEVEL, stop_pct)       # never go below the hard minimum
     
-    # 4. Target Ratio (2:1 Reward to Risk ideally, but at least 1.5:1)
+    # 3. Target ratio remains 2:1 (or could also be scaled by δf)
     target_pct = stop_pct * 2.0
     
-    # 5. Calculate Prices
-    if effective_dir == 1: # LONG
+    # 4. Calculate prices
+    if effective_dir == 1:  # LONG
         stop_loss = current_price * (1 - stop_pct)
         take_profit = current_price * (1 + target_pct)
-    else: # SHORT
+    else:  # SHORT
         stop_loss = current_price * (1 + stop_pct)
         take_profit = current_price * (1 - target_pct)
         
@@ -138,30 +138,31 @@ def update_stock_position(current_step_index, df, position, δf):
 
 def calculate_stock_dynamic_qty(current_step_index, df, current_capital, entry_price, stop_loss, risk, δf):
     """
-    Calculates position size based on Risk Percentage.
-    Ensures we don't bet more than we can lose.
+    Calculates position size based on Risk Percentage and conviction δf.
+    Higher δf → larger fraction of capital risked (up to a cap).
     """
     if current_capital <= 0 or entry_price <= 0:
         return 0
 
-    # 1. Determine Risk Per Share
+    # 1. Risk per share
     risk_per_share = abs(entry_price - stop_loss)
-    
-    # Safety: If stop is somehow same as entry, default to a safe buffer
     if risk_per_share == 0:
-        risk_per_share = entry_price * 0.02
+        risk_per_share = entry_price * 0.02   # fallback
 
-    # 2. Determine Capital at Risk (e.g., $200 on a $10k account)
-    amount_to_risk = current_capital * RISK_PER_TRADE
+    # 2. Scale the risk percentage by conviction: δf=0 → 0.5× base, δf=1 → 1.5× base
+    # Define min and max multipliers (adjust as desired)
+    MIN_RISK_MULT = 0.5
+    MAX_RISK_MULT = 1.5
+    risk_mult = MIN_RISK_MULT + δf * (MAX_RISK_MULT - MIN_RISK_MULT)
     
-    # 3. Calculate Quantity
+    amount_to_risk = current_capital * RISK_PER_TRADE * risk_mult
+
+    # 3. Calculate quantity
     qty = int(amount_to_risk / risk_per_share)
-    
-    # 4. Leverage Cap (Do not exceed 95% of available cash)
+
+    # 4. Leverage cap (do not exceed 95% of cash)
     max_capital_allocation = current_capital * 0.95
     if (qty * entry_price) > max_capital_allocation:
         qty = int(max_capital_allocation / entry_price)
-        
+
     return qty
-
-

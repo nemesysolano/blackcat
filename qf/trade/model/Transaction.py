@@ -5,8 +5,8 @@ class Transaction(NamedTuple):
     ticker: str
     entry_index: int
     entry_price: float
-    entry_dp: float
-    fval_delta: float
+    δP: float
+    δf: float
     side: int # 1 or -1
     quantity: int
     take_profit: float
@@ -24,8 +24,8 @@ class Transaction(NamedTuple):
             ticker=position.ticker,
             entry_index=position.entry_index,
             entry_price=position.entry_price,
-            entry_dp = position.entry_dp,
-            fval_delta=position.fval_delta,            
+            δP = position.δP,
+            δf = position.δf,            
             side=position.side,
             quantity=position.quantity,
             take_profit=position.take_profit,

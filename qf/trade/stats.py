@@ -86,7 +86,6 @@ def write_results(output_file, details_file, stats, transactions):
                 transaction = {
                     "Entry Index": transaction.entry_index,
                     "Entry Price": float(transaction.entry_price),
-                    "Force Delta": float(transaction.fval_delta),
                     "Side": int(transaction.side),
                     "Quantity": int(transaction.quantity),
                     "Take Profit": float(transaction.take_profit),
@@ -95,10 +94,11 @@ def write_results(output_file, details_file, stats, transactions):
                     "Exit Index": int(transaction.exit_index),
                     "Exit Price": float(transaction.exit_price),
                     "Exit Reason": exit_reason,
-                    "Entry DP": float(transaction.entry_dp),
+                    "δf": float(transaction.δf),
+                    "δP": float(transaction.δP),
                     "H": float(transaction.H),
                     "V": float(transaction.V),
-                    "position_history": [{"index": s.index, "open_price": float(s.open_price), "high_price": float(s.high_price), "low_price": float(s.low_price), "close_price": float(s.close_price), "dP": float(s.δP), "V": float(s.V), "H": float(s.H), "Force Delta": float(s.fval_delta), "H": float(s.H), "V": float(s.V)} for s in transaction.state]
+                    "position_history": [{"index": s.index, "open_price": float(s.open_price), "high_price": float(s.high_price), "low_price": float(s.low_price), "close_price": float(s.close_price), "δP": float(s.δP), "V": float(s.V), "H": float(s.H), "δf": float(s.δf), "H": float(s.H), "V": float(s.V)} for s in transaction.state]
                 }
                 transaction_list.append(transaction)
-            print(json.dumps(transaction_list), file=f)        
+            print(json.dumps(transaction_list, ensure_ascii = False), file=f)        
