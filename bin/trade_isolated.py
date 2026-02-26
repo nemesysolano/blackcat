@@ -62,7 +62,7 @@ def get_model_stats(current_dir, filename):
     model_stats.set_index('Ticker', inplace=True)
     return model_stats
 
-def predict(quote_name, model_name, X_test):
+def dnn_predictor(connection, quote_name, model_name, X_test):
     checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{quote_name}-{model_name}.keras')    
     try:
         if not os.path.exists(checkpoint_filepath):
@@ -80,12 +80,38 @@ def predict(quote_name, model_name, X_test):
     predictions = model.predict(X_input, verbose=0)
     return predictions
 
+def no_dnn_predictor(connection, quote_name, model_name, X_test):
+    checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{quote_name}-{model_name}.keras')    
+    if not os.path.exists(checkpoint_filepath):
+        print(f"Warning: Model {checkpoint_filepath} not found.")
+        return None
+    min_date = X_test.index.min().strftime('%Y-%m-%d') + ' 00:00:00'
+    max_date = X_test.index.max().strftime('%Y-%m-%d') + ' 23:59:59'
+    sql_text = None
+
+    if model_name == "price-time-wavelet-direction":
+        sql_text = f"SELECT \"TIMESTAMP\", (\"Ω⋅ΔP\" - LAG(\"Ω⋅ΔP\", 1) OVER(ORDER BY \"TIMESTAMP\")) AS \"Ω⋅ΔP0\" FROM ANGULAR_INDICATORS('{quote_name}') X WHERE \"TIMESTAMP\" BETWEEN '{min_date}' AND '{max_date}' AND \"TICKER\" = '{quote_name}' ORDER BY \"TIMESTAMP\""
+    elif model_name == "volume-time-wavelet-direction":
+        sql_text = f"SELECT \"TIMESTAMP\", (\"H⋅ΔP\" - LAG(\"H⋅ΔP\", 1) OVER(ORDER BY \"TIMESTAMP\")) AS \"H⋅ΔP0\" FROM ANGULAR_INDICATORS('{quote_name}') X WHERE \"TIMESTAMP\" BETWEEN '{min_date}' AND '{max_date}' AND \"TICKER\" = '{quote_name}' ORDER BY \"TIMESTAMP\""
+    elif model_name == "price-time-wavelet-force":
+        sql_text = f"SELECT \"TIMESTAMP\", X.\"Ω\" FROM ANGULAR_INDICATORS('{quote_name}') X WHERE \"TIMESTAMP\" BETWEEN '{min_date}' AND '{max_date}' AND \"TICKER\" = '{quote_name}' ORDER BY \"TIMESTAMP\""
+    
+    df = pd.read_sql(sql_text, connection)
+    df.set_index('TIMESTAMP', inplace=True)
+    df.fillna(0, inplace=True)
+    df = df.sort_index()
+    df = df.loc[df.index.intersection(X_test.index)]    
+    array = df.to_numpy()
+    array.resize((len(array),1))
+    return array
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python trade_angular.py <quotes_file>")
+        print("Usage: python trade_angular.py <quotes_file> [predictor]")
         sys.exit(1)
         
     quotes_file = sys.argv[1]
+    use_predictor = len(sys.argv) > 2 and sys.argv[2] == "predictor"
     _, sqlalchemy_url = db_config()
     
     try:
@@ -133,9 +159,10 @@ if __name__ == "__main__":
                     print(f"No data for {quote_name}. Skipping.")
                     continue
 
-                price_time_predictions = predict(quote_name, "price-time-wavelet-direction", X_price_time_test)
-                volume_time_predictions = predict(quote_name, "volume-time-wavelet-direction", X_volume_time_test)
-                force_predictions = predict(quote_name, "price-time-wavelet-force", X_force_test)
+                predictor = dnn_predictor if use_predictor else no_dnn_predictor
+                price_time_predictions = predictor(connection, quote_name, "price-time-wavelet-direction", X_price_time_test)
+                volume_time_predictions = predictor(connection, quote_name, "volume-time-wavelet-direction", X_volume_time_test)
+                force_predictions = predictor(connection, quote_name, "price-time-wavelet-force", X_force_test)
 
                 if price_time_predictions is None or volume_time_predictions is None or force_predictions is None:
                     print(f"No predictions for {quote_name}. Skipping.")

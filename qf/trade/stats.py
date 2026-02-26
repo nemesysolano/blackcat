@@ -85,6 +85,8 @@ def write_results(output_file, details_file, stats, transactions):
                 exit_reason = exit_reasons.get(str(transaction.exit_reason), 'Unknown')
                 transaction = {
                     "Entry Index": transaction.entry_index,
+                    "Entry Date": transaction.entry_date.isoformat(),                    
+                    "Exit Date": transaction.exit_date.isoformat(),
                     "Entry Price": float(transaction.entry_price),
                     "Side": int(transaction.side),
                     "Quantity": int(transaction.quantity),
@@ -92,12 +94,11 @@ def write_results(output_file, details_file, stats, transactions):
                     "Stop Loss": float(transaction.stop_loss),
                     "PL": float(transaction.pl),
                     "Exit Index": int(transaction.exit_index),
-                    "Exit Price": float(transaction.exit_price),
                     "Exit Reason": exit_reason,
                     "δf": float(transaction.δf),
                     "δP": float(transaction.δP),
                     "δP": float(transaction.H),
-                    "V": float(transaction.V),
+                    "V": float(transaction.V),                    
                     "position_history": [{"index": s.index, "open_price": float(s.open_price), "high_price": float(s.high_price), "low_price": float(s.low_price), "close_price": float(s.close_price), "δP": float(s.δP), "V": float(s.V), "H": float(s.H), "δf": float(s.δf), "H": float(s.H), "V": float(s.V)} for s in transaction.state]
                 }
                 transaction_list.append(transaction)

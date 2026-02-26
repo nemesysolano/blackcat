@@ -1,7 +1,9 @@
+from datetime import datetime
 from typing import NamedTuple
 from .Position import Position
 
 class Transaction(NamedTuple):
+    entry_date: datetime
     ticker: str
     entry_index: int
     entry_price: float
@@ -17,10 +19,12 @@ class Transaction(NamedTuple):
     exit_reason: str    
     V: float
     H: float
+    exit_date: datetime
     state: list
     @staticmethod
-    def from_position(position: Position, pl: float, exit_index: int, exit_price: float, exit_reason: int):
-        return Transaction(
+    def from_position(position: Position, pl: float, exit_index: int, exit_price: float, exit_reason: int, t: datetime):
+        return Transaction(          
+            entry_date = position.entry_date,          
             ticker=position.ticker,
             entry_index=position.entry_index,
             entry_price=position.entry_price,
@@ -36,6 +40,7 @@ class Transaction(NamedTuple):
             exit_reason=exit_reason,
             V=position.V,
             H=position.H,
+            exit_date=t,
             state = position.state
         )
 

@@ -1,4 +1,5 @@
 # Position.py
+from datetime import datetime
 import numpy as np
 from typing import NamedTuple
 
@@ -8,11 +9,11 @@ class Position(NamedTuple):
     entry_price: float
     δf: float
     δP: float
-    side: int # 1 or -1
+    side: int 
     quantity: int
     take_profit: float
     stop_loss: float
     V: float
-    H: float
+    H: float    
     state: list
-    is_runner: bool = False
+    entry_date: datetime 
