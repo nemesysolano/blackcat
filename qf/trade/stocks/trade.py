@@ -22,8 +22,7 @@ def long_delta_filter(δP, δf, H, V, effective_direction):
             V < 0.1 and 
             H > 0.2) 
 
-def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions, force_predictions):    
-    initial_capital = 10000.0
+def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions, force_predictions, initial_capital = 10000.0, stop_and_reverse = False):    
     current_capital = float(initial_capital)
     active_position = None
     transactions = []
@@ -106,7 +105,8 @@ def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions
             unrealized = 0.0
             if active_position:
                 # Exits if next open breaks stop loss or take profit.
-                if active_position.entry_index == i and not (next_row is None):
+                
+                if (active_position.entry_index == i and not (next_row is None)):
                     next_open = float(next_row['OPEN'])
                     abort_loss = 0                                        
                     if (active_position.side == 1 and next_open < active_position.stop_loss) or (active_position.side == -1 and next_open > active_position.stop_loss):
@@ -115,7 +115,7 @@ def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions
                         loser_longs += (1 if active_position.side == 1 else 0)
                         loser_shorts += (1 if active_position.side == -1 else 0)
                         transactions.append(Transaction.from_position(active_position, abort_loss, i, next_open, -1, t))
-                        abort_reverse = - effective_dir
+                        abort_reverse =  (- effective_dir if stop_and_reverse else 0)
                         unrealized = abort_loss
                     elif (active_position.side == 1 and next_open > active_position.take_profit) or (active_position.side == -1 and next_open < active_position.take_profit):
                         abort_profit = float((next_open - active_position.entry_price) * active_position.side * active_position.quantity)
@@ -123,7 +123,7 @@ def trade_stocks(quote_name, df, price_time_predictions, volume_time_predictions
                         winner_longs += (1 if active_position.side == 1 else 0)
                         winner_shorts += (1 if active_position.side == -1 else 0)
                         transactions.append(Transaction.from_position(active_position, abort_profit, i, next_open, 1, t))
-                        abort_reverse = - effective_dir
+                        abort_reverse = (- effective_dir if stop_and_reverse else 0)
                         unrealized = abort_profit
                         
                     active_position = None if abort_reverse != 0 else active_position
