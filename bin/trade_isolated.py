@@ -50,6 +50,12 @@ def get_stats(model_stats, quote_name):
     except:
         return None
 
+def get_mse(quote_stats):
+    try:
+         return quote_stats["MSE"]
+    except:
+        return None
+
 def get_model_stats(current_dir, filename):
     model_stats_file = os.path.join(current_dir, "test-results", filename)
     if not os.path.exists(model_stats_file):
@@ -106,15 +112,14 @@ def no_dnn_predictor(connection, quote_name, model_name, X_test):
     return array
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python trade_angular.py <quotes_file> [predictor]")
-        sys.exit(1)
-        
-    quotes_file = sys.argv[1]
-    use_predictor = len(sys.argv) > 2 and sys.argv[2] == "predictor"
-    _, sqlalchemy_url = db_config()
-    
     try:
+        if len(sys.argv) < 2:
+            print("Usage: python trade_angular.py <quotes_file> [predictor]")
+            sys.exit(1)
+
+        quotes_file = sys.argv[1]
+        use_predictor = len(sys.argv) > 2 and sys.argv[2] == "predictor"
+        _, sqlalchemy_url = db_config()
         quotes = read_quote_names(quotes_file)
     except Exception as e:
         print(f"Error reading quotes: {e}")
@@ -126,16 +131,24 @@ if __name__ == "__main__":
     force_stats = get_model_stats(os.getcwd(), "report-price-time-wavelet-force.csv")
     lookback_periods = 14
     engine = create_engine(sqlalchemy_url)
+    discriminators = {
+        'unfiltered': lambda q: True,        
+        'force': lambda q: get_stats(force_stats, q)['MSE'] < 0.005,
+        'uncertain': lambda q: get_stats(force_stats, q)['MSE'] >= 0.005 and get_stats(force_stats, q)['MSE'] <= 0.1,
+        'price': lambda q: get_stats(price_direction_stats, q)['MSE'] > 0.1,
+        'volume': lambda q: get_stats(volume_direction_stats, q)['MSE'] > 1.0,
+        'blackcat': lambda q: get_stats(force_stats, q)['MSE'] < 0.005 and get_stats(price_direction_stats, q)['MSE'] > 0.1
+    }
+    discriminator = 'blackcat'
 
     with engine.connect() as connection:
         for quote_name in quotes:
             price_direction = get_stats(price_direction_stats, quote_name)
-            volume_direction = get_stats(volume_direction_stats, quote_name)
-            force_stats = get_stats(force_stats, quote_name)        
-            tradable = check_if_tradable(price_direction) and check_if_tradable(volume_direction)
+            volume_direction = get_stats(volume_direction_stats, quote_name)     
+            tradable = check_if_tradable(price_direction) and check_if_tradable(volume_direction) and discriminators[discriminator](quote_name)
             
             if tradable:
-                output_file = os.path.join(os.getcwd(), "test-results", f"report-backtest.csv")
+                output_file = os.path.join(os.getcwd(), "test-results", f"report-backtest-{discriminator}.csv")
                 details_file = os.path.join(os.getcwd(), "test-results", f"report-{quote_name}-transactions.json")
                 if os.path.exists(details_file):
                     continue

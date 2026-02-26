@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 QUOTES_FILE=$1
-
+MODELS_DIR="${SCRIPT_DIR}/../models"
 QUOTES=$(cat $QUOTES_FILE)
 
 MODELS=("price-time-wavelet-force" "price-time-wavelet-direction" "volume-time-wavelet-direction")
@@ -9,7 +9,13 @@ MODELS=("price-time-wavelet-force" "price-time-wavelet-direction" "volume-time-w
 for MODEL in "${MODELS[@]}"
 do
     for QUOTE in $QUOTES; do
-        python3 ${SCRIPT_DIR}/train_isolated.py $QUOTE $MODEL
+        QUOTE_MODEL_FILE="${MODELS_DIR}/${QUOTE}-${MODEL}.keras"
+        if [ ! -f "${QUOTE_MODEL_FILE}" ]; then
+            python3 ${SCRIPT_DIR}/train_isolated.py $QUOTE $MODEL
+        else
+            echo "/${QUOTE}-${MODEL}.keras already exists"
+        fi
+        
     done
 done    
 
