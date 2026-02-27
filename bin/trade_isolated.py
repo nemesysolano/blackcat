@@ -16,15 +16,13 @@ def get_quotes(connection, quote_name, index):
     # Fetch OHLC + Volume to match X_test timestamps
     sql_template = f"""
         with quote_data as (
-            SELECT "TICKER", "TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME", "MARKET_CAP_LOG10", "BETA_LOG",
+            SELECT "TICKER", "TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME",
             ("CLOSE" - LAG("CLOSE", 1) over (ORDER BY "TIMESTAMP")) / ("CLOSE" + LAG("CLOSE", 1) over (ORDER BY "TIMESTAMP")) "ΔP"  
             FROM "QUOTE" WHERE "TICKER" = '{quote_name}'
         ) select quote_data."TICKER", quote_data."TIMESTAMP", "OPEN", "HIGH", "LOW", "CLOSE", 
             COALESCE(STDDEV(quote_data."ΔP") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW),0.0001) "δP" ,
             coalesce(POWER((AVG("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) - "VOLUME") / (AVG("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) + "VOLUME" + 0.000009),2),0) "V",
             AVG("VOLUME") OVER(ORDER BY quote_data."TIMESTAMP" ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) "AV",
-            quote_data."MARKET_CAP_LOG10",
-            quote_data."BETA_LOG",
             indicators."H"
         from quote_data inner join ANGULAR_INDICATORS('{quote_name}') indicators on quote_data."TIMESTAMP" = indicators."TIMESTAMP"
         order by "TIMESTAMP" 
@@ -139,7 +137,7 @@ if __name__ == "__main__":
         'volume': lambda q: get_stats(volume_direction_stats, q)['MSE'] > 1.0,
         'blackcat': lambda q: get_stats(force_stats, q)['MSE'] < 0.005 and get_stats(price_direction_stats, q)['MSE'] > 0.1
     }
-    discriminator = 'blackcat'
+    discriminator = 'force'
 
     with engine.connect() as connection:
         for quote_name in quotes:

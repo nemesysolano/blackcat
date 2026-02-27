@@ -17,14 +17,12 @@ def quote_exists(connection, quote_name):
 
 def import_yfinance_historical_data(connection, historical_data, quote_name, ticker):        
     cursor = connection.cursor();
-    statement = f"PREPARE INSERT_QUOTE AS INSERT INTO \"{table_name(quote_name)}\" (\"TICKER\", \"TIMESTAMP\", \"OPEN\", \"HIGH\", \"LOW\", \"CLOSE\", \"VOLUME\", \"MARKET_CAP_LOG10\", \"BETA_LOG\") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (\"TICKER\", \"TIMESTAMP\") DO NOTHING;"
+    statement = f"PREPARE INSERT_QUOTE AS INSERT INTO \"{table_name(quote_name)}\" (\"TICKER\", \"TIMESTAMP\", \"OPEN\", \"HIGH\", \"LOW\", \"CLOSE\", \"VOLUME\") VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (\"TICKER\", \"TIMESTAMP\") DO NOTHING;"
     cursor.execute(statement)
     count = 0
-    market_cap = (np.log10(ticker.info['marketCap']) / 13) if 'marketCap' in ticker.info else 0
-    beta = (np.log(ticker.info['beta']+1)) if 'beta' in ticker.info else 0
 
     for index, row in historical_data.iterrows():
-        cursor.execute("EXECUTE INSERT_QUOTE (%s, %s, %s, %s, %s, %s, %s, %s, %s)", (quote_name, index, row["Open"], row["High"], row["Low"], row["Close"], row["Volume"], market_cap, beta))        
+        cursor.execute("EXECUTE INSERT_QUOTE (%s, %s, %s, %s, %s, %s, %s)", (quote_name, index, row["Open"], row["High"], row["Low"], row["Close"], row["Volume"]))        
         connection.commit()
         count += 1
         if count % 100 == 0:
