@@ -4,7 +4,8 @@ QUOTES_FILE=$1
 MODELS_DIR="${SCRIPT_DIR}/../models"
 QUOTES=$(cat $QUOTES_FILE)
 
-MODELS=("price-time-wavelet-force" "price-time-wavelet-direction" "volume-time-wavelet-direction")
+#MODELS=("price-time-wavelet-force" "price-time-wavelet-direction" "volume-time-wavelet-direction")
+MODELS=("fractional-price-direction")
 
 for MODEL in "${MODELS[@]}"
 do
@@ -12,6 +13,11 @@ do
         QUOTE_MODEL_FILE="${MODELS_DIR}/${QUOTE}-${MODEL}.keras"
         if [ ! -f "${QUOTE_MODEL_FILE}" ]; then
             python3 ${SCRIPT_DIR}/train_isolated.py $QUOTE $MODEL
+            STATUS=$?
+            if [ ${STATUS} -ne 0 ]; then
+                exit -1
+            fi
+
         else
             echo "/${QUOTE}-${MODEL}.keras already exists"
         fi

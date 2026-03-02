@@ -2,7 +2,7 @@
 
 ## The Price and Volume Series ##
 
-Let $X=\{x(1),...,x(t-1), x(t),...\}$ and $V=\{v(1),...,v(t-1), v(t),...\}$ two stochastic processes where $x(t)$ and $v(t)$ are strictly positive. For convenience we denot $X$ and $V$ as price and volume series respectively.
+Let $X=\{x(1),...,x(t-1), x(t),...\}$ and $V=\{v(1),...,v(t-1), v(t),...\}$ two stochastic processes where $x(t)$ and $v(t)$ are strictly positive. For convenience we denote $X$ and $V$ as price and volume series respectively.
 
 ### Difference Functions ###
 
@@ -46,7 +46,7 @@ $l_↓(t) = l(t - i_{l↓}) \quad \text{where} \quad i_{l↓} = \min \{j \in \ma
 
 ---
 
-To ensure the geometry remains stable and free from the "zero-degree" or "90-degree" traps, the normalization factors are now defined using the standardized indices ($i_{h↑}, i_{h↓}, i_{l↑}, i_{l↓}$).
+To ensure the geometry remains stable and free from the "zero-degree" or "90-degree" traps, the normalization factors are now defined using the standardized     indices ($i_{h↑}, i_{h↓}, i_{l↑}, i_{l↓}$).
 
 #### 1. Time Lookback Base $B(t)$
 This factor represents the maximum temporal distance to any of the four structural pivots, ensuring all time-ratios are bounded in $[0, 1]$.
@@ -72,13 +72,13 @@ $Θ_k(t) = \arctan\left(\frac{b_k(t)}{c_k(t) + \epsilon}\right) \quad \text{for 
 
 ## The Volume-Time Angles ##
 
-Serial volume difference ($|Δ_1(v(t))|$) swallows a lot of noice; so we decided to try geometrical patterns (angles) instead.
+Serial volume difference ($|Δ_1(v(t))|$) swallows a lot of noise; so we decided to try geometrical patterns (angles) instead.
 
 #### Closest Higher Volume (${v_↑(t)}$) ####
 
-$v_↑(t) = h(t - i_{v↑}) \quad \text{where} \quad i_{v↑} = \min \{j \in \mathbb{Z}^+ \mid v(t-j) > v(t)\}$
+$v_↑(t) = v(t - i_{v↑}) \quad \text{where} \quad i_{v↑} = \min \{j \in \mathbb{Z}^+ \mid v(t-j) > v(t)\}$
 
-#### Closest Lower Volume (${v_↑(t)}$) ####
+#### Closest Lower Volume (${v_↓(t)}$) ####
 
 $v_↓(t) = v(t - i_{v↓}) \quad \text{where} \quad i_{v↓} = \min \{j \in \mathbb{Z}^+ \mid v(t-j) < v(t)\}$
 
@@ -91,15 +91,15 @@ $B(t) = \max\{i_{v↑}, \space i_{v↓}\}$
 
 #### 2. Normalized Time Vector $b(t)$ ####
 
-$b(t) = \left\{\frac{i_{v_↑}}{B(t)}, \space \frac{i_{v_↓}}{B(t)} \right\}$
+$b(t) = \left\{\frac{i_{v↑}}{B(t)}, \space \frac{i_{v↓}}{B(t)} \right\}$
 
 #### 3. Volume Range Base $C(t)$ ####
 
-$C(t) = \max\{v_↑(t)-v(t), \space v(t)-v_↓(t)\}$
+$C(t) = \max\{v↑(t)-v(t), \space v(t)-v↓(t)\}$
 
 #### 4. Normalized Volume Vector $c(t)$ ####
 
-$c(t) = \left\{\frac{v_↑(t)-v(t)}{C(t)}, \space \frac{v(t)-v_↓(t)}{C(t)}\right\}$
+$c(t) = \left\{\frac{v↑(t)-v(t)}{C(t)}, \space \frac{v(t)-v↓(t)}{C(t)}\right\}$
 
 ----
 
@@ -116,7 +116,7 @@ is a periodic non-linear function defined as
 $W(t) =\frac{\sum^4_{i=1} (\cos (θ_i(t)) + \sin (θ_i(t)))}{4\sqrt{2}}$.
 
 This wavelet function is useful to sketch the market structure at a given point in time $t$. 
-Let's move further and define the family of multivariative probability 
+Let's move further and define the family of multivariate probability 
 functions $Ω(t)$ for $\{Θ_1(t), Θ_2(t), Θ_3(t), Θ_4(t)\}$. At any given time $t$ the four angles are bound to the $[0,\frac{π}{2}]$ interval, therefore
 we just need to isolate the normalization constant $A$ in the following equation:
 
@@ -144,14 +144,14 @@ is a periodic non-linear function defined as
 $V(t) =\frac{\sum^2_{i=1} (\cos (φ_i(t)) + \sin (φ_i(t)))}{2\sqrt{2}}$.
 
 Let's define another family of multivariative probability 
-functions $H(t)$ for $\{φ_1(t), φ_2(t)\}$. At any given time $t$ the four angles are bound to the $[0,\frac{π}{2}]$ interval,
+functions $H(t)$ for $\{φ_1(t), φ_2(t)\}$. At any given time $t$ the two angles are bound to the $[0,\frac{π}{2}]$ interval,
 therefore we just need to isolate the normalization constant $A$ in the following equation:
 
 $A \int^{π/2}_{0} \int^{π/2}_{0} h^2⋅dφ_1⋅dφ_2 = 1$, where
 
 $h = \frac{\sum^2_{i=1} (\cos (φ_i) + \sin (φ_i))}{2\sqrt{2}}$.
 
-After calculation the double integral and isolating $A$, we get
+After calculating the double integral and isolating $A$, we get
 
 $A = \frac{16}{\pi^2 + 2\pi + 16}$ and the probability function we want is
 
@@ -164,15 +164,83 @@ $\overrightarrow H(t) =  H(t)⋅Δ_T(ξ(t)) - H(t-1)⋅Δ_T(ξ(t-1))$ given
 
 $\{\overrightarrow H(t-k),...,\overrightarrow H(t-1)\}$ as input features where $k > 0$.
 
-## Squared Standarized Volume ##
+## Fractional Features ##
 
-The **squared standarized volume** $V(t)$ is required to calculate _liquidity cap_ in backtesting simulation.
+Fractional features are numeric features that can be modeled using fractional derivatives:
+
+$D^s_tZ(t)= \frac{1}{Γ(1-s)}\frac{d}{dt}\int^{t}_0\frac{Z(τ)}{(t-τ)^s}dτ$
+
+We are not expecting that $D^s_tZ(t)$ boils down to an analytical solution because we will carelessly plug any $Z(t)$; therefore
+we need to discretize (quantize) $D^s_tZ(t)$  using historical values of $Z(t)$:
+
+$D^s_tZ(t) ≈ \sum^{N-1}_{k=0} w_k Z(t-k)$, where
+
+$w_k = \begin{cases}
+    1\text{ } \text{when } k = 0  \\\\
+    w_{k-1}\frac{k-1-s}{k} \text{ when } k > 0
+\end{cases}$
+
+
+### Log Acceleration ###
+
+Consider the series of log returns $\{L(t-(N-1)),...,L(t)\}$. Roughly speaking, if $L(t)$ 
+gauges momentum at time $t$, we can approximate the acceleration at time $t$ as $L(t)-L(t-1)$. Worth to notice that **momentum signum** and
+**acceleration signum** represent different ideas; the former indicate direction of motion whilst the later represent whether the 
+particle is accelerating or decelerating. Let $Λ(t) = L(t)-L(t-1)$ denote the **log acceleration** of a particle at time $t$ which can be 
+expressed with fractional derivative as:
+
+$Λ(t) ≈ \hat D^s_tL(t) = \sum^{N-1}_{k=0} w_k L(t-k)$ where $0 < s < 1$.
+
+Once we know the $Λ(t)$'s order (namely $s$) we can calculate the weights for the discrete integration formula required to reverse
+engineer momentum from acceleration:
+
+$w_k(-s) = \begin{cases}
+    1\text{ } \text{when } k = 0  \\\\
+    w_{k-1}\frac{k-1+s}{k} \text{ when } k > 0
+\end{cases}$
+
+Now we are in position to to trade $Λ(t)$ and $s$ as follows:
+1. Calculate
+    - $ \hat L(t) = \sum^{N-1}_{k=0} |w_k(-s)|Λ(t-k)$; $w_k(-s)$ are the integral weights (where s is replaced by −s in the recursive step).
+    - $ L(t)= \log(\frac{ξ(t)}{ξ(t-1)})$
+2. Enter into market according following depending all three sign match as illustrated in the table below:
+
+|Feature                 |Strong Bullish Trend|Strong Bearish Trend |
+|------------------------|--------------------|---------------------|
+| $\hat L(t)$ Memory     |  > 0               | < 0                 |
+| $L(t)$ Momentum        |  > 0               | < 0                 |
+| $Λ(t)$ Acceleration    |  > 0               | < 0                 |
+
+
+---
+
+The formula for $\hat L(t)$  is the discrete version of Riemann-Liouville Fractional Integral:
+
+$_aI^s_tf(t) = \frac{1}{Γ(s)} \int^t_a(t-τ)^{s-1}f(τ)dτ$
+
+### Time-Dependent Schrödinger Equations ###
+
+Presume that $V(x,t) = V(L(t),t) = \frac{1}{2}m(ω(t) L(t))^2$ and $Ψ(x,t) = Ψ(L(t), t)$, then we can write standard the schrödinger equation as
+
+$i\hbar \frac{\partial Ψ(L(t), t)}{\partial t} = -\frac{ℏ^2}{2m} \frac{\partial^2 Ψ(L(t), t)}{\partial L(t)^2} + \frac{1}{2}m(ω(t) L(t))^2 Ψ(L(t), t)$, where
+
+1. $m = f/o$ ($f$, $o$ represent floating and outstanding shares respectively).
+2. $x$ = current log price.
+3. $ω = \max_{t,...,t-N+1} W(t)$, where $W(t)$ is the **price-time wavelet**.
+
+----
+
+On the same lines, we can write the fractional Schrödinger equation as:
+
+$i\hbar \frac{\partial Ψ(L(t), t)}{\partial t} = D^s_t (-ℏ^2 Δ{L(t)})^{s/2} Ψ(L(t), t) + \frac{1}{2}m(ω(t)L(t))^2 Ψ(L(t), t)$
+
+## Squared Standardized Volume ##
+
+The **squared standardized volume** $V(t)$ is required to calculate _liquidity cap_ in backtesting simulation.
 
 $\hat V(t) = [\frac{\hat v(t) - v(t)} {\hat v(t) + v(t)}]^2 $ where
 
-$\hat v(t) = \frac{\sum^{k-1}_0 v(t-k)} {k}$ and
-
-$σ_v(t) = \sqrt {\frac{\sum^{k-1}_0  (\hat v(t)-v(t-k))^2}{k-1}}$
+$\hat v(t) = \frac{\sum^{k-1}_0 v(t-k)} {k}$.
 
 ## Time invariant features ##
 

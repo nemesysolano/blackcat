@@ -1,9 +1,11 @@
 
 from sqlalchemy import create_engine
-from qf.indicators import price_time_wavelet_direction, price_time_wavelet_force, volume_time_wavelet_direction
-from qf.dbsync import db_config
+from qf.dbsync.dbconfig import db_config
+from qf.indicators import price_time_wavelet_direction, price_time_wavelet_force, volume_time_wavelet_direction, fractional_price_acceleration
 from qf.nn import directional_mse, set_seeds
 from qf.nn import PenaltyScheduler
+from qf.nn.models import create_cnn_model
+from qf.nn.models import create_fractional_diff_model
 from qf.nn.splitter import create_datasets
 import tensorflow as tf
 layers = tf.keras.layers
@@ -14,35 +16,19 @@ import sys
 import numpy as np
 
 
-def create_cnn_model(input_dim, indicator):
-    # input_dim = 14 (your lags)
-    inputs = layers.Input(shape=(input_dim, 1))
-    # 1. Convolutional Layer: Scans for patterns using 32 different "filters"
-    # kernel_size=3 means it looks at 3 consecutive lags at a time
-    x = layers.Conv1D(filters=128, kernel_size=3, activation='relu', padding='same')(inputs)
-    x = layers.MaxPooling1D(pool_size=2)(x) # Reduces noise
-    
-    # 2. Second Scan: Finds more complex combinations of the first patterns
-    x = layers.Conv1D(filters=64, kernel_size=3, activation='relu', padding='same')(x)
-    x = layers.GlobalAveragePooling1D()(x) # Flattens the data for the final decision
-    
-    # 3. Final Decision Layers
-    x = layers.Dense(64, activation='relu', kernel_regularizer=regularizers.l2(0.001))(x)
-    x = layers.BatchNormalization()(x) # Stabilizes learning
-    x = layers.Dropout(0.1)(x)
-
-    activation = 'linear' if indicator is price_time_wavelet_force else 'tanh'
-  
-    outputs = layers.Dense(1, activation = activation)(x)
-    model = models.Model(inputs=inputs, outputs=outputs)
-    model.compile(optimizer='adam', loss='mse', metrics=['mae'])
-    return model
-
 indicator = {
     "price-time-wavelet-force": price_time_wavelet_force,
     "price-time-wavelet-direction": price_time_wavelet_direction,
-    "volume-time-wavelet-direction": volume_time_wavelet_direction
+    "volume-time-wavelet-direction": volume_time_wavelet_direction,
+    "fractional-price-direction": fractional_price_acceleration
 }
+
+def create_model(lookback_periods, indicator):
+    if indicator is fractional_price_acceleration:
+        return create_fractional_diff_model(lookback_periods)
+    else:
+        return create_cnn_model(lookback_periods, indicator)
+
 if __name__ == "__main__":
     set_seeds(42)
     quote_name = sys.argv[1]
@@ -66,8 +52,8 @@ if __name__ == "__main__":
         X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
         model = create_cnn_model(X_train.shape[1], indicator)
 
-        patience = 15
-        epochs = 30
+        patience = 30
+        epochs = 100
         batch_size = 50
         model.summary()
         
@@ -126,7 +112,7 @@ if __name__ == "__main__":
         mode = 'a' if os.path.exists(output_file) else 'w'
         with open(output_file, mode) as f:
             if mode == 'w':
-                if indicator is price_time_wavelet_direction or indicator is volume_time_wavelet_direction:
+                if indicator is price_time_wavelet_direction or indicator is volume_time_wavelet_direction or indicator is fractional_price_acceleration:
                     print("Ticker,MSE,MAE,Match %,Different %,Pct Diff%,Edge,tradable", file=f)
                 else:
                     print("Ticker,MSE,MAE", file=f)
@@ -134,7 +120,7 @@ if __name__ == "__main__":
             pct_diff = int(np.abs(matching_pct - different_pct) * 100)
             edge_diff = int((max(matching_pct, different_pct) * 100) - 50)
             tradable = edge_diff > 6
-            if indicator is price_time_wavelet_direction or indicator is volume_time_wavelet_direction:
+            if indicator is price_time_wavelet_direction or indicator is volume_time_wavelet_direction or indicator is fractional_price_acceleration:
                 print(f"{quote_name},{mse},{mae},{matching_pct * 100},{different_pct * 100},{pct_diff},{edge_diff},{tradable}", file=f)
             else:
                 print(f"{quote_name},{mse},{mae}", file=f)

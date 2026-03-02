@@ -1,7 +1,38 @@
 import numpy as np
+import os
+import pandas as pd
 
 # Suggested Stress-Test Version
 # utils.py
+def check_if_tradable(quote_stats):
+    try:
+        return quote_stats["Edge"] > 10 and quote_stats["tradable"]
+    except:
+        return False
+    
+def get_stats(model_stats, quote_name):
+    try:
+        return model_stats.loc[quote_name]
+    except:
+        return None
+
+def get_mse(quote_stats):
+    try:
+         return quote_stats["MSE"]
+    except:
+        return None
+
+def get_model_stats(current_dir, filename):
+    model_stats_file = os.path.join(current_dir, "test-results", filename)
+    if not os.path.exists(model_stats_file):
+        print(f"Error: Report file {filename} not found.")
+        return None
+        
+    model_stats = pd.read_csv(model_stats_file)
+    # Clean whitespace from column names if any
+    model_stats.columns = model_stats.columns.str.strip()
+    model_stats.set_index('Ticker', inplace=True)
+    return model_stats
 
 def dynamic_slippage(atr_pct, base_median_bps=3.5, base_sigma=1.1):
     """
