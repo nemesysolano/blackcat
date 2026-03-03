@@ -189,7 +189,7 @@ gauges momentum at time $t$, we can approximate the acceleration at time $t$ as 
 particle is accelerating or decelerating. Let $Λ(t) = L(t)-L(t-1)$ denote the **log acceleration** of a particle at time $t$ which can be 
 expressed with fractional derivative as:
 
-$Λ(t) ≈ \hat D^s_tL(t) = \sum^{N-1}_{k=0} w_k L(t-k)$ where $0 < s < 1$.
+$Λ(t) ≈ \hat Λ(t) = \hat D^s_tL(t) = \sum^{N-1}_{k=0} w_k L(t-k)$ where $0 < s < 1$.
 
 Once we know the $Λ(t)$'s order (namely $s$) we can calculate the weights for the discrete integration formula required to reverse
 engineer momentum from acceleration:
@@ -205,12 +205,14 @@ Now we are in position to to trade $Λ(t)$ and $s$ as follows:
     - $ L(t)= \log(\frac{ξ(t)}{ξ(t-1)})$
 2. Enter into market according following depending all three sign match as illustrated in the table below:
 
-|Feature                 |Strong Bullish Trend|Strong Bearish Trend |
-|------------------------|--------------------|---------------------|
-| $\hat L(t)$ Memory     |  > 0               | < 0                 |
-| $L(t)$ Momentum        |  > 0               | < 0                 |
-| $Λ(t)$ Acceleration    |  > 0               | < 0                 |
-
+Signal Type|$L(t)$|$\hat L^(t)$|$\hat Λ$|$Λ(t)$|Potential State (V)|Physical Interpretation|
+-----------|------|------------|--------|------|-------------------|-----------------------|
+Strong Bullish|+|+|+|+|Tunneling|All signs align. Kinetic pressure exceeds the potential barrier $V$. High probability breakout.
+Strong Bearish|−|−|−|−|Tunneling|Momentum and memory are in phase. The price particle is escaping the well to the downside.
+Mean Reversion (Long)|−|−|+|+|Hard Boundary|Price is at the bottom of the well. Potential $V$ is high, forcing a reversal in $\hat Λ$.
+Mean Reversion (Short)|+|+|−|−|Hard Boundary|Price is at the ceiling. The wavelet force $ω(t)$ is overpowering the upward inertia.
+Incoherent Noise|±|±|∓|∓|Damping|The fractional memory ($\hat L$) and local acceleration ($Λ$) are out of phase. No Trade.
+Fake-Out Warning|+|+|+|−|Decoherence|Memory predicts a jump ($\hat Λ$), but the classical price ($Λ$) is stalling. The particle is trapped.
 
 ---
 
@@ -218,7 +220,14 @@ The formula for $\hat L(t)$  is the discrete version of Riemann-Liouville Fracti
 
 $_aI^s_tf(t) = \frac{1}{Γ(s)} \int^t_a(t-τ)^{s-1}f(τ)dτ$
 
+### Estimating Analytical Order ($s$) for Fractional Derivatives and Integrals ###
+
+Suppose that these wavelets $\{W(t-(N-1)),...,W(t)\}$ are the input features for a neural network targeting $Λ(t)$. Moreover,
+assume that last layer prior to output is a custom linear with $\{L(t-(N-1)),...,L(t)\}$ as non trainable weights; this
+custom layer will receive $N$ inputs (namely $\{a(t-(N-1)),...,a(t)\}$) from previous layer.
+
 ### Time-Dependent Schrödinger Equations ###
+Let the sequence of log returns $\{L(t-(N-1)),...,L(t)\}$ be the features for a neural network targeting 
 
 Presume that $V(x,t) = V(L(t),t) = \frac{1}{2}m(ω(t) L(t))^2$ and $Ψ(x,t) = Ψ(L(t), t)$, then we can write standard the schrödinger equation as
 

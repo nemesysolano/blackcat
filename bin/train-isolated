@@ -4,7 +4,7 @@ QUOTES_FILE=$1
 MODELS_DIR="${SCRIPT_DIR}/../models"
 QUOTES=$(cat $QUOTES_FILE)
 
-#MODELS=("price-time-wavelet-force" "price-time-wavelet-direction" "volume-time-wavelet-direction")
+#MODELS=("price-time-wavelet-force" "price-time-wavelet-direction" "volume-time-wavelet-direction" "fractional-price-direction")
 MODELS=("fractional-price-direction")
 
 for MODEL in "${MODELS[@]}"

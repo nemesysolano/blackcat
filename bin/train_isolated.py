@@ -3,7 +3,6 @@ from sqlalchemy import create_engine
 from qf.dbsync.dbconfig import db_config
 from qf.indicators import price_time_wavelet_direction, price_time_wavelet_force, volume_time_wavelet_direction, fractional_price_acceleration
 from qf.nn import directional_mse, set_seeds
-from qf.nn import PenaltyScheduler
 from qf.nn.models import create_cnn_model
 from qf.nn.models import create_fractional_diff_model
 from qf.nn.splitter import create_datasets
@@ -23,11 +22,6 @@ indicator = {
     "fractional-price-direction": fractional_price_acceleration
 }
 
-def create_model(lookback_periods, indicator):
-    if indicator is fractional_price_acceleration:
-        return create_fractional_diff_model(lookback_periods)
-    else:
-        return create_cnn_model(lookback_periods, indicator)
 
 if __name__ == "__main__":
     set_seeds(42)
@@ -50,8 +44,12 @@ if __name__ == "__main__":
         X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
         X_val = X_val.reshape((X_val.shape[0], X_val.shape[1], 1))
         X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
-        model = create_cnn_model(X_train.shape[1], indicator)
 
+        if indicator is fractional_price_acceleration:
+            model = create_fractional_diff_model(lookback_periods, indicator)
+        else:
+            model = create_cnn_model(X_train.shape[1], indicator)
+    
         patience = 30
         epochs = 100
         batch_size = 50
@@ -92,7 +90,6 @@ if __name__ == "__main__":
             batch_size=batch_size,
             callbacks = callbacks
         )    
-
     
         best_model = tf.keras.models.load_model(checkpoint_filepath, custom_objects={'directional_mse': directional_mse})
         mse, mae = best_model.evaluate(X_test, Y_test, verbose=0) 

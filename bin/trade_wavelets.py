@@ -5,11 +5,10 @@ import os
 from qf.dbsync import read_quote_names, db_config
 from qf.nn import directional_mse
 from qf.nn import create_local_datasets
-from qf.trade import trade_forex, write_results
+from qf.trade import write_results
 import tensorflow as tf
 import pandas as pd
 from sqlalchemy import create_engine
-from qf.trade import trade_forex
 from qf.trade import get_model_stats
 from qf.trade import get_stats
 from qf.trade.wavelets import trade_wavelets
@@ -129,24 +128,13 @@ if __name__ == "__main__":
                 quotes = get_quotes(connection, quote_name, X_price_time_test.index)
                 assert len(quotes) == len(X_price_time_test)
 
-                if quote_name.endswith("=X") and "JPY" not in quote_name:
-                    # Use the specialized Forex function
-                    stats, transactions = trade_forex(
-                        quote_name, 
-                        quotes,                                             
-                        price_time_predictions, 
-                        volume_time_predictions, 
-                        force_predictions
-                    )
-                else:
-                    # Use the existing standard/stock function
-                    stats, transactions = trade_wavelets(
-                        quote_name, 
-                        quotes,                                             
-                        price_time_predictions, 
-                        volume_time_predictions, 
-                        force_predictions
-                    )
+                stats, transactions = trade_wavelets(
+                    quote_name, 
+                    quotes,                                             
+                    price_time_predictions, 
+                    volume_time_predictions, 
+                    force_predictions
+                )
             
                 write_results(output_file, details_file, stats, transactions)
             else:

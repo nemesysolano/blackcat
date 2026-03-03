@@ -1,32 +1,100 @@
-https://github.com/algogenetic/dukascopy-1/tree/master/dukascopy
-
-
-    for i in range(len(df)):
-        row = df.iloc[i]
-        curr_dp = float(row['δP'])
-        p_dir = int(np.sign(price_time_predictions[i][0]))
-        v_dir = int(np.sign(volume_time_predictions[i][0]))
-        f_val = force_predictions[i][0]
-        close_series = row['CLOSE']
-        effective_V = row['H']
-        effective_H = row['V']        
-
-
-
-    # --- DYNAMIC FLOOR/CEILING CALIBRATION ---
-    # alpha, beta, gamma are sensitivity coefficients
-    h_shift = (0.5 - effective_H) * 0.10     # Stricter if H < 0.5 (noise)
-    v_shift = curr_dp * 2.0            # Stricter if Volatility is high
-    e_shift = effective_V * 0.05            # Relaxed if Energy is high
-    
-    # Calculate base dynamic bounds
-    dynamic_floor_base = FLOOR + h_shift + v_shift - e_shift
-    dynamic_ceiling_base = CEILING + h_shift + v_shift - e_shift
-    current_floor = max(0.10, dynamic_floor_base + 0.02)
-    current_ceiling = min(0.35, dynamic_ceiling_base)
-    confidence = (f_val - current_floor) / (current_ceiling - current_floor)
-
-    conviction = (confidence * 0.6) + (H * 0.2) + (abs(V) * 0.2)
-    conviction = max(0.1, min(1.0, conviction))
-
-
+IMTX
+DSGN
+FIGS
+NG
+OTLY
+SVM
+FSM
+ERAS
+AMRX
+CSIQ
+XP
+ARQT
+HBM
+GLTO
+SEDG
+VSAT
+AMKR
+GLDD
+LUNMF
+ALGM
+PLAB
+APG
+BE
+AMPX
+ARMN
+PL
+AP
+UUUU
+SBSW
+QBTS
+CSTM
+ERO
+F
+NWG
+YOU
+MIR
+RCKY
+DLX
+AHL-PD
+NVGS
+HTLD
+MFA
+HPQ
+CMG
+DT
+NVDA
+AAPL
+GOOG
+AMZN
+UBER
+SONY
+ACN
+GSK
+SBUX
+INTU
+CME
+SO
+UPS
+B
+AEO
+CNK
+HAYW
+AMH
+INVH
+COLD
+MCD
+TD
+SBGSY
+EADSY
+UL
+APP
+PGR
+PANW
+SNY
+IONX
+IONL
+LUNL
+OPEG
+OPEX
+FTNT
+FTV
+FOXA
+FOX
+BEN
+FCX
+GRMN
+IT
+GE
+GEHC
+GEV
+GEN
+GNRC
+GD
+GIS
+GPC
+GILD
+GPN
+GL
+GDDY
+GS

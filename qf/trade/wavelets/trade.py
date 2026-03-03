@@ -1,12 +1,15 @@
 import numpy as np
 from qf.trade import create_backtest_stats
-from qf.trade import FLOOR, CEILING
 from qf.trade.model import Position
 from qf.trade.model import Transaction
 from qf.trade.model import State
 from .sizing import calculate_stock_levels, update_stock_position, calculate_stock_dynamic_qty
 
-# trade.py
+
+OMEGA_MAX = 0.20
+FLOOR =0.13
+CEILING = 0.18
+
 
 def short_delta_filter(δP, δf, H, V, effective_direction):
     return (effective_direction == -1 and 

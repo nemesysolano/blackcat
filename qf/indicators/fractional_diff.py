@@ -12,7 +12,7 @@ def fractional_price_acceleration_sql (quote_name, lookback_periods):
     wavelet_lags.reverse()  # Reverse to have the most recent lag first
     features.reverse()  # Reverse to match the order of the lags
     lags_str = ", ".join(wavelet_lags)
-    return (f"SELECT \"TIMESTAMP\", {lags_str}, LOG(\"CLOSE\" /  LAG(\"CLOSE\", 1) OVER(ORDER BY \"TIMESTAMP\")) - LOG(LAG(\"CLOSE\", 1) OVER(ORDER BY \"TIMESTAMP\") / LAG(\"CLOSE\", 2) OVER(ORDER BY \"TIMESTAMP\")) AS \"A\" FROM \"QUOTE\" X WHERE \"TICKER\" = '{quote_name}'", features, "A")
+    return (f"SELECT \"TIMESTAMP\", \"OPEN\", \"LOW\", \"HIGH\", \"CLOSE\", {lags_str}, LOG(\"CLOSE\" /  LAG(\"CLOSE\", 1) OVER(ORDER BY \"TIMESTAMP\")) - LOG(LAG(\"CLOSE\", 1) OVER(ORDER BY \"TIMESTAMP\") / LAG(\"CLOSE\", 2) OVER(ORDER BY \"TIMESTAMP\")) AS \"Λ\" FROM \"QUOTE\" X WHERE \"TICKER\" = '{quote_name}'", features, "Λ")
 
 
 def fractional_price_acceleration(connection, quote_name, lookback_periods):
