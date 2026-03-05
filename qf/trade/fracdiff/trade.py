@@ -6,7 +6,7 @@ from qf.trade.fracdiff.signal import STRONG_BULLISH, STRONG_BEARISH, MEAN_REVERS
 import numpy as np
 import pandas as pd
 
-from qf.trade.fracdiff.sizing import create_position, update_position
+from qf.trade.fracdiff.sizing import TRANSACTION_COMMISSION, create_position, update_position
 from qf.trade.fracdiff.stats import FracDiffState
 
 
@@ -36,7 +36,7 @@ def trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, t
     long_trades, short_trades = 0, 0
     winner_longs, winner_shorts = 0, 0
     loser_longs, loser_shorts = 0, 0
-    equity_curve = []    
+    equity_curve = [initial_capital]    
 
     for i in range(lookback_periods-1, len(trade_dataset)):
         t = trade_dataset.index[i]        
@@ -72,14 +72,14 @@ def trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, t
                 loser_longs = loser_longs + 1 if transaction.side == 1 and transaction.exit_reason == -1 else loser_longs
                 winner_shorts = winner_shorts + 1 if transaction.side == -1 and transaction.exit_reason == 1 else winner_shorts
                 loser_shorts = loser_shorts + 1 if transaction.side == -1 and transaction.exit_reason == -1 else loser_shorts
-                current_capital += transaction.pl
+                current_capital += (transaction.pl - TRANSACTION_COMMISSION)
                 equity_curve.append(current_capital)
 
             if active_position is None:
                 active_position = create_position(quote_name, i, signal, trade_dataset, L, L_hat, Λ, Λ_hat_t, current_capital)
                 long_trades = long_trades + 1 if active_position and active_position.side == 1 else long_trades
                 short_trades = short_trades + 1 if active_position and active_position.side == -1 else short_trades
-            
+                
             if active_position is not None:
                 active_position.state.append(FracDiffState(
                     i,
@@ -93,9 +93,6 @@ def trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, t
                     L_hat = L_hat
                 ))
                 
-    if len(equity_curve) == 0:
-        equity_curve.append(initial_capital)
-
     return create_backtest_stats(
         quote_name, equity_curve, long_trades, short_trades, 
         winner_longs, winner_shorts, loser_longs, loser_shorts, transactions

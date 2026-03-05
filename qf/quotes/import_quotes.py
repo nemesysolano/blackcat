@@ -56,7 +56,7 @@ def import_since_last_update(connection, quote_name):
         count = import_yfinance_historical_data(connection, historical_data, quote_name, ticker_data)
         print(f"📁: inserted {count} records from '{quote_name}' since '{first_quote_date}' to '{next_quote_date}.")
     else:
-        print(f"📁: records for '{quote_name}' since '{first_quote_date}' to '{next_quote_date} are up to date.")
+        print(f"📁: records for '{quote_name}' since '{next_quote_date}' to '{first_quote_date} are up to date.")
 
 def import_yinance_quote(connection_string, quote):
     connection = None

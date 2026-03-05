@@ -2,7 +2,7 @@ import math
 import numpy as np
 from qf.trade.fracdiff.signal import STALL, STRONG_BULLISH, STRONG_BEARISH, MEAN_REVERSION_LONG, MEAN_REVERSION_SHORT
 from qf.trade.fracdiff.stats import FracDiffPosition, FracDiffTransaction
-MAX_RISK_PER_TRADE = 0.03
+from qf.trade.fracdiff.utils import MAX_RISK_PER_TRADE, TRANSACTION_COMMISSION
 
 def calculate_levels(current_index, signal, trade_dataset, L, L_hat, Λ, Λ_hat_t):
     """
@@ -79,28 +79,43 @@ def try_early_close(current_index, position, next_open_price, exit_date):
         return None, FracDiffTransaction.from_position(position, current_index, next_open_price, exit_reason, profit_loss, exit_date)
     return position, None # Ensure it returns position if no exit
 
-def try_normal_close(current_index, position, low_price, high_price, exit_date):
+def try_normal_close(current_index, position, low_price, high_price, exit_date, L, L_hat, Λ, Λ_hat_t):
     exit_reason = 0
     
-    # --- NEW: Dynamic SL Tightening (The "No-Turn-Back" Rule) ---
+    # 1. Calculate the Quantum Confidence Score
+    # conviction: How strongly the current and predicted forces push in our direction
+    conviction = np.tanh((Λ + Λ_hat_t) * position.side * 10)
+    
+    # exhaustion: If level (L) is high in our trade direction, we are hitting a barrier
+    exhaustion = np.tanh(max(0, L * position.side) * 5)
+    
+    # Final score (-1 to 1): High force + Low exhaustion = High Score
+    alpha_score = conviction - (0.3 * exhaustion)
+
+    # 2. Dynamic Threshold Mapping
+    # High alpha_score (Great trade) -> Higher thresholds (0.65 / 0.85) to allow "tunneling"
+    # Low alpha_score (Stalling/Exhausted) -> Lower thresholds (0.35 / 0.65) to lock in profit early
+    be_threshold = np.clip(0.5 + (0.15 * alpha_score), 0.35, 0.65)
+    lock_threshold = np.clip(0.75 + (0.10 * alpha_score), 0.65, 0.85)
+
+    # 3. Apply Dynamic Trailing Logic
     tp_distance = abs(position.take_profit - position.entry_price)
-    progress = abs(high_price - position.entry_price) / tp_distance if position.side == 1 else \
-               abs(position.entry_price - low_price) / tp_distance
+    current_best = high_price if position.side == 1 else low_price
+    progress = abs(current_best - position.entry_price) / tp_distance
     
-    # If we reached 75% of TP, lock in at least 50% of the profit
-    if progress >= 0.75:
+    # Lock-in Rule (Dynamic Lock Threshold)
+    if progress >= lock_threshold:
         lock_in_price = position.entry_price + (position.side * tp_distance * 0.5)
-        if position.side == 1:
-            position = position._replace(stop_loss=max(position.stop_loss, lock_in_price))
-        else:
-            position = position._replace(stop_loss=min(position.stop_loss, lock_in_price))
+        position = position._replace(stop_loss=max(position.stop_loss, lock_in_price) if position.side == 1 else \
+                                     min(position.stop_loss, lock_in_price))
     
-    # Standard Trailing Stop (Break-even at 50% progress)
-    elif progress >= 0.50:
-        new_sl = max(position.stop_loss, position.entry_price) if position.side == 1 else min(position.stop_loss, position.entry_price)
+    # Break-even Rule (Dynamic BE Threshold)
+    elif progress >= be_threshold:
+        new_sl = max(position.stop_loss, position.entry_price) if position.side == 1 else \
+                 min(position.stop_loss, position.entry_price)
         position = position._replace(stop_loss=new_sl)
 
-    # Standard SL/TP Check
+    # Standard Price-based Exit Check
     if position.side == 1:
         if low_price < position.stop_loss: exit_reason = -1
         elif high_price > position.take_profit: exit_reason = 1
@@ -115,70 +130,142 @@ def try_normal_close(current_index, position, low_price, high_price, exit_date):
         
     return position, None
 
+def try_stallness_close(active_position, current_index, current_price, signal, trade_dataset, L, L_hat, Λ, Λ_hat):
+    """
+    Evaluates if an actively winning or losing position is stalling, eroding, or turning toxic.
+    Returns (None, Transaction) if closed.
+    """
+    if not active_position.state:
+        return active_position, None
+        
+    time_in_trade = len(active_position.state)
+    entry_price = active_position.entry_price
+    side = active_position.side
+
+    # 1. PnL Tracking
+    current_pnl_pct = ((current_price - entry_price) * side) / entry_price
+    history_prices = [s.high_price if side == 1 else s.low_price for s in active_position.state]
+    peak_price = max(history_prices + [current_price]) if side == 1 else min(history_prices + [current_price])
+    peak_pnl_pct = ((peak_price - entry_price) * side) / entry_price
+    
+    stallness_reason = None
+    should_exit = False
+    
+    # =================================================================
+    # TIER 1: ABSOLUTE SIGNAL FAILURE
+    # =================================================================
+    # A. Quantum Inversion (The Circuit Breaker)
+    confluence_score = np.sign(Λ) + np.sign(Λ_hat) + np.sign(L) + np.sign(L_hat)
+    if (side == 1 and confluence_score <= -2) or (side == -1 and confluence_score >= 2):
+        stallness_reason = f"Quantum Inversion: score={confluence_score}."
+        should_exit = True
+
+    # =================================================================
+    # TIER 2: CAPITAL PROTECTION ON WINNERS
+    # =================================================================
+    # B. The "Free Trade" Rule (Hard Breakeven)
+    if not should_exit and peak_pnl_pct >= 0.01:
+        if current_pnl_pct <= 0.001:
+            stallness_reason = f"Hard Breakeven: peak_pnl_pct={peak_pnl_pct:.4f}, current_pnl_pct={current_pnl_pct:.4f}."
+            should_exit = True
+
+    # C. Tiered Profit Erosion (Dynamic Protection)
+    if not should_exit and peak_pnl_pct >= 0.01:
+        retracement = (peak_pnl_pct - current_pnl_pct) / peak_pnl_pct
+        
+        if peak_pnl_pct >= 0.03:      # > 3.0% gain: allow 35% give-back
+            allowed_retracement = 0.35
+        elif peak_pnl_pct >= 0.02:    # 2.0% - 3.0% gain: allow 50% give-back
+            allowed_retracement = 0.50
+        else:                         # 1.0% - 2.0% gain: allow 70% give-back
+            allowed_retracement = 0.70
+            
+        if retracement > allowed_retracement and current_pnl_pct > -0.005: 
+            stallness_reason = f"Profit Erosion: allowed={allowed_retracement}, retraced={retracement:.2f}."
+            should_exit = True
+
+    # =================================================================
+    # TIER 3: CUTTING LOSERS EARLY (CTVA/LHX Fix)
+    # =================================================================
+    # D. Failed Tunneling (Replaces 5-day Toxic Stagnation)
+    if not should_exit and time_in_trade >= 3 and current_pnl_pct < 0:
+        if (side == 1 and Λ < 0) or (side == -1 and Λ > 0):
+            stallness_reason = f"Failed Tunneling: days={time_in_trade}, side={side}, Λ={Λ:.4f}."
+            should_exit = True
+            
+    # E. Loser Erosion (Deep red, dead momentum)
+    if not should_exit and current_pnl_pct < 0:
+        sl_distance_pct = abs(active_position.stop_loss - entry_price) / entry_price
+        if sl_distance_pct > 0:
+            loss_ratio = abs(current_pnl_pct) / sl_distance_pct
+            # If we've eaten 50% of our stop loss risk and total momentum is flat
+            if loss_ratio >= 0.5 and (abs(Λ) + abs(Λ_hat)) < 0.002:
+                stallness_reason = f"Loser Erosion: loss_ratio={loss_ratio:.2f}, flat momentum."
+                should_exit = True
+
+    # =================================================================
+    # TIER 4: FADING MOMENTUM & TIME STOPS
+    # =================================================================
+    # F. Quantum Divergence (The Early Warning)
+    if not should_exit and current_pnl_pct > 0.002:
+        if (side == 1 and Λ < 0 and Λ_hat < 0) or (side == -1 and Λ > 0 and Λ_hat > 0):
+            stallness_reason = f"Quantum Divergence: Λ={Λ:.4f}, Λ_hat={Λ_hat:.4f}."
+            should_exit = True
+
+    # G. Flat Stagnation
+    if not should_exit and time_in_trade >= 8 and current_pnl_pct < 0.004:
+        stallness_reason = f"Flat Stagnation: time={time_in_trade}, pnl={current_pnl_pct:.4f}."
+        should_exit = True
+
+    # =================================================================
+    # EXECUTION
+    # =================================================================
+    if should_exit:
+        exit_date = trade_dataset.index[current_index]                
+        profit_loss = (current_price - entry_price) * active_position.quantity * side
+        exit_reason = 1 if profit_loss > 0 else -1
+        
+        transaction = FracDiffTransaction.from_position(
+            active_position, current_index, current_price, exit_reason, 
+            profit_loss, exit_date, stallness_reason
+        )        
+        return None, transaction
+
+    return active_position, None
+
+
 def update_position(current_index, signal, trade_dataset, L, L_hat, Λ, Λ_hat_t, position):        
-    """
-    Updates the active position with high-frequency exit logic to minimize roundtrips.
-    Includes: Signal Inversion, Stall Exhaustion, Resonance Decay, and Trailing Stops.
-    """
     if position is None: 
         return None, None
     
     transaction = None
     exit_date = trade_dataset.index[current_index]
-    bars_held = current_index - position.entry_index
-    
-    # --- 1. SIGNAL INVERSION EXIT (Regime Change) ---
-    # If the force has flipped entirely against our position, exit at current price.
-    is_inversion = (position.side == 1 and signal in [STRONG_BEARISH, MEAN_REVERSION_SHORT]) or \
-                   (position.side == -1 and signal in [STRONG_BULLISH, MEAN_REVERSION_LONG])
-                   
-    # --- 2. RESONANCE DECAY EXIT (Alpha Exhaustion) ---
-    # We check the entry force stored in the first state of the position history.
-    entry_state = position.state[0]
-    entry_force = abs(entry_state.Λ) + abs(entry_state.Λ_hat)
-    current_force = abs(Λ) + abs(Λ_hat_t)
-    
-    # If the 'Quantum Push' has decayed below 15% of entry strength after 5 bars.
-    is_force_decay = (bars_held >= 5 and current_force < (entry_force * 0.15))
 
-    # --- 3. STALL EXHAUSTION (Time Decay) ---
-    # If the model stays in STALL for too long, the predictive edge is likely gone.
-    is_stall_exhaustion = (bars_held >= 10 and signal == STALL)
-
-    # Execute Strategy-Based Exit
-    if is_inversion or is_force_decay or is_stall_exhaustion:
-        exit_price = trade_dataset.loc[exit_date, 'CLOSE']
-        profit_loss = (exit_price - position.entry_price) * position.quantity * position.side
-        # Categorize exit reason based on PnL at the moment of signal death
-        exit_reason = 1 if profit_loss > 0 else -1 
-        
-        transaction = FracDiffTransaction.from_position(
-            position, current_index, exit_price, exit_reason, profit_loss, exit_date
-        )
-        return None, transaction
-
-    # --- 4. GAPS / EARLY CLOSE ---
-    # Check for overnight gaps that might have blown past SL/TP
+    # --- Price-Based Exits (Gaps) ---
     if current_index == position.entry_index and current_index < len(trade_dataset) - 1:
         next_date = trade_dataset.index[current_index + 1]
         next_open_price = trade_dataset.loc[next_date, 'OPEN']
         position, transaction = try_early_close(current_index, position, next_open_price, next_date)
 
-    # --- 5. DYNAMIC SL & INTRADAY EXITS ---
-    # This handles the Trailing Stop and 75%-Progress No-Turn-Back rule
+    # --- Price-Based Exits (Intraday with Dynamic Thresholds) ---
     if transaction is None:
         low_price = trade_dataset.loc[exit_date, 'LOW']
         high_price = trade_dataset.loc[exit_date, 'HIGH']
-        position, transaction = try_normal_close(current_index, position, low_price, high_price, exit_date)
-   
+        position, transaction = try_normal_close(current_index, position, low_price, high_price, exit_date, L, L_hat, Λ, Λ_hat_t)
+    
+    # -- Stallness based exits.
+    if transaction is None:
+        current_price = trade_dataset.loc[exit_date, 'CLOSE']
+        position, transaction = try_stallness_close(position, current_index, current_price, signal, trade_dataset, L, L_hat, Λ, Λ_hat_t)
     return position, transaction
+
 
 def calculate_stock_qty(current_index, trade_dataset, entry_price, stop_loss, current_capital, L, L_hat, Λ, Λ_hat, signal_direction):
     """
     Calculates quantity based on Risk-at-Risk (3% of capital) and 
     scales the conviction based on the Magnitude of the Resonance.
     """
-    if stop_loss == 0 or entry_price == stop_loss:
+    if (stop_loss == 0) or (entry_price == stop_loss):
         return 0
 
     # 1. Basic Risk Management (The 'Potential Barrier' width)
@@ -205,7 +292,7 @@ def calculate_stock_qty(current_index, trade_dataset, entry_price, stop_loss, cu
 
     # 3. Liquidity & Capital Constraints
     # Ensure we don't try to buy more than we have cash for
-    max_affordable = (current_capital * 0.95) / entry_price # Keep 5% for fees/slippage
+    max_affordable = current_capital / entry_price # TODO: Introduce friction allowance later
     
     qty = min(final_qty, max_affordable)
 
@@ -225,6 +312,8 @@ def create_position(quote_name, current_index, signal, trade_dataset, L, L_hat, 
         entry_price,
         Λ,
         Λ_hat,
+        L,
+        L_hat,
         signal_direction,
         qty,
         take_profit,

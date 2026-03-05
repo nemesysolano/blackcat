@@ -9,6 +9,8 @@ class FracDiffTransaction(NamedTuple):
     entry_price: float
     Λ: float
     Λ_hat: float
+    L: float
+    L_hat: float
     side: int # 1 or -1
     quantity: int
     take_profit: float
@@ -18,10 +20,11 @@ class FracDiffTransaction(NamedTuple):
     exit_price: float
     exit_date: datetime
     exit_reason: int
+    stallness_reason: str
     state: list    
 
     @staticmethod
-    def from_position(position, current_index, exit_price, exit_reason, profit_loss, exit_date):
+    def from_position(position, current_index, exit_price, exit_reason, profit_loss, exit_date, stallness_reason = None):
         return FracDiffTransaction(
             entry_date = position.entry_date,
             ticker = position.ticker,
@@ -29,6 +32,8 @@ class FracDiffTransaction(NamedTuple):
             entry_price = position.entry_price,
             Λ = position.Λ,
             Λ_hat = position.Λ_hat,
+            L = position.L,
+            L_hat = position.L_hat,
             side = position.side,
             quantity = position.quantity,
             take_profit = position.take_profit,
@@ -38,5 +43,6 @@ class FracDiffTransaction(NamedTuple):
             exit_price = exit_price,
             exit_date = exit_date,
             exit_reason = exit_reason,
+            stallness_reason = stallness_reason,
             state = position.state
         )

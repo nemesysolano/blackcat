@@ -54,7 +54,7 @@ def create_trade_dataset(connection, quote_name, lookback_periods, model_name):
         Λ = dataset.loc[X_test.index, 'Λ'],
         S = S       
     )
-    print(X_test)
+    
     return X_test, feature_names, target
 
 def write_results(output_file, details_file, stats, transactions):
@@ -88,7 +88,10 @@ def write_results(output_file, details_file, stats, transactions):
                     "Exit Reason": transaction.exit_reason,
                     "Λ": float(transaction.Λ),
                     "Λ_hat": float(transaction.Λ_hat),
-                    "position_history": [{"index": s.index, "open_price": float(s.open_price), "high_price": float(s.high_price), "low_price": float(s.low_price), "close_price": float(s.close_price), "Λ": float(s.Λ), "Λ_hat": float(s.Λ_hat)} for s in transaction.state]
+                    "L": float(transaction.L),
+                    "L_hat": float(transaction.L_hat),
+                    "Stallness Reason": transaction.stallness_reason,
+                    "position_history": [{"index": s.index, "open_price": float(s.open_price), "high_price": float(s.high_price), "low_price": float(s.low_price), "close_price": float(s.close_price), "Λ": float(s.Λ), "Λ_hat": float(s.Λ_hat), "L": float(s.L), "L_hat": float(s.L_hat)} for s in transaction.state]
                 }
                 transaction_list.append(transaction)
             print(json.dumps(transaction_list, ensure_ascii = False), file=f)     
@@ -115,9 +118,8 @@ if __name__ == "__main__":
     with engine.connect() as connection:
         for quote_name in quotes:
             quote_stats = get_stats(fractional_price_direction_stats, quote_name)
-            tradable = quote_stats['tradable']
             
-            if tradable:
+            if not (quote_stats is None) and quote_stats['tradable']:
                 print(f"Backtesting {quote_name}")
                 output_file = os.path.join(os.getcwd(), "test-results", f"report-backtest-fracdiff.csv")
                 details_file = os.path.join(os.getcwd(), "test-results", f"report-{quote_name}-fracdiff-transactions.json")            
@@ -127,6 +129,8 @@ if __name__ == "__main__":
                 trade_dataset, feature_names, target_name = create_trade_dataset(connection, quote_name, lookback_periods, model_name)                                                
                 stats, transactions = trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, target_name, f"{target_name}_hat")
                 write_results(output_file, details_file, stats, transactions)
+            else:
+                print(f"{quote_name} is not tradable.")
         connection.close()
     engine.dispose()
     

@@ -9,6 +9,8 @@ class FracDiffPosition(NamedTuple):
     entry_price: float
     Λ: float
     Λ_hat: float
+    L: float
+    L_hat: float
     side: int 
     quantity: int
     take_profit: float
