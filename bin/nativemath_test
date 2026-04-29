@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+import numpy as np
+import redis
+from sqlalchemy import create_engine
+from qf.dbsync.dbconfig import db_config
+import qf.nativemath
+import pandas as pd
+
+def add_lagged_feature(df, column_name, indicator_array, lookback_periods):
+    # Wrap the raw numpy array in a Series aligned to the DataFrame's index
+    base_series = pd.Series(indicator_array, index=df.index)
+    features = []
+    # 1. Insert the lags first, counting backwards (e.g., LP3, then LP2, then LP1)
+    for i in range(lookback_periods, 0, -1):
+        features.append(f"{column_name}{i}")
+        df[features[-1]] = base_series.shift(i)
+        
+    # 2. Insert the current un-lagged column last (e.g., LP)
+    df[column_name] = base_series
+    return features
+
+def read_quotes(connection, quote_name):
+    query = f"SELECT quote_timestamp, open_price, high_price, low_price, close_price, volume FROM quote_stocks WHERE ticker = '{quote_name}' ORDER BY quote_timestamp ASC"
+    df = pd.read_sql(query, connection)
+    df.set_index('quote_timestamp', inplace=True)
+    return df
+
+if __name__ == "__main__":
+    _, sqlalchemy_url, redis_host, redis_port, redis_database = db_config()
+    engine = create_engine(sqlalchemy_url)
+    redis_connection = redis.Redis(host=redis_host, port=redis_port, db=redis_database, decode_responses=True)
+    lookback_periods = 14
+    with engine.connect() as connection:
+        df = read_quotes(connection, 'AAPL.US')
+        print("Records loaded")
+        open_price = df['open_price'].values.astype(np.float64)
+        high_price = df['high_price'].values.astype(np.float64)
+        low_price = df['low_price'].values.astype(np.float64)
+        close_price = df['close_price'].values.astype(np.float64)
+        volume = df['volume'].values.astype(np.float64)
+        print("Arrays created")
+        
+        # # 2. Call the compiled C++ engine
+        LP, Λ, f, f_mean, f_stdev = qf.nativemath.get_price_time_indicators(close_price, high_price, low_price, volume, lookback_periods)
+        lookback_periods = 14
+
+        df['f'] = f
+        df['f_mean'] = f_mean
+        df['f_stdev'] = f_stdev
+        add_lagged_feature(df, 'Λ', Λ, lookback_periods)
+        df.dropna(inplace=True)
+        print(df)
+        
+        
+        

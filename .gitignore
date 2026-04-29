@@ -1,0 +1,6 @@
+**/*.pyc
+pydevs/
+data/
+signals/*.csv
+build/
+**/*.so

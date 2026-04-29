@@ -1,0 +1,15 @@
+pandas
+numpy
+yfinance
+matplotlib
+mplfinance
+scikit-learn
+tensorflow-macos
+tensorflow-metal
+xgboost
+psycopg2-binary
+sqlalchemy
+requests
+redis
+redis[hiredis]
+Cython
