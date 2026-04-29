@@ -153,7 +153,7 @@ double fractional_order(double Lambda, std::span<const double> L){
         return current_lambda - Lambda;
     };
 
-    double order = brentq_root(objective_function, 1e-6, 1.0);
+    double order = brentq_root(objective_function, 1e-6, 10.0);
     return order; // Return the found order
 }
 
