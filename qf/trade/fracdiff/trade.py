@@ -34,7 +34,7 @@ def trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, t
         equity_curve.append(current_capital)        
         
     # Main simulation loop
-    for current_index in range(lookback_periods, len(trade_dataset)):       
+    for current_index in range(lookback_periods, len(trade_dataset)-1):       
         t0 = trade_dataset.index[current_index - 1]        
         t = trade_dataset.index[current_index]       
         f = trade_dataset.loc[t, 'f']

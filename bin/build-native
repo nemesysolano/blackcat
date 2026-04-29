@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+BUILD_DIR="${SCRIPT_DIR}/../build"
+TARGET_DIR="${SCRIPT_DIR}/../qf/nativemath"
+TEST_RESULTS_DIR="${SCRIPT_DIR}/../test-results"
+if [ -d "${BUILD_DIR}" ]
+then
+    rm -rf "${BUILD_DIR}/*"
+fi
+
+rm -rf "${TARGET_DIR}/*.so"
+rm -rf "${TARGET_DIR}/*.pyd"
+
+python qf/nativemath/setup.py build_ext --inplace

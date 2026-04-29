@@ -93,15 +93,15 @@ def update_position(current_index, trade_dataset, L, Lambda, Lambda_hat, positio
     if transaction is None:
         position, transaction = try_physics_close(current_index, position, current_price, exit_date, Lambda, Lambda_hat, f, f_mean, f_std)
 
-    if transaction is None and current_index == len(trade_dataset) - 1:
+    if transaction is None and current_index == len(trade_dataset) - 2:
        position, transaction = try_eos_close(position, current_index, current_price, exit_date)        
 
     return position, transaction, gap_hit
 
 def create_position(quote_name, current_index, signal, trade_dataset, L0, L, Lambda, Lambda_hat, current_capital, max_leverage_allowed, direction_bias, platform_commission, order):
-    t = trade_dataset.index[current_index]
+    t1 = trade_dataset.index[current_index + 1]
     take_profit, stop_loss, signal_direction = calculate_levels(current_index, signal, trade_dataset, L0, L, Lambda, Lambda_hat, direction_bias, order)
-    entry_price = trade_dataset.loc[t, 'CLOSE']
+    entry_price = trade_dataset.loc[t1, 'OPEN']
 
     # qty and actual_leverage used
     qty, actual_leverage = calculate_stock_qty(entry_price, stop_loss, current_capital, L0, L, Lambda, Lambda_hat, max_leverage_allowed, platform_commission, order)
