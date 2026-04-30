@@ -17,8 +17,8 @@ def create_fractional_diff_model(input_dim):
     
     # 3. Final Decision Layers
     x = layers.Dense(64, activation='relu', kernel_regularizer=regularizers.l2(0.001))(x)
-    x = layers.BatchNormalization()(x) # Stabilizes learning
-    x = layers.Dropout(0.1)(x)
+#   x = layers.BatchNormalization()(x) # Stabilizes learning
+#   x = layers.Dropout(0.1)(x)
 
     outputs = layers.Dense(1, activation = 'tanh')(x)
     model = models.Model(inputs=inputs, outputs=outputs)

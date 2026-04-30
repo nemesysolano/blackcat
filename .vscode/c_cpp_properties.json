@@ -3,7 +3,11 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "/Volumes/APPFS512GB/workspaces/LiteRT",
+                "/Volumes/APPFS512GB/workspaces/LiteRT/litert/cmake_build/include",
+                "/Volumes/APPFS512GB/workspaces/LiteRT/litert/cmake_build/abseil-cpp",
+                "/Volumes/APPFS512GB/workspaces/LiteRT/litert/cmake_build/flatbuffers/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

@@ -4,3 +4,4 @@ data/
 signals/*.csv
 build/
 **/*.so
+**/*.dylib

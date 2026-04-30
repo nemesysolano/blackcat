@@ -5,9 +5,17 @@
 #include "probabilities.h"
 #include "indicators.h"
 #include <cmath>
+#include <fstream>
 #include "stats.h"
 #include "entries.h"
 #include "sizing.h"
+#include "litert/cc/litert_environment.h"
+#include "litert/cc/litert_model.h"
+#include "litert/cc/litert_compiled_model.h"
+#include "absl/types/span.h" // LiteRT uses Abseil spans for buffer memory mapping
+#include "log.h"
+#include "csv-table.h"
+
 using namespace std;
 #ifdef __TEST_MAIN__
 
@@ -663,6 +671,85 @@ void fractional_physics_close_test() {
     printf("fractional_physics_close_test passed successfully!\n");
 }
 
+
+void test_cnn_inference_success() {
+    vector<string> feature_names = {"Lambda14", "Lambda13", "Lambda12", "Lambda11", "Lambda10", "Lambda9", "Lambda8", "Lambda7", "Lambda6", "Lambda5", "Lambda4", "Lambda3", "Lambda2", "Lambda1"};
+    string target_name = "Lambda";
+
+    // 1. Initialize LiteRT Environment
+    CSVTable csv("HII.US.csv");
+
+    auto env = litert::Environment::Create({});
+    assert(env.HasValue());
+
+    // 2. Load the model into a byte buffer manually
+    // This satisfies the BufferRef<uint8_t> signature requirement.
+    std::ifstream file("HII.US.tflite", std::ios::binary | std::ios::ate);
+    assert(file.is_open());
+    
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+    
+    // Note: This vector must outlive the compiled_model in this scope.
+    std::vector<uint8_t> model_buffer_data(size);
+    file.read(reinterpret_cast<char*>(model_buffer_data.data()), size);
+
+    // 3. Build the CompiledModel
+    // Matching candidate: Create(Environment&, BufferRef<uint8_t>, HwAccelerators)
+    auto compiled_model = litert::CompiledModel::Create(
+        env.Value(), 
+        litert::BufferRef<uint8_t>(model_buffer_data.data(), model_buffer_data.size()), 
+        litert::HwAccelerators::kCpu 
+    );
+    assert(compiled_model.HasValue());
+
+    // 4. Create and Prepare I/O Buffers
+    auto input_buffers = compiled_model.Value().CreateInputBuffers();
+    auto output_buffers = compiled_model.Value().CreateOutputBuffers();
+    assert(input_buffers.HasValue() && output_buffers.HasValue());
+    
+    // 5. Fill Input Data
+    // Per models.py, input_dim = 14 (lags). Shape is (1, 14, 1)
+    const int input_dim = feature_names.size();    
+    std::vector<float> input_data(input_dim, 0.0f); 
+    std::span<float> input_data_view(input_data);
+
+    // 5-1 Read first row
+    size_t match_count = 0;
+    float diff_sum = 0;
+    for(size_t row_number = 0; row_number < csv.row_count(); row_number++) {
+        assert(csv.to_float(row_number, feature_names, input_data_view) == CSVTABLE_FILL_OK);
+
+        // Write data into the first input buffer using an Abseil span
+        input_buffers.Value()[0].Write<float>(absl::MakeConstSpan(input_data));
+
+        // 6. Run Inference
+        compiled_model.Value().Run(input_buffers.Value(), output_buffers.Value());
+
+        // 7. Extract and Validate Output
+        // create_fractional_diff_model outputs 1 value via 'tanh', so we need a buffer of size 1
+        std::vector<float> output_data(1, 0.0f);
+        
+        // Pass a mutable span to Read() so LiteRT can copy the tensor data into our vector
+        auto read_status = output_buffers.Value()[0].Read<float>(absl::MakeSpan(output_data));
+        assert(read_status.HasValue());
+        
+        float prediction = output_data[0];
+
+        // Tanh activation ensures the result is between -1.0 and 1.0
+        assert(prediction >= -1.0f && prediction <= 1.0f);
+
+        float target = csv.to_float(row_number, target_name).value();
+        match_count += (signbit(prediction) == signbit(target) ? 1 : 0);
+        diff_sum = diff_sum + std::abs(prediction - target);
+
+        cout << "actual=" << target << ", prediction=" << prediction << endl;
+    }
+
+    printf("CNN Inference Success, match_count = %f, mae = %f\n", (match_count * 100.0) / csv.row_count(), diff_sum / csv.row_count());
+
+}
+
 int main(int argc, char* argv[]) {
     (void)argc;
     (void)argv;
@@ -683,6 +770,7 @@ int main(int argc, char* argv[]) {
     calculate_fractional_qty_test();
     fractional_physics_close_test();
     fractional_update_levels_test();
+    test_cnn_inference_success();
     return 0;
 }
 #endif // __TEST_MAIN__
