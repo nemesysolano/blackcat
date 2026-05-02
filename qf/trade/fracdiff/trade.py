@@ -47,7 +47,6 @@ def trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, t
         L = trade_dataset.loc[t0, 'L']
         L_hat = trade_dataset.loc[t, 'L']
 
-#       print("order=", order)
         signal = calculate_signal(L, L_hat, Lambda_hat, Lambda, f, f_mean, f_stdev, order)            
         active_position, transaction, gap_hit = update_position(current_index, trade_dataset, L, Lambda_hat, Lambda, active_position, f, f_mean, f_stdev)
         
