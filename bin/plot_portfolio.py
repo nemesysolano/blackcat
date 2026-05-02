@@ -38,6 +38,7 @@ def create_equity_dataframe(plot_index, tickers):
     return equity_data_frame
 
 def fill_equity_dataframe(equity_data_frame, transactions):
+    # Step 1: Record daily P/L events (Same as original)
     for ticker, ticker_transactions in transactions.items():
         for transaction in ticker_transactions:
             exit_date = pd.to_datetime(transaction['Exit Date'])
@@ -45,10 +46,21 @@ def fill_equity_dataframe(equity_data_frame, transactions):
             if exit_date in equity_data_frame.index:
                 equity_data_frame.loc[exit_date, ticker] += pl
 
-    pl = equity_data_frame.sum(axis=1)
-    running_total = pl.cumsum()
+    # Step 2: Convert daily P/L events into a running Cumulative Equity curve per ticker.
+    # This prevents the "zero-out" drop off by carrying held capital forward.
+    for ticker in transactions.keys():
+        equity_data_frame[ticker] = equity_data_frame[ticker].cumsum()
+
+    # Step 3: Calculate Aggregate Metrics (Refactored to match cumulative data)
+    # Total portfolio equity is now simply the sum of all individual cumulative equities
+    running_total = equity_data_frame.sum(axis=1)
+    
+    # Portfolio Daily P/L is the difference between today's total and yesterday's total
+    pl = running_total.diff().fillna(0) 
+
     equity_data_frame['P/L'] = pl
     equity_data_frame['Equity'] = running_total
+    
     return equity_data_frame
 
 if __name__ == "__main__":

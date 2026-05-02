@@ -7,7 +7,7 @@ from qf.trade.fracdiff.stats.FracTrailingLimit import FracTrailingLimit
 from qf.nativemath import get_levels as _calculate_levels, get_fractional_qty as calculate_stock_qty, get_fractional_physics_close as fractional_physics_close, get_fractional_update_levels as fractional_update_levels
 
 
-def calculate_levels(current_index, signal, trade_dataset, L0, L, Lambda, Lambda_hat, direction_bias, order):
+def calculate_levels(current_index, signal, trade_dataset, L, L_hat, Lambda, Lambda_hat, direction_bias, order):
     t = trade_dataset.index[current_index]
     row = trade_dataset.loc[t]    
     current_price = row['CLOSE']
@@ -17,7 +17,7 @@ def calculate_levels(current_index, signal, trade_dataset, L0, L, Lambda, Lambda
     high_price = row['HIGH']
     low_price = row['LOW']
 
-    return _calculate_levels(signal, L0, L, Lambda, Lambda_hat, direction_bias, f, f_mean, f_stdev, current_price, low_price, high_price, order)    
+    return _calculate_levels(signal, L, L_hat, Lambda, Lambda_hat, direction_bias, f, f_mean, f_stdev, current_price, low_price, high_price, order)    
 
 def try_early_close(current_index, position, next_open_price, exit_date):
     profit_loss = None
@@ -38,7 +38,7 @@ def try_update_levels(position, low_price, high_price, L, Lambda, exit_date):
     return position
 
 
-def try_normal_close(current_index, position, low_price, high_price, exit_date, L, Lambda):
+def try_normal_close(current_index, position, low_price, high_price, exit_date):
     exit_reason = 0
 
     if position.side == 1:
@@ -88,7 +88,7 @@ def update_position(current_index, trade_dataset, L, Lambda, Lambda_hat, positio
     if transaction is None:
         low_price = trade_dataset.loc[exit_date, 'LOW']
         high_price = trade_dataset.loc[exit_date, 'HIGH']
-        position, transaction = try_normal_close(current_index, position, low_price, high_price, exit_date, L, Lambda)
+        position, transaction = try_normal_close(current_index, position, low_price, high_price, exit_date)
     
     if transaction is None:
         position, transaction = try_physics_close(current_index, position, current_price, exit_date, Lambda, Lambda_hat, f, f_mean, f_std)
@@ -98,17 +98,17 @@ def update_position(current_index, trade_dataset, L, Lambda, Lambda_hat, positio
 
     return position, transaction, gap_hit
 
-def create_position(quote_name, current_index, signal, trade_dataset, L0, L, Lambda, Lambda_hat, current_capital, max_leverage_allowed, direction_bias, platform_commission, order):
+def create_position(quote_name, current_index, signal, trade_dataset, L, L_hat, Lambda, Lambda_hat, current_capital, max_leverage_allowed, direction_bias, platform_commission, order):
     t1 = trade_dataset.index[current_index + 1]
-    take_profit, stop_loss, signal_direction = calculate_levels(current_index, signal, trade_dataset, L0, L, Lambda, Lambda_hat, direction_bias, order)
+    take_profit, stop_loss, signal_direction = calculate_levels(current_index, signal, trade_dataset, L, L_hat, Lambda, Lambda_hat, direction_bias, order)
     entry_price = trade_dataset.loc[t1, 'OPEN']
 
     # qty and actual_leverage used
-    qty, actual_leverage = calculate_stock_qty(entry_price, stop_loss, current_capital, L0, L, Lambda, Lambda_hat, max_leverage_allowed, platform_commission, order)
+    qty, actual_leverage = calculate_stock_qty(entry_price, stop_loss, current_capital, L, L_hat, Lambda, Lambda_hat, max_leverage_allowed, platform_commission, order)
     if qty == 0: return None
     
     return FracDiffPosition(
-        quote_name, current_index, entry_price, actual_leverage, Lambda, Lambda_hat, L0, L, signal_direction, qty,
+        quote_name, current_index, entry_price, actual_leverage, Lambda, Lambda_hat, L, L_hat, signal_direction, qty,
         take_profit, stop_loss,
         SIGNAL_LABELS[signal], [], trade_dataset.index[current_index], [FracTrailingLimit(trade_dataset.index[current_index].to_pydatetime(), take_profit, stop_loss)]
     )
