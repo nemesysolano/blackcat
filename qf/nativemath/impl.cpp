@@ -3432,7 +3432,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
 static PyObject *__pyx_pf_2qf_10nativemath_4impl_2get_fractional_order(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_Lambda_val, __Pyx_memviewslice __pyx_v_L); /* proto */
 static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_fractional_integral(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_weights, __Pyx_memviewslice __pyx_v_values); /* proto */
 static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weights(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_order, int __pyx_v_N); /* proto */
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_8get_fractional_signal(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_std, double __pyx_v_order); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_8get_fractional_signal(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_f0, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_std, double __pyx_v_order); /* proto */
 static PyObject *__pyx_pf_2qf_10nativemath_4impl_10get_levels(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_signal, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, int __pyx_v_direction_bias, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_stdev, double __pyx_v_current_price, double __pyx_v_low_price, double __pyx_v_high_price, double __pyx_v_order); /* proto */
 static PyObject *__pyx_pf_2qf_10nativemath_4impl_12get_fractional_qty(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_entry_price, double __pyx_v_stop_loss, double __pyx_v_current_capital, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_max_leverage_allowed, double __pyx_v_platform_commission, double __pyx_v_order); /* proto */
 static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_physics_close(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_current_index, int __pyx_v_entry_index, double __pyx_v_entry_price, int __pyx_v_quantity, int __pyx_v_side, double __pyx_v_current_price, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_std); /* proto */
@@ -3491,7 +3491,7 @@ typedef struct {
   PyObject *__pyx_slice[1];
   PyObject *__pyx_tuple[1];
   PyObject *__pyx_codeobj_tab[9];
-  PyObject *__pyx_string_tab[190];
+  PyObject *__pyx_string_tab[191];
   PyObject *__pyx_number_tab[4];
 /* #### Code section: module_state_contents ### */
 /* CommonTypesMetaclass.module_state_decls */
@@ -3623,106 +3623,107 @@ static __pyx_mstatetype * const __pyx_mstate_global = &__pyx_mstate_global_stati
 #define __pyx_n_u_error __pyx_string_tab[87]
 #define __pyx_n_u_exit_reason __pyx_string_tab[88]
 #define __pyx_n_u_f __pyx_string_tab[89]
-#define __pyx_n_u_f_mean __pyx_string_tab[90]
-#define __pyx_n_u_f_mean_out __pyx_string_tab[91]
-#define __pyx_n_u_f_mean_view __pyx_string_tab[92]
-#define __pyx_n_u_f_out __pyx_string_tab[93]
-#define __pyx_n_u_f_std __pyx_string_tab[94]
-#define __pyx_n_u_f_stdev __pyx_string_tab[95]
-#define __pyx_n_u_f_stdev_out __pyx_string_tab[96]
-#define __pyx_n_u_f_stdev_view __pyx_string_tab[97]
-#define __pyx_n_u_f_view __pyx_string_tab[98]
-#define __pyx_n_u_flags __pyx_string_tab[99]
-#define __pyx_n_u_float64 __pyx_string_tab[100]
-#define __pyx_n_u_format __pyx_string_tab[101]
-#define __pyx_n_u_fortran __pyx_string_tab[102]
-#define __pyx_n_u_func __pyx_string_tab[103]
-#define __pyx_n_u_get_fractional_integral __pyx_string_tab[104]
-#define __pyx_n_u_get_fractional_integral_weights __pyx_string_tab[105]
-#define __pyx_n_u_get_fractional_order __pyx_string_tab[106]
-#define __pyx_n_u_get_fractional_physics_close __pyx_string_tab[107]
-#define __pyx_n_u_get_fractional_qty __pyx_string_tab[108]
-#define __pyx_n_u_get_fractional_signal __pyx_string_tab[109]
-#define __pyx_n_u_get_fractional_update_levels __pyx_string_tab[110]
-#define __pyx_n_u_get_levels __pyx_string_tab[111]
-#define __pyx_n_u_get_price_time_indicators __pyx_string_tab[112]
-#define __pyx_n_u_getstate __pyx_string_tab[113]
-#define __pyx_n_u_high_price __pyx_string_tab[114]
-#define __pyx_n_u_id __pyx_string_tab[115]
-#define __pyx_n_u_import __pyx_string_tab[116]
-#define __pyx_n_u_index __pyx_string_tab[117]
-#define __pyx_n_u_is_coroutine __pyx_string_tab[118]
-#define __pyx_n_u_items __pyx_string_tab[119]
-#define __pyx_n_u_itemsize __pyx_string_tab[120]
-#define __pyx_n_u_leverage __pyx_string_tab[121]
-#define __pyx_n_u_lookback_periods __pyx_string_tab[122]
-#define __pyx_n_u_low_price __pyx_string_tab[123]
-#define __pyx_n_u_main __pyx_string_tab[124]
-#define __pyx_n_u_max_leverage_allowed __pyx_string_tab[125]
-#define __pyx_n_u_memview __pyx_string_tab[126]
-#define __pyx_n_u_mode __pyx_string_tab[127]
-#define __pyx_n_u_module __pyx_string_tab[128]
-#define __pyx_n_u_name __pyx_string_tab[129]
-#define __pyx_n_u_name_2 __pyx_string_tab[130]
-#define __pyx_n_u_ndim __pyx_string_tab[131]
-#define __pyx_n_u_new __pyx_string_tab[132]
-#define __pyx_n_u_new_sl __pyx_string_tab[133]
-#define __pyx_n_u_new_tp __pyx_string_tab[134]
-#define __pyx_n_u_np __pyx_string_tab[135]
-#define __pyx_n_u_numpy __pyx_string_tab[136]
-#define __pyx_n_u_obj __pyx_string_tab[137]
-#define __pyx_n_u_order __pyx_string_tab[138]
-#define __pyx_n_u_pack __pyx_string_tab[139]
-#define __pyx_n_u_platform_commission __pyx_string_tab[140]
-#define __pyx_n_u_pop __pyx_string_tab[141]
-#define __pyx_n_u_profit_loss __pyx_string_tab[142]
-#define __pyx_n_u_pyx_checksum __pyx_string_tab[143]
-#define __pyx_n_u_pyx_state __pyx_string_tab[144]
-#define __pyx_n_u_pyx_type __pyx_string_tab[145]
-#define __pyx_n_u_pyx_unpickle_Enum __pyx_string_tab[146]
-#define __pyx_n_u_pyx_vtable __pyx_string_tab[147]
-#define __pyx_n_u_qf_nativemath_impl __pyx_string_tab[148]
-#define __pyx_n_u_qty __pyx_string_tab[149]
-#define __pyx_n_u_qualname __pyx_string_tab[150]
-#define __pyx_n_u_quantity __pyx_string_tab[151]
-#define __pyx_n_u_reduce __pyx_string_tab[152]
-#define __pyx_n_u_reduce_cython __pyx_string_tab[153]
-#define __pyx_n_u_reduce_ex __pyx_string_tab[154]
-#define __pyx_n_u_register __pyx_string_tab[155]
-#define __pyx_n_u_set_name __pyx_string_tab[156]
-#define __pyx_n_u_setdefault __pyx_string_tab[157]
-#define __pyx_n_u_setstate __pyx_string_tab[158]
-#define __pyx_n_u_setstate_cython __pyx_string_tab[159]
-#define __pyx_n_u_shape __pyx_string_tab[160]
-#define __pyx_n_u_side __pyx_string_tab[161]
-#define __pyx_n_u_signal __pyx_string_tab[162]
-#define __pyx_n_u_signal_direction __pyx_string_tab[163]
-#define __pyx_n_u_size __pyx_string_tab[164]
-#define __pyx_n_u_stallness_reason __pyx_string_tab[165]
-#define __pyx_n_u_start __pyx_string_tab[166]
-#define __pyx_n_u_step __pyx_string_tab[167]
-#define __pyx_n_u_stop __pyx_string_tab[168]
-#define __pyx_n_u_stop_loss __pyx_string_tab[169]
-#define __pyx_n_u_struct __pyx_string_tab[170]
-#define __pyx_n_u_take_profit __pyx_string_tab[171]
-#define __pyx_n_u_test __pyx_string_tab[172]
-#define __pyx_n_u_unpack __pyx_string_tab[173]
-#define __pyx_n_u_update __pyx_string_tab[174]
-#define __pyx_n_u_values __pyx_string_tab[175]
-#define __pyx_n_u_volume __pyx_string_tab[176]
-#define __pyx_n_u_weights __pyx_string_tab[177]
-#define __pyx_n_u_weights_out __pyx_string_tab[178]
-#define __pyx_n_u_x __pyx_string_tab[179]
-#define __pyx_kp_b_iso88591_1_1_q_Cxq_31_aq_5 __pyx_string_tab[180]
-#define __pyx_kp_b_iso88591_1_a_q_M_1_x_3ha_a_AQ_Q __pyx_string_tab[181]
-#define __pyx_kp_b_iso88591_F_1_z_q_3b_9F_3c_3fF_3cQR_j_5Rv __pyx_string_tab[182]
-#define __pyx_kp_b_iso88591_a_3aq __pyx_string_tab[183]
-#define __pyx_kp_b_iso88591_a_A_q_Cx_3ha_a_a_1_1 __pyx_string_tab[184]
-#define __pyx_kp_b_iso88591_aq_vV1Cs_j_QgQd_6 __pyx_string_tab[185]
-#define __pyx_kp_b_iso88591_c_S_PWWX __pyx_string_tab[186]
-#define __pyx_kp_b_iso88591_q_k_m_l_Q_81 __pyx_string_tab[187]
-#define __pyx_kp_b_iso88591_r_A_j_F_3fBa_7_Qk_1 __pyx_string_tab[188]
-#define __pyx_n_b_O __pyx_string_tab[189]
+#define __pyx_n_u_f0 __pyx_string_tab[90]
+#define __pyx_n_u_f_mean __pyx_string_tab[91]
+#define __pyx_n_u_f_mean_out __pyx_string_tab[92]
+#define __pyx_n_u_f_mean_view __pyx_string_tab[93]
+#define __pyx_n_u_f_out __pyx_string_tab[94]
+#define __pyx_n_u_f_std __pyx_string_tab[95]
+#define __pyx_n_u_f_stdev __pyx_string_tab[96]
+#define __pyx_n_u_f_stdev_out __pyx_string_tab[97]
+#define __pyx_n_u_f_stdev_view __pyx_string_tab[98]
+#define __pyx_n_u_f_view __pyx_string_tab[99]
+#define __pyx_n_u_flags __pyx_string_tab[100]
+#define __pyx_n_u_float64 __pyx_string_tab[101]
+#define __pyx_n_u_format __pyx_string_tab[102]
+#define __pyx_n_u_fortran __pyx_string_tab[103]
+#define __pyx_n_u_func __pyx_string_tab[104]
+#define __pyx_n_u_get_fractional_integral __pyx_string_tab[105]
+#define __pyx_n_u_get_fractional_integral_weights __pyx_string_tab[106]
+#define __pyx_n_u_get_fractional_order __pyx_string_tab[107]
+#define __pyx_n_u_get_fractional_physics_close __pyx_string_tab[108]
+#define __pyx_n_u_get_fractional_qty __pyx_string_tab[109]
+#define __pyx_n_u_get_fractional_signal __pyx_string_tab[110]
+#define __pyx_n_u_get_fractional_update_levels __pyx_string_tab[111]
+#define __pyx_n_u_get_levels __pyx_string_tab[112]
+#define __pyx_n_u_get_price_time_indicators __pyx_string_tab[113]
+#define __pyx_n_u_getstate __pyx_string_tab[114]
+#define __pyx_n_u_high_price __pyx_string_tab[115]
+#define __pyx_n_u_id __pyx_string_tab[116]
+#define __pyx_n_u_import __pyx_string_tab[117]
+#define __pyx_n_u_index __pyx_string_tab[118]
+#define __pyx_n_u_is_coroutine __pyx_string_tab[119]
+#define __pyx_n_u_items __pyx_string_tab[120]
+#define __pyx_n_u_itemsize __pyx_string_tab[121]
+#define __pyx_n_u_leverage __pyx_string_tab[122]
+#define __pyx_n_u_lookback_periods __pyx_string_tab[123]
+#define __pyx_n_u_low_price __pyx_string_tab[124]
+#define __pyx_n_u_main __pyx_string_tab[125]
+#define __pyx_n_u_max_leverage_allowed __pyx_string_tab[126]
+#define __pyx_n_u_memview __pyx_string_tab[127]
+#define __pyx_n_u_mode __pyx_string_tab[128]
+#define __pyx_n_u_module __pyx_string_tab[129]
+#define __pyx_n_u_name __pyx_string_tab[130]
+#define __pyx_n_u_name_2 __pyx_string_tab[131]
+#define __pyx_n_u_ndim __pyx_string_tab[132]
+#define __pyx_n_u_new __pyx_string_tab[133]
+#define __pyx_n_u_new_sl __pyx_string_tab[134]
+#define __pyx_n_u_new_tp __pyx_string_tab[135]
+#define __pyx_n_u_np __pyx_string_tab[136]
+#define __pyx_n_u_numpy __pyx_string_tab[137]
+#define __pyx_n_u_obj __pyx_string_tab[138]
+#define __pyx_n_u_order __pyx_string_tab[139]
+#define __pyx_n_u_pack __pyx_string_tab[140]
+#define __pyx_n_u_platform_commission __pyx_string_tab[141]
+#define __pyx_n_u_pop __pyx_string_tab[142]
+#define __pyx_n_u_profit_loss __pyx_string_tab[143]
+#define __pyx_n_u_pyx_checksum __pyx_string_tab[144]
+#define __pyx_n_u_pyx_state __pyx_string_tab[145]
+#define __pyx_n_u_pyx_type __pyx_string_tab[146]
+#define __pyx_n_u_pyx_unpickle_Enum __pyx_string_tab[147]
+#define __pyx_n_u_pyx_vtable __pyx_string_tab[148]
+#define __pyx_n_u_qf_nativemath_impl __pyx_string_tab[149]
+#define __pyx_n_u_qty __pyx_string_tab[150]
+#define __pyx_n_u_qualname __pyx_string_tab[151]
+#define __pyx_n_u_quantity __pyx_string_tab[152]
+#define __pyx_n_u_reduce __pyx_string_tab[153]
+#define __pyx_n_u_reduce_cython __pyx_string_tab[154]
+#define __pyx_n_u_reduce_ex __pyx_string_tab[155]
+#define __pyx_n_u_register __pyx_string_tab[156]
+#define __pyx_n_u_set_name __pyx_string_tab[157]
+#define __pyx_n_u_setdefault __pyx_string_tab[158]
+#define __pyx_n_u_setstate __pyx_string_tab[159]
+#define __pyx_n_u_setstate_cython __pyx_string_tab[160]
+#define __pyx_n_u_shape __pyx_string_tab[161]
+#define __pyx_n_u_side __pyx_string_tab[162]
+#define __pyx_n_u_signal __pyx_string_tab[163]
+#define __pyx_n_u_signal_direction __pyx_string_tab[164]
+#define __pyx_n_u_size __pyx_string_tab[165]
+#define __pyx_n_u_stallness_reason __pyx_string_tab[166]
+#define __pyx_n_u_start __pyx_string_tab[167]
+#define __pyx_n_u_step __pyx_string_tab[168]
+#define __pyx_n_u_stop __pyx_string_tab[169]
+#define __pyx_n_u_stop_loss __pyx_string_tab[170]
+#define __pyx_n_u_struct __pyx_string_tab[171]
+#define __pyx_n_u_take_profit __pyx_string_tab[172]
+#define __pyx_n_u_test __pyx_string_tab[173]
+#define __pyx_n_u_unpack __pyx_string_tab[174]
+#define __pyx_n_u_update __pyx_string_tab[175]
+#define __pyx_n_u_values __pyx_string_tab[176]
+#define __pyx_n_u_volume __pyx_string_tab[177]
+#define __pyx_n_u_weights __pyx_string_tab[178]
+#define __pyx_n_u_weights_out __pyx_string_tab[179]
+#define __pyx_n_u_x __pyx_string_tab[180]
+#define __pyx_kp_b_iso88591_1_1_q_Cxq_31_aq_5 __pyx_string_tab[181]
+#define __pyx_kp_b_iso88591_1_a_q_M_1_x_3ha_a_AQ_Q __pyx_string_tab[182]
+#define __pyx_kp_b_iso88591_F_1_z_q_3b_9F_3c_3fF_3cQR_j_5Rv __pyx_string_tab[183]
+#define __pyx_kp_b_iso88591_a_3aq __pyx_string_tab[184]
+#define __pyx_kp_b_iso88591_a_A_q_Cx_3ha_a_a_1_1 __pyx_string_tab[185]
+#define __pyx_kp_b_iso88591_aq_vV1Cs_j_QgQd_6 __pyx_string_tab[186]
+#define __pyx_kp_b_iso88591_c_T_HT __pyx_string_tab[187]
+#define __pyx_kp_b_iso88591_q_k_m_l_Q_81 __pyx_string_tab[188]
+#define __pyx_kp_b_iso88591_r_A_j_F_3fBa_7_Qk_1 __pyx_string_tab[189]
+#define __pyx_n_b_O __pyx_string_tab[190]
 #define __pyx_int_0 __pyx_number_tab[0]
 #define __pyx_int_neg_1 __pyx_number_tab[1]
 #define __pyx_int_1 __pyx_number_tab[2]
@@ -3768,7 +3769,7 @@ static CYTHON_SMALL_CODE int __pyx_m_clear(PyObject *m) {
   for (int i=0; i<1; ++i) { Py_CLEAR(clear_module_state->__pyx_slice[i]); }
   for (int i=0; i<1; ++i) { Py_CLEAR(clear_module_state->__pyx_tuple[i]); }
   for (int i=0; i<9; ++i) { Py_CLEAR(clear_module_state->__pyx_codeobj_tab[i]); }
-  for (int i=0; i<190; ++i) { Py_CLEAR(clear_module_state->__pyx_string_tab[i]); }
+  for (int i=0; i<191; ++i) { Py_CLEAR(clear_module_state->__pyx_string_tab[i]); }
   for (int i=0; i<4; ++i) { Py_CLEAR(clear_module_state->__pyx_number_tab[i]); }
 /* #### Code section: module_state_clear_contents ### */
 /* CommonTypesMetaclass.module_state_clear */
@@ -3819,7 +3820,7 @@ static CYTHON_SMALL_CODE int __pyx_m_traverse(PyObject *m, visitproc visit, void
   for (int i=0; i<1; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_slice[i]); }
   for (int i=0; i<1; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_tuple[i]); }
   for (int i=0; i<9; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_codeobj_tab[i]); }
-  for (int i=0; i<190; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_string_tab[i]); }
+  for (int i=0; i<191; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_string_tab[i]); }
   for (int i=0; i<4; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_number_tab[i]); }
 /* #### Code section: module_state_traverse_contents ### */
 /* CommonTypesMetaclass.module_state_traverse */
@@ -19942,7 +19943,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weight
 /* "qf/nativemath/impl.pyx":149
  * # Add this at the bottom of the file as a new Python-facing function
  * # 6. Python-facing function for trading signals
- * def get_fractional_signal(double L0, double L, double Lambda, double Lambda_hat, double f, double f_mean, double f_std, double order):             # <<<<<<<<<<<<<<
+ * def get_fractional_signal(double L0, double L, double Lambda, double Lambda_hat, double f0, double f, double f_mean, double f_std, double order):             # <<<<<<<<<<<<<<
  *     """
  *     Computes the trading signal based on fractional force and momentum parameters using the C++ backend.
 */
@@ -19968,6 +19969,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   double __pyx_v_L;
   double __pyx_v_Lambda;
   double __pyx_v_Lambda_hat;
+  double __pyx_v_f0;
   double __pyx_v_f;
   double __pyx_v_f_mean;
   double __pyx_v_f_std;
@@ -19976,7 +19978,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   CYTHON_UNUSED Py_ssize_t __pyx_nargs;
   #endif
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject* values[8] = {0,0,0,0,0,0,0,0};
+  PyObject* values[9] = {0,0,0,0,0,0,0,0,0};
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -19992,11 +19994,15 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   #endif
   __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
   {
-    PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_L0,&__pyx_mstate_global->__pyx_n_u_L,&__pyx_mstate_global->__pyx_n_u_Lambda,&__pyx_mstate_global->__pyx_n_u_Lambda_hat,&__pyx_mstate_global->__pyx_n_u_f,&__pyx_mstate_global->__pyx_n_u_f_mean,&__pyx_mstate_global->__pyx_n_u_f_std,&__pyx_mstate_global->__pyx_n_u_order,0};
+    PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_L0,&__pyx_mstate_global->__pyx_n_u_L,&__pyx_mstate_global->__pyx_n_u_Lambda,&__pyx_mstate_global->__pyx_n_u_Lambda_hat,&__pyx_mstate_global->__pyx_n_u_f0,&__pyx_mstate_global->__pyx_n_u_f,&__pyx_mstate_global->__pyx_n_u_f_mean,&__pyx_mstate_global->__pyx_n_u_f_std,&__pyx_mstate_global->__pyx_n_u_order,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
     if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 149, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
+        case  9:
+        values[8] = __Pyx_ArgRef_FASTCALL(__pyx_args, 8);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 149, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
         case  8:
         values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
         if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 149, __pyx_L3_error)
@@ -20034,10 +20040,10 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
       if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_signal", 0) < (0)) __PYX_ERR(0, 149, __pyx_L3_error)
-      for (Py_ssize_t i = __pyx_nargs; i < 8; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_signal", 1, 8, 8, i); __PYX_ERR(0, 149, __pyx_L3_error) }
+      for (Py_ssize_t i = __pyx_nargs; i < 9; i++) {
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_signal", 1, 9, 9, i); __PYX_ERR(0, 149, __pyx_L3_error) }
       }
-    } else if (unlikely(__pyx_nargs != 8)) {
+    } else if (unlikely(__pyx_nargs != 9)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
@@ -20056,19 +20062,22 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
       if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 149, __pyx_L3_error)
       values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
       if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 149, __pyx_L3_error)
+      values[8] = __Pyx_ArgRef_FASTCALL(__pyx_args, 8);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 149, __pyx_L3_error)
     }
     __pyx_v_L0 = __Pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_L0 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 149, __pyx_L3_error)
     __pyx_v_L = __Pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_L == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 149, __pyx_L3_error)
     __pyx_v_Lambda = __Pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_Lambda == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 149, __pyx_L3_error)
     __pyx_v_Lambda_hat = __Pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_Lambda_hat == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 149, __pyx_L3_error)
-    __pyx_v_f = __Pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_f == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 149, __pyx_L3_error)
-    __pyx_v_f_mean = __Pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_f_mean == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 149, __pyx_L3_error)
-    __pyx_v_f_std = __Pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_f_std == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 149, __pyx_L3_error)
-    __pyx_v_order = __Pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_order == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 149, __pyx_L3_error)
+    __pyx_v_f0 = __Pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_f0 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 149, __pyx_L3_error)
+    __pyx_v_f = __Pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_f == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 149, __pyx_L3_error)
+    __pyx_v_f_mean = __Pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_f_mean == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 149, __pyx_L3_error)
+    __pyx_v_f_std = __Pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_f_std == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 149, __pyx_L3_error)
+    __pyx_v_order = __Pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_order == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 149, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_fractional_signal", 1, 8, 8, __pyx_nargs); __PYX_ERR(0, 149, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_fractional_signal", 1, 9, 9, __pyx_nargs); __PYX_ERR(0, 149, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -20079,7 +20088,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_8get_fractional_signal(__pyx_self, __pyx_v_L0, __pyx_v_L, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_f, __pyx_v_f_mean, __pyx_v_f_std, __pyx_v_order);
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_8get_fractional_signal(__pyx_self, __pyx_v_L0, __pyx_v_L, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_f0, __pyx_v_f, __pyx_v_f_mean, __pyx_v_f_std, __pyx_v_order);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -20089,7 +20098,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_8get_fractional_signal(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_std, double __pyx_v_order) {
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_8get_fractional_signal(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_f0, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_std, double __pyx_v_order) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -20101,12 +20110,12 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_8get_fractional_signal(CYTHON_U
   /* "qf/nativemath/impl.pyx":154
  *     Returns integers corresponding to STALL (0), STRONG_BULLISH (1), STRONG_BEARISH (-1), etc.
  *     """
- *     return calculate_fractional_signal_cy(L0, L, Lambda, Lambda_hat, f, f_mean, f_std, order)             # <<<<<<<<<<<<<<
+ *     return calculate_fractional_signal_cy(L0, L, Lambda, Lambda_hat, f0, f, f_mean, f_std, order)             # <<<<<<<<<<<<<<
  * 
  * # Add this at the very bottom of the file:
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_int(calculate_fractional_signal_cy(__pyx_v_L0, __pyx_v_L, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_f, __pyx_v_f_mean, __pyx_v_f_std, __pyx_v_order)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 154, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(calculate_fractional_signal_cy(__pyx_v_L0, __pyx_v_L, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_f0, __pyx_v_f, __pyx_v_f_mean, __pyx_v_f_std, __pyx_v_order)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 154, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -20115,7 +20124,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_8get_fractional_signal(CYTHON_U
   /* "qf/nativemath/impl.pyx":149
  * # Add this at the bottom of the file as a new Python-facing function
  * # 6. Python-facing function for trading signals
- * def get_fractional_signal(double L0, double L, double Lambda, double Lambda_hat, double f, double f_mean, double f_std, double order):             # <<<<<<<<<<<<<<
+ * def get_fractional_signal(double L0, double L, double Lambda, double Lambda_hat, double f0, double f, double f_mean, double f_std, double order):             # <<<<<<<<<<<<<<
  *     """
  *     Computes the trading signal based on fractional force and momentum parameters using the C++ backend.
 */
@@ -23259,7 +23268,7 @@ __Pyx_RefNannySetupContext("PyInit_impl", 0);
   /* "qf/nativemath/impl.pyx":149
  * # Add this at the bottom of the file as a new Python-facing function
  * # 6. Python-facing function for trading signals
- * def get_fractional_signal(double L0, double L, double Lambda, double Lambda_hat, double f, double f_mean, double f_std, double order):             # <<<<<<<<<<<<<<
+ * def get_fractional_signal(double L0, double L, double Lambda, double Lambda_hat, double f0, double f, double f_mean, double f_std, double order):             # <<<<<<<<<<<<<<
  *     """
  *     Computes the trading signal based on fractional force and momentum parameters using the C++ backend.
 */
@@ -23474,31 +23483,31 @@ static int __Pyx_InitCachedConstants(__pyx_mstatetype *__pyx_mstate) {
 static int __Pyx_InitConstants(__pyx_mstatetype *__pyx_mstate) {
   CYTHON_UNUSED_VAR(__pyx_mstate);
   {
-    const struct { const unsigned int length: 9; } index[] = {{2},{68},{43},{35},{54},{37},{60},{24},{52},{26},{34},{29},{33},{45},{22},{15},{29},{179},{37},{30},{32},{52},{1},{1},{1},{1},{1},{8},{5},{6},{15},{23},{25},{7},{6},{2},{6},{35},{9},{30},{50},{38},{33},{8},{22},{20},{32},{22},{30},{37},{5},{8},{1},{2},{6},{7},{6},{10},{10},{10},{11},{1},{20},{8},{15},{3},{15},{18},{4},{1},{9},{17},{18},{11},{5},{15},{13},{13},{8},{14},{5},{15},{5},{6},{11},{11},{9},{5},{11},{1},{6},{10},{11},{5},{5},{7},{11},{12},{6},{5},{7},{6},{7},{8},{23},{31},{20},{28},{18},{21},{28},{10},{25},{12},{10},{2},{10},{5},{13},{5},{8},{8},{16},{9},{8},{20},{7},{4},{10},{4},{8},{4},{7},{6},{6},{2},{5},{3},{5},{4},{19},{3},{11},{14},{11},{10},{19},{14},{18},{3},{12},{8},{10},{17},{13},{8},{12},{10},{12},{19},{5},{4},{6},{16},{4},{16},{5},{4},{4},{9},{6},{11},{8},{6},{6},{6},{6},{7},{11},{1},{63},{72},{283},{33},{77},{65},{30},{54},{61},{1}};
-    #if (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (1994 bytes) */
-const char* const cstring = "BZh91AY&SY\320\216Y5\000\001\021\377\377\357\377\177\377\377\357\377\377\277'\373\310\277\377\377\376@@@@@@@@@@@@@\000@\000`\007\177<\031\3237\003\031\250\032\246\332\333*\256\r\206\240\232iM<S\323I?\002h&\023\325<\247\251\223h\206\206M\003#jy@\000y \332\233L\236\244\323O$d\365\006\210\032\231\030\246&\246\232@\036\246\324z\214\206\200\006\200\000\000\000\000\000\000\320\000\340\000\000\000\000\000\000\000h\000\000\000\000\000\000\000\000i\221\002\010\231\r)\352yO\321G\201@\003\3246\240\000\000\320\000\000\000\321\243LM\22448\000\000\000\000\000\000\000\032\000\000\000\000\000\000\000\000\022\232\200\200&\200\021=)\372\023\325\031\036Q\246\2004h\006\200\000\000\000\000\r\036\240brb\227b\275@\366\003\370:\341\315\327?\330\034\314\366h\273\377\354\010\022\004$&d\204\243s\r\331f\227c \362C\r\226\274\031\232\035\226\225\010\223\021OpE]\021x\307\376\354\214E\232\006\023v\270_F\354\243\201\023\262\276\032\037\003\006n\231\341C\265\034+c\264\366\242\037\177LuG\344\037\252\375C\372{\235jG\266\363\364WJ\371\365\"\242\372\205\204\311#\331w&c\310\262k\202\351)[\236w\204\361\035:\254N,}.n/^+\374\341\233\243ZQ\262\td\016\253\227\021\222%\226\nq\327.q\022\374M\303\261\204\234A\264dA\305\263\277<\365\346\273\026\304X\253\354S\320F\243\224\203\220 \032*J3<R\270\341M\007N\221\303\301V\222\202\261\020#\025\243Y\013$\034\036\272BM\240\002h\350\336q\000\010\235\rV\230\2438U\013E\014f40\315\315BB\004\364\242m3QQF\360\026\303\315\224\223\247\232r\201H\201b\033\251TO\n\335\354\367\361D\361\275\342;7\0058{Lv\322\301\217\030\310wy)\030\246\013\270\247\346\241N\274!f\364e\301%5*\210\330ZP\250\230\360\267\252\266u\031b\202x\025\315q\303\322gY\231\232&\0358]\206Rs\324\274^\024i2\025\006Y\362\272\035z \202\224!\251\334X:\214\312\212\010z\245\240\240\226\275\016F\263\3103\021P\344\017\320@n\277\204u8\374g\264\242q\277%\"\004\367bo\000\234\346\313\016H\245\210H\250\301\255c \343yM\231\304\035\362 \305\3171T!\036Y\215\226,\345\262\233\253\255L\177Ow\345!a\312{\245D\023\2146\205\021-/@\006#*i\261N""\214\215\262{\235h\263\023\033\254},\225\312Yy\214\243\231\260?7\026\\g\257\373\302\300'\004\347\217\260\323\233\307\375\3473\242\3061\341\253\273\260\306X0\236\035(W \266w\350\034b~z\314\371\202U\252\216\242\325;\005[9>b\2438C\002Z\nH\375\305\212\241\3509\374'!\312\216Wrt\037\035\3317\370\315\342\326/m{u\004\200\200=_oWg:\335N\242\246\256\270\332<Bz&\215S%\022\n*\035jG`\247\271\3353\003h\365S\312\334\314!\tV\314\202\335\234\025L\244\327\257\227z\372\330L}\267'\016Od\362\341\3448r1g\021-\20161\230\356\210gk\303\023\251$X^\202b\305\301\350@P*\373\204\010|\370o\177\227\3450t'\343\356\004aQDd\320\3335\212\353STi\251\023$\311\357\021Wq\273\023'<N-\246w\t\261\001B\310\351\233\234\203R\257![\006\355\2445\353\"\371\317x\022c\334\232K\014\\QA\332\020'\266\347\331py\030\260i\003%\200v\306\274\255\n\303\201D\233}\3521\300\317Q\211*Ata\274\274\026.\t=5a\034/\251X\027\030P\222\000I$\224\310\343\007p0P\313\022\007\234\0102\354:k\020u?\343-v\346\337\316\372\215p\010\034A-\002u\004\262\200\376&r\254\"a\344\311\236\"S\330\003\313J\2603V\326\006\2301\024\026\035'\224\324E\274[\331\267\325@\212\252\034\333\023\323\021\016\016\206=\350\355\303\177(9\024[\315\030D\310\346#I\376$\201 \226\351\004B\266\314l\223\353s\037\267y\233*\tP\367\241!\005\360'~,\322&:\026\264\330\023$\250\240\033\270\n\0324\020~\355\032\370\212+\266vd\252\316\021A\211\271\264\264\227~\330q\254\210\037\276\374\245\316\030\305 {\325\001\313\251\323\340\034\330\315\ru\"\275\305tx\306.\254F\204\257sQAI\030_9\n\346\271\305z\032;v\301\344\246f\261:\003\360\251\230\223\331\354ix\3227\255-\232Y\232\2145UX\266\335\000Y,0\252$\025\033n\360\001H$\225G4\211E\231\025\231\025{(\237\032\250c\243`\3249\301!\\\212\242)Y\006\240Ngajk\222A \212\330h\245H\026\014lSJ\031\332!\263\032nW\021M\020\025\241\252\272\322\233\236\331\215Rv\211\205Er\342{\246G\211\326\270\034\301\275\016\260\361\237 \262\374\024\371\302\303\275\231lG\022\230<\301\231\305\"F\273\331!!\2712\355\020\314)\314\204\201\300e\3452\227 \206a\030\3158\032\324\345\256""\366$U\256\n\026\035\320\245\"\260f\246\210\313aqm4\r\341\347M>\021\313\305\312\021\005\357\221b\303>\3232\033A\331\315\244h\2062\263Q\223 3\317\014Q\233N\211\215H\316;w@|\013%\002\032\303l2rC=\020\004\026\367\373\354\203\177m\013\nY\302}!\343l\321N\220\316KWQ\332\265\033\224\252\302JC\t\250\332\340\353J\375\320xi6t\320\326.D\303+\372x\230\372g\205\344)q4\344\327\276\254a\022W\024\244\nv\025\370\214\212Q\300\251\235\232\310\307S\"\260-\254\013 e\256$%\002\306N\315\010\356;O-\215\263\\\314K\224U\217\006*a\260\245\034\nA\004\263]r\233\032\010-\177\211X:\263\310\305\2506\007\0303hc\013\032\207PU4\301|\252|\013\252\030\260}D\010@nz\240\334\252\205\315D\364\277c\223\024\243\r\220\226\264\014D\200\274\276\240\340\034\304Fq\267\\\374&\245\267?\206\322\341igl\337\253;I\254\014\256\363\320\032\212n3\277F18B \235\003i\246\302\354\026\367%C\013\313\031I\300\250'\211\013\002N\010\017M\331\300,3q\361\232\242!A\333\014\247\225\027\221\020\213\237\033`3\315\275]!CN\224\306r\225\231\200\331\n$\333\372\370\301\377\265\276~\313\301\255\342\002z\276\204\037r\352_\337\003\360&\303\223\006\250\337\341ve\273\347\302Qw\025\314Q)\304I\343zOA\036\343\024\337r\223\346,\006)\177v\311\t\360\010\003\217\030l\331o\245\306b\031\27189\013\221\263\331-\303\2709\320-P%\376\214b\251\264\320I\231FNj\224\375\356\311\316\306Q\376\364\312\203\037B\347,\021\323\334\305j\037\206c\343\327\213b\332>Rc\322e\321\265\000\346\026v\262\224]\2546\352\305,'\354\320\316|2\036\013\365\364\003\272\313\215\2356-/C\304\030`e\014N\013\352\r\336\325\213\216~\253\274+\202\356X1\247\237q(s%\"z*fJO1'\032\335\314\354\326\242\nS1g\"Q\022\264\321\033\264.\344\212p\241!\241\034\262j";
-    PyObject *data = __Pyx_DecompressString(cstring, 1994, 2);
+    const struct { const unsigned int length: 9; } index[] = {{2},{68},{43},{35},{54},{37},{60},{24},{52},{26},{34},{29},{33},{45},{22},{15},{29},{179},{37},{30},{32},{52},{1},{1},{1},{1},{1},{8},{5},{6},{15},{23},{25},{7},{6},{2},{6},{35},{9},{30},{50},{38},{33},{8},{22},{20},{32},{22},{30},{37},{5},{8},{1},{2},{6},{7},{6},{10},{10},{10},{11},{1},{20},{8},{15},{3},{15},{18},{4},{1},{9},{17},{18},{11},{5},{15},{13},{13},{8},{14},{5},{15},{5},{6},{11},{11},{9},{5},{11},{1},{2},{6},{10},{11},{5},{5},{7},{11},{12},{6},{5},{7},{6},{7},{8},{23},{31},{20},{28},{18},{21},{28},{10},{25},{12},{10},{2},{10},{5},{13},{5},{8},{8},{16},{9},{8},{20},{7},{4},{10},{4},{8},{4},{7},{6},{6},{2},{5},{3},{5},{4},{19},{3},{11},{14},{11},{10},{19},{14},{18},{3},{12},{8},{10},{17},{13},{8},{12},{10},{12},{19},{5},{4},{6},{16},{4},{16},{5},{4},{4},{9},{6},{11},{8},{6},{6},{6},{6},{7},{11},{1},{63},{72},{283},{33},{77},{65},{32},{54},{61},{1}};
+    #if (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (2007 bytes) */
+const char* const cstring = "BZh91AY&SY9e\321\265\000\001\022\177\377\357\377\177\377\377\357\377\377\277g\377\214\277\377\377\376@@@@@@@@@@@@@\000@\000`\007\177=\321\301\034m\252-\006JT\245U\203\006\240\232h\215\251\243I\264\302h&\324\3651G\211\030\200\r\003M6\246@\014\206FF\006\247\246\220z\236\241\204*\231\250\304\010\300\000\2150\232d\300\000\t\246&\000\214\020d410\000\000\001\006\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000i\221\t\240A\032j\237\251\224\364\312x)\240\003\322i\265\032\000\000\320\000\000\000\000\r6P\321\006\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000Jj\001\004\311\240&\223O*lF\221\243j2\000f\243@\000\000\000\000\000h\321\352=&I\311\212\235\216\365\003\332\017\344\354\007\037`\344\201\306\317f\213\277\356\320\201 BBfHJ70\335\266iv\262\217$0\331\260fg\366\3323DX\212{\202*\350\226\213\377\356\300\274U\240e\233\265\242\3527bn\257\"\225WCC\336`\315\323<(v  \024\261\224\241*8\240\377\306\r\000\270\000\350\016a/O\3229?@\215\344.\002\343f&@\013\220\001L\014 \202\017I\334\231\217\n\251\255\013\361R\2574\356\t\342?K\026\007\006>_/\027\241\026~\327\346\352\331J6\"X\207Vd\300c\022\311\0058\353\0278\t}f\321\327\276N \3261A\305s\2774\364Mu\353\200\251WT\247\240\214\256R\016@\200h\251(\314\361K0\276\233\007olp\360I]ah\210\026\005\233\014!\204\203\203\364\022\022l\220\023[/e\324\000\"\242&\332\236\264\313\353\206\"\206\301\215\0144\245\241!\002\242QJ3VYg8\014ko8RS\250jk\005\242\005\210i\245qP/\261\355\370\327Qde\220\253\213\203./\224k%\301$\202\311hmK\025\333\004\32739I#s\237\007+)\230\350\342\215i\005\2051(e&\305\3673\230n\264\341Vs\033\311i\327O\033y\355\344e\230Y\205\350e&\202\333%\340B\202\005\326 +\301\347\336\010)B&\323\301\277\321\231)\250\240\206\341j\254\032^f\037\316A\003+\310\354\037\246\200\334~\374\345\350x/YD\343~JD\t\356D\336\0019\315U\375\030\245HH\250\275\253S \343yM\231\304\035\362 \305\2571b\020\217$\306\246,\345\262\033l\350]\2075g\313Ks\234rt\226\001\246D\254L\317L\266\201\024\213\344aO\014L\261\254\347\224\267\033\034\026\276\246J""\345,\334fa\314\330\037\243\213n4Y\376ah\023\202s\307\332mg\342\353\316gA\214\203\303W{i\220\264a<:P\262A\212w\351\034c~\213\r\031\302V*\316\242\325;Ec9>b\246\200\206\004\264\225\021\373\313Uc\320s\267\316\211\302\205\323\\\264tI>\224b\020\242\006\311\005g\300\\\000\260\007+j\320\247\022\2373\022\211.Z\024\016\010.E\010\325A9\01021\347T,\306\234+\214f\033\241\315\256.L\300\202\022\261\231\006-{+\231Q\267\267\303\312\276\306\023\037u\311\303\223\331<\270y\r\334\254[\274'\244M\214f;\202\031\332\340\304\345\222,.A1b\340\364\340(\026?<\201\007\344\267{\263e\352\013C\237\317\335!m\t\271E\240\332\251\nf\236S]\021$\224_a\n;\215\310\2319\342q]\271\332&\304\005\013\027L\334\304\033\n\270\205[\333\263\220\321d\213\367\025\250\030\305gN\263\210|(\204\371mj\313Es\350\025b3\217\354\026p\016\266\031\266;\334\302a\260ik\325\021\342w(\214V!\354\325\225\364\347{i\223g0\244\306\272Z_\013l\246 $\222Jdr\003\2660Q\2264\0176 \315\254\351\254a\325\354\231\363\333w\024TN\242\236XH`\201\214\200&\250&{\001\237\005\263O!\026-\253W\002\210\335\220W\322\323\313VD\010\2301\024\026\235'\225VE\272\267\263r\325`\212\353\034\333\023\323\021\016\343\272\311\312\216\356\033\231\201\310\246.8\302&W1\032\216D\220$\022\340\220D,l\346\271>\3071\327\357\263\346A*=\350HA|\t\337\217<\211\216\206&\233\002d\225(\r\334\205\0324 \376\r;{\305,\305;r\327n\350\240\304\334\333M%\340\266\033\353*\007\356?1s\2061\310\036\365@\341\324\351\354\034\331\r-uB\275\305\224\362\014}h\215\t^\346\245\202\242Q\222\223\007\026\305\013\264\264\267wa\304\3504^T\007\315k0\233\263\260\354\2344\306\315e\252\225f\243\rec\026\332\240\013\032\213\354D\202\243i\336\000)\004\222\241\311\"QfE\206Uf\272O}V1\320\264j9\301!\\\212\342)[\006\240\234\317b\251\347I\t\010\245F\211\321\005C*\223\2320g\264 \330)\354\246\"\233\020\005\3045\270\340+\213\266\201\252kM\000\264]=\347T\022\336X \023\001\263\036xx\317\220[~\n|\261a\323\231\212#\211L\036`\314\342\241#n\366HHn\216na^\333_{\027\n\263kD,\224\312\366\331\034\325Z{\244\367\343\336\233\262\310q""\221g\256\352`\257f\246\304d\250\264\266\335\003q\347M>\021\311\305\310\021\005\356\221b\303>\3132\033#\331\315\2644C!a\250\313\224\031\347\212(\315\247I\215P\3168\035\001\360-\224\004s\203id\344\206z \010-\355wX\215\375\244*)W\t\366\303\306\321\242\235!\234\231=\347Y\321\232Y\2051\304j(\312bz\315\257\242\332\2114\262]d\241\361h-\257\271\211\017\252x^B\247\023NM{\353\310\021%qR@\247ig\214\310\251\033\025T\277\234F\031qU\005\265\301d\014\264\t\t@\251\223\263B<\367i\344\251\256kY\211r\212\251\340\301L5\364\243\201H \226kmScA\005\256\360,\203\255<X\264\315#\214\031\264\261\205\255GP\256i\202\371V\370\027V1h\372\310\020\200\334\325A\302lB\326\242z]\247\243\202Q~\240\226\274\014\004\200\270\276Q\3009H\214\343j\314\374&\211\271\317\335\304\\-\246v\275\312\3644\232\320\314\357E\001\250\252\343C\364\344\023\204\"\t@\331i\260\266\365\275\307`aqc)8\026\002x\220\250$\336\200\351;8\005\2149\373\346\250\210Pv\2631\326\213\310\210E\317\216(\014\363\231\305\264\024i\324\230\3202Z\n\016\020\243\016\227\323L\037\222\326\317\273\346&\355\020\023\331\266A\270^\236\366\350\033\342\2248\370s\206\355\3723\3657\217\366(\371`\325\301\022\334D\2506\260\372\010\367\030\215\367k\276b\300b\227\026\241!?\010\200:\361\207s5\312\034f!\234\303\301\370.7\017\232]S\2727P/U&\347.!!\263\020I\374\343\367\217*=j<_\345s\216_L\2501r4r\301b?\035\373\320\353\262\370\365\337\355\352#\341\203\025\331\224F\204\003\030\315\320\346(\330\2644d\212pN\334\320\333\342`x5\324\311\024s\332\035\314\313\330\232\255\242\024\241{\230L\252\025\234<\275\253\256\363\366-\276-\202\351]Ku\367R\2072R'\252\246d\244\363\022q\243\267\235Z\264AJf*\344J\"U\232!\277\361w$S\205\t\003\226]\033P";
+    PyObject *data = __Pyx_DecompressString(cstring, 2007, 2);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (1851 bytes) */
-const char* const cstring = "x\332\205VKs\0337\022\266*\264WYeS\241\263\261\023\277\002\306I\024\327\332\214\0259\316K\361\226\254XU\252r\034\311\252\265\267j\017(p\006C\"\302\000\303\001\206\"\235\335*\037y\234#\217s\344\221G\036y\344QG\036\365\023\374\023\266\033\030R\262\234\335TY`\003\350nt\177_w\217\277'\233R\222P\304\\\031\241\225!I\312\003\036\n\325<9$\237\205$\316\214%\rN\204\ny\227\207\204\251\220(m\211\221\002\324\321\207PIf\tKS\3263^\275\305:\234\330\026'\206\305\234H\256\232\266U\177\230E\021OIG\360C\022jn\234\027\336M\264\001=\233\212\220\233-\246\210V\262G\202\2243\313\t#\rod[\314\022aH\240\225\025\315Lg\006^%1\217u\332\253\203\025\272b\306\210\246\"V\0230\016\3578?^\003\237,\225J\307\207\251\260\254!y\251\340\203\212R\035\377?[\207\0009\024\266El/\341d\265<\267)S\306\245qb\342\325\300B\000\252\366\024\314?\235\306Vx\020\274\322\2438\261=bZ\014\\\333,\201\340\"\235\222\240g[Z\325\035\272;.\000\r`\353\2104t\246BC\276`]\360\362Yxk\347\315\267<OY\222\350\324\362pGu\230\024@\250\016\371m\004\036\224\201\317\325`\225\300;\253\360\030&\262z\2334\301j\256\354\303\001\254\3353\033?\273\004\237a\202\020\302\223Eq0\002\371\013+:\250ky\223\247\365'\332r\317\333\226K\001\223\r\271\024\r\236\002\003\200/r\016\0218r\025\331}\264{\347\336\267\367\\y\245\374W\210\315@\350\215@\002\255P+\230p&\244\205H\020{S';\021\351\351\214(\0169\000\347\t\350\2356\200\352S\304p\353\312p\325\021\305,\200B\301\034j|\265\004\035#\006\353m&\r\257\377\362\032\262\020rY},\010\270\231C\275oyBb\326s\340B\352/x\252OX\370\207re\005.\241T;<\205\252\261<\306\275n`R\317\271h\266 5L\023\020\316 \322?l\234\372\203\325[\177gaH\025B\212\226\004P\275\333\r\264\224\230\0020]g\215`\343Ts\240\222O\360\301\331\343yM>\010\205\301X\271\213\270\031\220/\220\367\246+G\314\032\007\001\357Z\256\254\353\265\223\231 \2147\t13#^p\262\361#\271\373F\261*\rtG,\223\226P\232\3620\0138\245$\314\0348J\253;@\177G0\t\267\201P\302R\252\2628\351\325\003\235\362z\014f\302\271!\021\023\322S,b,\344SZY\314\240\311\316*\224H?hG_*\206\004\243\326\227p'\353I""\257\273\341GM\370\032Do\236aK,\220z\355~q\232-\250fR\352\300\315+\027q\310,\253\377\316\255\357%\364Q\216\273\372\346\376\326\316\316#)Eb\204y\374\370\356\343]\n\335\r+\216\220\307,n\204\314\257\024\372\250\224P\301KP?s\t\324\237P\272\333\353\302\337O\320U\364\tP\367\224G\373\274\235q\025p\354\330\372I\363B\265\314\243\242\276\306\231\351\251@h\304\025\036\020\212\233\0063<\000n\260\237(\235\013Mn\221v\334\202\022\025\320O)\013x\203\005\007\201\204\021H\023hj\036@\007\331 KS\250\036\032\260\004\206\255\234o\335\024\235o\2346\245!\206L\313\216\204\036m\010fB\354s\267Pa\250\347\224\343\210\204|`\202\201u\332\363\316\274\350\\q\250\0167_x\232B\205t\241\254`\240\033\255\242\210\306\234)\277\"\206\245\204\310E~ol\350\026\336)\177\026\307 z=\267J\3264\221\324\314\336\277\0075\017\305UNNJ\243L\001b\000\021\215\000\024\314\204I\352\346a\312\344\3778\246\207~\"\234\271\326i\310\3233gI\253gD`\250\003\372\314]\333\366\316\234\340\307\360\215W\263$D\316%\357p\351\236<\221<\025\026\332\034Q\025P\033:5.\033c\321\206\266 N\257%BJ}\257Q\317\0002\264\250\034?\026\312\331\200\376S\326\344R\353\003,\022\232\300d\321\241\221\372pN~\314\240\212`\355\322\2712\305\342<\344!|N\021q\374`\201\202\0163\t\277\n&\343b\205\251\004+?\364\213\221\270\332D%nH@\3158\030\023x7\221\216\247\030\302\214cap\220%:IR\035A\211\000\236\220)\014\007\032\264xp`\262\330\357\312\304Qtu\350\244L%\"8\200H\036\251\271^\307\375_\202\322vT?\2318u\2348@\013\034gL\372xA\202Y\214g\363\201\270\220\374\350<u\000\250\202\330\024\006>\221\224\302\227\254\314\031\244r\256:\271\214\361\224<\367\344\306\215\3019\343*\301\257'M\206\354\200\201\004\314 {\337%\260O\301\013O\214\325\356\317A\003\323*\013\254e\007\330\335\0160j\301\224\"\024\000\255\257)\3771\353h\t\rX\226t\371\203m\324}\271\364\352\342\271\363\177\315\327f\225\253\203\265W\027\316\235'\203\366l\371\203\374_\305\322l\371\235\376V\277\233\303\376\306\321\215\365\321\332l\371\355\376\007}\326o\243\336;\375\257\363%o~m\000\3467\006lV!\305\322q\345c\364p9\377O\361""\363\350\312x\r\305\356\340\337\303\365ak\304\320\303\365\234\301\335f\261\347\275\3748\370K\261\367riV\251\346W\007\333E\255X;\256\374\351\345\213\374R\336\036\2745X\0374\212\267\212\357\206\333\243\332h}\024\214/\216\327\307\321d{Z\233\256O\203\243\275\247\263\345w\373\277\016\226\006\325\343\312\327\243\247\243\316xo\034L.M\322iuV\371\016\264\357O\252\223\233\223g\323\257\246{\263\312\275\321\303Q4\336\034\357O.L\032\323\245\337\321\370~\374\311x{R\233\254O\242\351\303);\256\\\037\300i\255\000o\327\006\233\245\364IQ;v[H\346j\276\231\357\241p%_\313\335\311Gy-wH]\352\267s\300\360m\377\257\1779_\312\253\257\231\314\025NN\256\345{9\363\260|\233o\014\016\0139\252yh\252\371\347\230\345\254\262r\264\002H;<\331\260=Z\032U\201\003\260\370\030\341w1:\016.#k\357\345\225|\013\301?\372\333\017\200[k\302\220\214\337\212\333\303\005\021\277!\340s\"V\2125p\266|\356\374\305\374\362\340\002\274\322\236\001\025\235\3763\310m+7\203\332\002m\027\007\200Q\334,\366\212\346po\030\002?\367\307\3251\204\373\352\317\340\355h\345\326\260:\374t\030\214>\034_\233\354O\227\217v\237\037=\377'\334\276w\356\374\025t\360\021r\346J\345\335\376\301\340z\021\217~\030\313\351\315\251\003\342CH\2706\007\242\014j\371e\332\177\277\277y\212\3613l9f\212o\2067!\236\003\214\345\270\262\322_\373\345\277\241\024'\226";
-    PyObject *data = __Pyx_DecompressString(cstring, 1851, 1);
+    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (1857 bytes) */
+const char* const cstring = "x\332\205VKs\033\307\021\026\312\220B\207\216\313\224c\311\326\313\003\313\016\255\212\004\213\241\254\370A+E\321b\205U\262,H\216rP\252\246\006\273\263\300\230\2633\213\235Y\020\220\223*\035q\334#\216{\304\021G\034q\304\221G\034\371\023\364\023\322=\263\000)\312\211\253\304A\317LwO\367\367u\367\352\033\262-%\tE\314\225\021Z\031\222\244<\340\241P\255\343C\362YH\342\314X\322\344D\250\220\367xH\230\n\211\322\226\030)@\035}\010\225d\226\2604e}\343\325\333\254\313\211msbX\314\211\344\252e\333\365\373Y\024\361\224t\005? \241\346\306y\341\275D\033\320\263\251\010\271\331a\212h%\373$H9\263\2340\322\364F\266\315,\021\206\004ZY\321\312tf\340U\022\363X\247\375:X\241+f\214h)b5\001\343\360\226\363\3435\360\311R\251t|\220\n\313\232\222\227\n>\250(\325\361\377\263u\010\220\003a\333\304\366\023N\326\313s\2332e\\\032\307&^\r,\004\240jO\300\374\375Il\205\007\301+=\210\023\333'\246\315\300\265\315\022\010.\322)\t\372\266\255U\335\241\273\347\002\320\000\266\216HSg*4\344s\326\003/\237\2057\366\336|\313\363\224%\211N-\017\367T\227I\001\204\352\220\337D\340A\031\370\\\017\326\t\274\263\016\217a\"\3537I\013\254\026\312>\034\300\332=\263\365\203K\360\031&\010!<Z\026\007#\220\277\260\242\213\272\226\267xZ\177\244-\367\274\355\270\0240\331\220K\321\344)0\000\370\"\347\020\201#W\221\307\017\036\337\272\363\325\035W^)\377\031b3\020z3\220@+\324\n&\234\ti!\022\304\336\324\311^D\372:#\212C\016\300y\002z'\r\240\372\0241\334\2722\\wD1\013\240P0\207\032_/A\307\210\301z\227I\303\353?\276\206,\204\\V\037\013\002n\026P?\265<!1\353;p!\365\027<\325\307,\374C\271\262\002\227P\252]\236B\325X\036\343^71\251\177r\321jCj\230& \234A\244\277\3318\365{\3537\376\306\302\220*\204\024-\t\240z\273\027h)1\005`\272\316\232\301\326\211\346@%\237\340\275\323\307\213\232\274\027\n\203\261r\027q+ \237#\357-W\216\2305\016\002\336\263\\Y\327k\3073A\030o\022bfF\274\340d\353;r\373\215bU\032\350\216X&-\2414\345a\026pJI\2309p\224V\267\200\376\256`\022n\003\241\204\245Teq\322\257\007:\345\365\030\314\204sC\"&\244\247X\304X\310'""\264\262\230A\223\235V(\221\276\327\211\276P\014\tF\255/\340N\326\223~o\313\217\232\3605\210\336<\303\226X\"\365\332\375\3624[R\315\244\324\201\233W.\342\220YV\377\225[\337K\350\243\034w\365\355\247;{{\017\244\024\211\021\346\341\303\333\017\037S\350nXq\204<dq3d~\245\320G\245\204\n^\202\372YH\240\376\210\322\307\375\036\374}\017]E\037\001uOx\364\224w2\256\002\216\035[?n^\250\226ET\324\32783}\025\010\215\270\302\003Bq\323d\206\007\300\r\366\023\245\013\241\305-\322\216[P\242\002\372)e\001o\262`?\2200\002i\002M\315\003\350 \033di\n\325C\003\226\300\260\225\213\255\233\242\213\215\323\2464\304\220i\331\221\320\243M\301L\210}\356\026*\014\365\234r\034\221\220\017L0\260N\373\336\231\027\235+\016\325\341\346\013OS\250\220\036\224\025\014t\243U\024\335\216h\314\231\362+\242XJ\210]\344\367\306\206n\341\335\362gy\014\242\327s\253d-\023I\315\354\335;P\365P^\345\354\2444\312\024`\006 \321\010`\301\\\230\244n\"\246L\376\217cz\340g\302\251k\235\206<=u\226\264\373F\004\206:\250O\335ul\377\324\t~\016\337x5KBd]\362.\227\356\311c\311\223a\241\321\021W\001\325\241S\343\2621\026mh\033\342\364Z\"\244\324w\033\365\034 G\313\332\361\203\241\234\016\350?e-.\265\336\3072\241\t\314\026\035\032\251\017\026\364\307\014\352\010\326\036](S,\317\003\036\302\007\025\021\307O\026(\3500\223\360\253`6.W\230K\260\362\003\277\030\211\253MT\342\306\004T\215\2031\201w\023\351x\212!\3148\026\006GY\242\223$\325\021\024\t\340\t\231\302x\240A\233\007\373&\213\375\256L\034EW\211N\312T\"\202}\210\344\201Z\350u\335\377&(\355D\365\343\231S\307\231\003\264\300q\306\244\217\027$\230\306x\266\030\211K\311\017\317\023\007\200*\210-a\340#I)|\313\312\234A*'\253\223\313\030O\310\013On\340\030\2344\256\022\374z\334f\310\016\030H\300\014\262\367}\002\373\024\274\360\304X\355\376\03440\257\262\300Z\266\217\375\355\000\243\026L)B\001\320\372\232\362\237\263\256\226\320\202eI\227?\330F\275\227\225W\347\317\234\375c\2761\257^\036n\274:w\346,\031v\346+\037\344\317\213\312|\345\235\301\316\240\227\303\376\332\341\265\315\361""\306|\345\355\301\007\0036\350\240\336;\203/\363\2127\2772\004\363kC6\257\222\242rT\375\030=\\\314\377S\3740\2764\331@\2617\374\367hs\324\0363\364p5gp\267]4\274\227\357\206\177(\032/+\363\352Z~y\270[\324\212\215\243\352\357^\276\310/\344\235\341[\303\315a\263x\253\370z\264;\256\2157\307\301\344\374ds\022Mwg\265\331\346,8l<\231\257\274;\370yX\031\256\035U\277\034?\031w'\215I0\2750Mgk\363\352\327\240}w\2726\275>}6\373\313\2541\257\336\031\337\037G\223\355\311\323\351\271isV\371\025\215o&\237Lv\247\265\351\3464\232\335\237\261\243\352\325!\234\326\n\360ve\270]J\237\024\265#\267\205d.\347\333y\003\205K\371F\356N>\312k\271C\352\302\240\223\003\206o\373\177\203\213y%_{\315d\241p|r%o\344\314\303\362U\2765<(\344\270\346\241Y\313\377\204Y\316\253\253\207\253\200\264\303\223\215:\343\312x\r8\000\213\217\021~\027\243\343\340\"\262\366^^\315w\020\374\303?\177\013\270\265\247\014\311\370\245\2709Z\022\361\013\002\276 b\265\330\000g+g\316\236\317/\016\317\301+\2359P\321\035<\203\334vr3\254-\321vq\000\030\305\365\242Q\264F\215Q\010\374\334\235\254M \334W\277\007o\207\2537Fk\243OG\301\370\303\311\225\351O\263\367g\177?\374\351\371\341\363\177\301\375{g\316^B\027\037!k\256X\336\035\354\017\257\026\361\370\333\211\234]\2379(>\204\224k\013(\312\260V^\246\203\367\007\333'8?\305\227\343\246\370\353\350:D\264\217\321\034UW\007\033?\376\027\031\372)X";
+    PyObject *data = __Pyx_DecompressString(cstring, 1857, 1);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #else /* compression: none (3409 bytes) */
-const char* const bytes = ": All dimensions preceding dimension %d must be indexed and not slicedAll input arrays must have the same length.Buffer view does not expose stridesCan only create a buffer that is contiguous in memory.Cannot assign to read-only memoryviewCannot create writable memory view from read-only memoryviewCannot index with type 'Cannot transpose memoryview with indirect dimensionsDimension %d is not directEmpty shape tuple for cython.arrayIndex out of bounds (axis %d)Indirect dimensions not supportedInvalid mode, expected 'c' or 'fortran', got Invalid shape in axis <MemoryView of N must be a positive integer.Note that Cython is deliberately stricter than PEP-484 and rejects subclasses of builtin types. If you need to pass subclasses then set the 'annotation_typing' directive to False.Out of bounds on buffer access (axis Step may not be zero (axis %d)Unable to convert item to objectWeights and values arrays must have the same length..>')?add_note and  at 0xcollections.abc<contiguous and direct><contiguous and indirect>disableenablegc (got got differing extents in dimension isenableditemsize <= 0 for cython.arrayno default __reduce__ due to non-trivial __cinit__numpy.core.multiarray failed to importnumpy.core.umath failed to import object>qf/nativemath/impl.pyx<strided and direct><strided and direct or indirect><strided and indirect>unable to allocate array data.unable to allocate shape and strides.ASCIIEllipsisLL0LP_outLP_viewLambdaLambda_hatLambda_outLambda_valLambda_viewN__Pyx_PyDict_NextRefSequenceView.MemoryViewabcallocate_bufferasyncio.coroutinesbasec__class____class_getitem__cline_in_tracebackclose_pricecountcurrent_capitalcurrent_indexcurrent_price__dict__direction_biasdtypedtype_is_objectemptyencodeentry_indexentry_priceenumerateerrorexit_reasonff_meanf_mean_outf_mean_viewf_outf_stdf_stdevf_stdev_outf_stdev_viewf_viewflagsfloat64formatfortran__func__get_fractional_integralget_fractional_integral_weightsget_fractional_orderget_fractional_physics_closeget_fractional_qt""yget_fractional_signalget_fractional_update_levelsget_levelsget_price_time_indicators__getstate__high_priceid__import__index_is_coroutineitemsitemsizeleveragelookback_periodslow_price__main__max_leverage_allowedmemviewmode__module__name__name__ndim__new__new_slnew_tpnpnumpyobjorderpackplatform_commissionpopprofit_loss__pyx_checksum__pyx_state__pyx_type__pyx_unpickle_Enum__pyx_vtable__qf.nativemath.implqty__qualname__quantity__reduce____reduce_cython____reduce_ex__register__set_name__setdefault__setstate____setstate_cython__shapesidesignalsignal_directionsizestallness_reasonstartstepstopstop_lossstructtake_profit__test__unpackupdatevaluesvolumeweightsweights_outx\200\001\360\022\000\005\024\2201\330\004\033\2301\360\006\000\005 \230q\330\010\025\220[\240\001\330\010\014\210C\210x\220q\330\010\036\320\0363\2601\330\010\t\210\025\210a\210q\360\006\000\005\014\2105\220\001\200\001\360\022\000\005\034\2301\330\004\036\230a\330\004 \240\001\340\004\037\230q\330\010\027\220}\240M\260\032\2701\330\010\027\220x\230|\2503\250h\260a\330\010\t\210\035\220a\220}\240A\240Q\360\006\000\005\014\210=\230\r\240Q\200\001\330\004\021\220\033\230F\240!\2401\340\004\007\200z\220\026\220q\230\003\2303\230b\240\003\2409\250F\260!\2603\260c\270\022\2703\270f\300F\310!\3103\310c\320QR\330\010\016\210j\230\001\230\021\340\0045\260R\260v\270Q\270c\300\026\300r\310\021\330\0049\270\022\2706\300\021\300#\300V\3102\310Q\330\0044\260B\260f\270A\270S\300\006\300b\310\001\330\0049\270\022\2706\300\021\300#\300V\3102\310Q\330\004:\270\"\270F\300!\3003\300f\310B\310a\340\004\035\230Q\330\004!\240\021\330\004\034\230A\330\004!\240\021\330\004\"\240!\340\004\034\230A\330\010\t\210\033\220A\220Q\330\010\t\210\032\2201\220A\330\010\t\210\031\220!\2201\330\010\t\210\026\210q\220\001\330\010\t\330\010\t\330\010\t\210\027\220\001\220\021\330\010\t\210\033\220A\220Q\330\010\t\210\026\210q\220\001\330\010\t\210\033\220A\220Q\330\010\t\210\034\220Q\220a\360\006\000\005\014\2108\220<\230w\240l\260!\200\001\330""\004\021\220\021\220&\230\001\230\021\330\004\013\320\013\036\230a\230|\2503\250a\250q\260\001\260\021\200\001\360\006\000\005\037\230a\330\004\034\230A\330\004 \240\001\340\004\027\220q\330\010\020\220\004\220C\220x\230|\320+;\2703\270h\300a\330\010\027\220{\240,\250a\330\010\t\210\035\220a\220{\240!\2401\360\006\000\005\014\210=\230\013\2401\200\001\360\010\000\005\022\220\027\230\006\230a\230q\330\004\007\200v\210V\2201\220C\220s\230!\330\010\016\210j\230\001\230\021\330\004\013\320\013!\240\021\240#\240Q\240g\250Q\250d\260!\2606\270\021\270!\200\001\360\n\000\005\014\320\013)\250\021\250$\250c\260\030\270\034\300S\310\010\320PW\320WX\200\001\360\020\000\005\032\230\021\330\004\031\230\021\340\004\037\230q\330\010\016\210k\230\035\240m\260;\270l\310#\310Q\330\010\t\210\030\220\021\220!\360\006\000\005\014\2108\2201\200\001\360\010\000\005\010\200r\210\023\210A\330\010\016\210j\230\001\230\021\340\004:\270\"\270F\300!\3003\300f\310B\310a\330\004\"\240!\2407\250#\250Q\250k\270\021\270!\340\004\013\2101O";
+    #else /* compression: none (3413 bytes) */
+const char* const bytes = ": All dimensions preceding dimension %d must be indexed and not slicedAll input arrays must have the same length.Buffer view does not expose stridesCan only create a buffer that is contiguous in memory.Cannot assign to read-only memoryviewCannot create writable memory view from read-only memoryviewCannot index with type 'Cannot transpose memoryview with indirect dimensionsDimension %d is not directEmpty shape tuple for cython.arrayIndex out of bounds (axis %d)Indirect dimensions not supportedInvalid mode, expected 'c' or 'fortran', got Invalid shape in axis <MemoryView of N must be a positive integer.Note that Cython is deliberately stricter than PEP-484 and rejects subclasses of builtin types. If you need to pass subclasses then set the 'annotation_typing' directive to False.Out of bounds on buffer access (axis Step may not be zero (axis %d)Unable to convert item to objectWeights and values arrays must have the same length..>')?add_note and  at 0xcollections.abc<contiguous and direct><contiguous and indirect>disableenablegc (got got differing extents in dimension isenableditemsize <= 0 for cython.arrayno default __reduce__ due to non-trivial __cinit__numpy.core.multiarray failed to importnumpy.core.umath failed to import object>qf/nativemath/impl.pyx<strided and direct><strided and direct or indirect><strided and indirect>unable to allocate array data.unable to allocate shape and strides.ASCIIEllipsisLL0LP_outLP_viewLambdaLambda_hatLambda_outLambda_valLambda_viewN__Pyx_PyDict_NextRefSequenceView.MemoryViewabcallocate_bufferasyncio.coroutinesbasec__class____class_getitem__cline_in_tracebackclose_pricecountcurrent_capitalcurrent_indexcurrent_price__dict__direction_biasdtypedtype_is_objectemptyencodeentry_indexentry_priceenumerateerrorexit_reasonff0f_meanf_mean_outf_mean_viewf_outf_stdf_stdevf_stdev_outf_stdev_viewf_viewflagsfloat64formatfortran__func__get_fractional_integralget_fractional_integral_weightsget_fractional_orderget_fractional_physics_closeget_fractional_""qtyget_fractional_signalget_fractional_update_levelsget_levelsget_price_time_indicators__getstate__high_priceid__import__index_is_coroutineitemsitemsizeleveragelookback_periodslow_price__main__max_leverage_allowedmemviewmode__module__name__name__ndim__new__new_slnew_tpnpnumpyobjorderpackplatform_commissionpopprofit_loss__pyx_checksum__pyx_state__pyx_type__pyx_unpickle_Enum__pyx_vtable__qf.nativemath.implqty__qualname__quantity__reduce____reduce_cython____reduce_ex__register__set_name__setdefault__setstate____setstate_cython__shapesidesignalsignal_directionsizestallness_reasonstartstepstopstop_lossstructtake_profit__test__unpackupdatevaluesvolumeweightsweights_outx\200\001\360\022\000\005\024\2201\330\004\033\2301\360\006\000\005 \230q\330\010\025\220[\240\001\330\010\014\210C\210x\220q\330\010\036\320\0363\2601\330\010\t\210\025\210a\210q\360\006\000\005\014\2105\220\001\200\001\360\022\000\005\034\2301\330\004\036\230a\330\004 \240\001\340\004\037\230q\330\010\027\220}\240M\260\032\2701\330\010\027\220x\230|\2503\250h\260a\330\010\t\210\035\220a\220}\240A\240Q\360\006\000\005\014\210=\230\r\240Q\200\001\330\004\021\220\033\230F\240!\2401\340\004\007\200z\220\026\220q\230\003\2303\230b\240\003\2409\250F\260!\2603\260c\270\022\2703\270f\300F\310!\3103\310c\320QR\330\010\016\210j\230\001\230\021\340\0045\260R\260v\270Q\270c\300\026\300r\310\021\330\0049\270\022\2706\300\021\300#\300V\3102\310Q\330\0044\260B\260f\270A\270S\300\006\300b\310\001\330\0049\270\022\2706\300\021\300#\300V\3102\310Q\330\004:\270\"\270F\300!\3003\300f\310B\310a\340\004\035\230Q\330\004!\240\021\330\004\034\230A\330\004!\240\021\330\004\"\240!\340\004\034\230A\330\010\t\210\033\220A\220Q\330\010\t\210\032\2201\220A\330\010\t\210\031\220!\2201\330\010\t\210\026\210q\220\001\330\010\t\330\010\t\330\010\t\210\027\220\001\220\021\330\010\t\210\033\220A\220Q\330\010\t\210\026\210q\220\001\330\010\t\210\033\220A\220Q\330\010\t\210\034\220Q\220a\360\006\000\005\014\2108\220<\230w\240l\260!\200\001""\330\004\021\220\021\220&\230\001\230\021\330\004\013\320\013\036\230a\230|\2503\250a\250q\260\001\260\021\200\001\360\006\000\005\037\230a\330\004\034\230A\330\004 \240\001\340\004\027\220q\330\010\020\220\004\220C\220x\230|\320+;\2703\270h\300a\330\010\027\220{\240,\250a\330\010\t\210\035\220a\220{\240!\2401\360\006\000\005\014\210=\230\013\2401\200\001\360\010\000\005\022\220\027\230\006\230a\230q\330\004\007\200v\210V\2201\220C\220s\230!\330\010\016\210j\230\001\230\021\330\004\013\320\013!\240\021\240#\240Q\240g\250Q\250d\260!\2606\270\021\270!\200\001\360\n\000\005\014\320\013)\250\021\250$\250c\260\030\270\034\300T\310\023\310H\320T[\320[\\\200\001\360\020\000\005\032\230\021\330\004\031\230\021\340\004\037\230q\330\010\016\210k\230\035\240m\260;\270l\310#\310Q\330\010\t\210\030\220\021\220!\360\006\000\005\014\2108\2201\200\001\360\010\000\005\010\200r\210\023\210A\330\010\016\210j\230\001\230\021\340\004:\270\"\270F\300!\3003\300f\310B\310a\330\004\"\240!\2407\250#\250Q\250k\270\021\270!\340\004\013\2101O";
     PyObject *data = NULL;
     CYTHON_UNUSED_VAR(__Pyx_DecompressString);
     #endif
     PyObject **stringtab = __pyx_mstate->__pyx_string_tab;
     Py_ssize_t pos = 0;
-    for (int i = 0; i < 180; i++) {
+    for (int i = 0; i < 181; i++) {
       Py_ssize_t bytes_length = index[i].length;
       PyObject *string = PyUnicode_DecodeUTF8(bytes + pos, bytes_length, NULL);
       if (likely(string) && i >= 50) PyUnicode_InternInPlace(&string);
@@ -23509,7 +23518,7 @@ const char* const bytes = ": All dimensions preceding dimension %d must be index
       stringtab[i] = string;
       pos += bytes_length;
     }
-    for (int i = 180; i < 190; i++) {
+    for (int i = 181; i < 191; i++) {
       Py_ssize_t bytes_length = index[i].length;
       PyObject *string = PyBytes_FromStringAndSize(bytes + pos, bytes_length);
       stringtab[i] = string;
@@ -23520,14 +23529,14 @@ const char* const bytes = ": All dimensions preceding dimension %d must be index
       }
     }
     Py_XDECREF(data);
-    for (Py_ssize_t i = 0; i < 190; i++) {
+    for (Py_ssize_t i = 0; i < 191; i++) {
       if (unlikely(PyObject_Hash(stringtab[i]) == -1)) {
         __PYX_ERR(0, 1, __pyx_L1_error)
       }
     }
     #if CYTHON_IMMORTAL_CONSTANTS
     {
-      PyObject **table = stringtab + 180;
+      PyObject **table = stringtab + 181;
       for (Py_ssize_t i=0; i<10; ++i) {
         #if CYTHON_COMPILING_IN_CPYTHON_FREETHREADING
         #if PY_VERSION_HEX < 0x030E0000
@@ -23621,9 +23630,9 @@ static int __Pyx_CreateCodeObjects(__pyx_mstatetype *__pyx_mstate) {
     __pyx_mstate_global->__pyx_codeobj_tab[3] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_integral_weights, __pyx_mstate->__pyx_kp_b_iso88591_r_A_j_F_3fBa_7_Qk_1, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[3])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {8, 0, 0, 8, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 149};
-    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_L0, __pyx_mstate->__pyx_n_u_L, __pyx_mstate->__pyx_n_u_Lambda, __pyx_mstate->__pyx_n_u_Lambda_hat, __pyx_mstate->__pyx_n_u_f, __pyx_mstate->__pyx_n_u_f_mean, __pyx_mstate->__pyx_n_u_f_std, __pyx_mstate->__pyx_n_u_order};
-    __pyx_mstate_global->__pyx_codeobj_tab[4] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_signal, __pyx_mstate->__pyx_kp_b_iso88591_c_S_PWWX, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[4])) goto bad;
+    const __Pyx_PyCode_New_function_description descr = {9, 0, 0, 9, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 149};
+    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_L0, __pyx_mstate->__pyx_n_u_L, __pyx_mstate->__pyx_n_u_Lambda, __pyx_mstate->__pyx_n_u_Lambda_hat, __pyx_mstate->__pyx_n_u_f0, __pyx_mstate->__pyx_n_u_f, __pyx_mstate->__pyx_n_u_f_mean, __pyx_mstate->__pyx_n_u_f_std, __pyx_mstate->__pyx_n_u_order};
+    __pyx_mstate_global->__pyx_codeobj_tab[4] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_signal, __pyx_mstate->__pyx_kp_b_iso88591_c_T_HT, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[4])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {13, 0, 0, 16, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 158};

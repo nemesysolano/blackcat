@@ -27,7 +27,7 @@ cdef extern from "fracdiff.h":
 
 # Add this under section "# 1. Bind to the C++ bridge functions"
 cdef extern from "entries.h":
-    int calculate_fractional_signal_cy(double L0, double L, double Lambda, double Lambda_hat, double f, double f_mean, double f_std, double order)
+    int calculate_fractional_signal_cy(double L0, double L, double Lambda, double Lambda_hat, double f0, double f, double f_mean, double f_std, double order)
 
 # Add this under the existing `cdef extern` blocks (around line 30):
 cdef extern from "sizing.h":
@@ -146,12 +146,12 @@ def get_fractional_integral_weights(double order, int N):
 
 # Add this at the bottom of the file as a new Python-facing function
 # 6. Python-facing function for trading signals
-def get_fractional_signal(double L0, double L, double Lambda, double Lambda_hat, double f, double f_mean, double f_std, double order):
+def get_fractional_signal(double L0, double L, double Lambda, double Lambda_hat, double f0, double f, double f_mean, double f_std, double order):
     """
     Computes the trading signal based on fractional force and momentum parameters using the C++ backend.
     Returns integers corresponding to STALL (0), STRONG_BULLISH (1), STRONG_BEARISH (-1), etc.
     """
-    return calculate_fractional_signal_cy(L0, L, Lambda, Lambda_hat, f, f_mean, f_std, order)    
+    return calculate_fractional_signal_cy(L0, L, Lambda, Lambda_hat, f0, f, f_mean, f_std, order)    
 
 # Add this at the very bottom of the file:
 # 7. Python-facing function for position sizing levels
