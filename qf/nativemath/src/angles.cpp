@@ -92,7 +92,12 @@ void calculate_price_time_angles(
     /* in */ std::span<const double> low_price, 
     /* out */ std::span<double> angles
 ) {
-    int32_t N = close_price.size();    
+
+#ifdef _WINDOWS
+    int32_t N = (int32_t)close_price.size();
+#else
+    int32_t N = close_price.size();
+#endif    
     if (N <= 0) return;
 
     std::fill(angles.begin(), angles.end(), std::numeric_limits<double>::quiet_NaN());
@@ -116,7 +121,12 @@ vector<double> calculate_price_time_angles(
     std::span<const double> high_price, 
     std::span<const double> low_price
 ) {
-    int32_t N = close_price.size(); 
+#ifdef _WINDOWS
+    int32_t N = (int32_t)close_price.size();
+#else
+    int32_t N = close_price.size();
+#endif 
+    
     vector<double> angles(N * 4); 
     
     // std::vector implicitly converts to std::span for the output argument
@@ -176,7 +186,11 @@ void calculate_volume_time_angles(
     /* in */ const std::span<const double> volume, 
     /* out */ std::span<double> angles
 ) {
-    int32_t N = volume.size();
+    #ifdef _WINDOWS
+        int32_t N = (int32_t)volume.size();
+    #else
+        int32_t N = volume.size();
+    #endif    
     if (N <= 0) return;
 
     std::fill(angles.begin(), angles.end(), std::numeric_limits<double>::quiet_NaN());
@@ -188,7 +202,11 @@ void calculate_volume_time_angles(
 }
 
 vector<double> calculate_volume_time_angles(std::span<const double> volume) {
-    int32_t N = volume.size();
+    #ifdef _WINDOWS
+        int32_t N = (int32_t)volume.size();
+    #else
+        int32_t N = volume.size();
+    #endif 
     vector<double> angles(N * 2); 
     
     // std::vector implicitly converts to std::span for the output argument

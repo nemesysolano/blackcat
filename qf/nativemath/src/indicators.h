@@ -43,4 +43,6 @@ void price_time_indicators_cy(
     double* f_stdev
 );
 
+void rolling_mean(/* in */ std::span<const double> source, /* in */ size_t lookback_periods, /* out */ std::span<double> mean);
+void rolling_stdev(/* in */ std::span<const double> source, /* in */ std::span<const double> mean, /* in */ size_t lookback_periods, /* out */ std::span<double> stdev);
 #endif

@@ -5,8 +5,12 @@
 using namespace std;
 
 void calculate_log_returns(std::span<const double> close_price, std::span<double> log_returns) {
-    int32_t N = close_price.size();    
-    
+#ifdef _WINDOWS
+    int32_t N = (int32_t)close_price.size();
+#else
+    int32_t N = close_price.size();
+#endif 
+
     log_returns[0] = NAN;    
     for (int32_t t = 1; t < N; t++) {
         log_returns[t] = std::log(close_price[t] / close_price[t-1] + std::numeric_limits<double>::epsilon());
@@ -14,7 +18,11 @@ void calculate_log_returns(std::span<const double> close_price, std::span<double
 }
 
 std::vector<double> calculate_log_returns(const vector<double> & close_price) {
-    int32_t N = close_price.size();    
+#ifdef _WINDOWS
+    int32_t N = (int32_t)close_price.size();
+#else
+    int32_t N = close_price.size();
+#endif 
     vector<double> log_returns(N);
 
     span close_price_span(close_price);
@@ -25,8 +33,12 @@ std::vector<double> calculate_log_returns(const vector<double> & close_price) {
 }
 
 void calculate_acceleration(/* in */ std::span<const double> log_returns, /* out */ std::span<double> acceleration) {
-    int32_t N = log_returns.size();    
-    
+#ifdef _WINDOWS
+    int32_t N = (int32_t)log_returns.size();
+#else
+    int32_t N = log_returns.size();
+#endif 
+
     acceleration[0] = NAN;    
     for (int32_t t = 1; t < N; t++) {
         acceleration[t] = log_returns[t] - log_returns[t-1];
@@ -34,7 +46,12 @@ void calculate_acceleration(/* in */ std::span<const double> log_returns, /* out
 }
 
 std::vector<double> calculate_acceleration(const std::vector<double> & log_returns) {
-    int32_t N = log_returns.size();    
+#ifdef _WINDOWS
+    int32_t N = (int32_t)log_returns.size();
+#else
+    int32_t N = log_returns.size();
+#endif 
+    
     vector<double> acceleration(N);
 
     span log_returns_span(log_returns);
