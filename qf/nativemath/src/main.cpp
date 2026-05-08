@@ -393,44 +393,48 @@ void rolling_stdev_test() {
 }
 
 void calculate_fractional_signal_test() {
-    // Shared F parameters for a standard distribution
-    double f_mean = 10.0;
-    double f_std = 1.0;
-    // Bounds: F_STD_K_FACTOR = 1.5. 
-    // upper_f_bound = 11.5, lower_f_bound = 8.5
+    // Function Signature Reminder:
+    // calculate_fractional_signal(double L, double L_hat, double Lambda, double Lambda_hat, double f0, double f, double f_mean, double f_std, double order)
 
-    // Case 1: STALL -> Momentum (L) relative magnitude > Force (Lambda) magnitude
-    // L_ratio = exp(ln(4)) / 1.0 = 4.0. Lambda_ratio = exp(ln(2)) / 1.0 = 2.0
-    int signal_stall = calculate_fractional_signal(1.0, std::log(4.0), 1.0, std::log(2.0), 10.0, f_mean, f_std);
-    assert(signal_stall == STALL);
+    // Setup Baseline Probability Bounds
+    // Assuming F_STD_K_FACTOR = 2.5
+    // If f_mean = 0.5 and f_std = 0.1, boundaries are:
+    // Lower = 0.25, Upper = 0.75
 
-    // Case 2: STRONG_BULLISH -> Lambda_rel (4.0) > L_rel (2.0), alignment trigger (f=10.0 inside bounds), both ratios > 0
-    // L_ratio = exp(ln(2))/1.0 = 2.0, Lambda_ratio = exp(ln(4))/1.0 = 4.0
-    int signal_bull = calculate_fractional_signal(1.0, std::log(2.0), 1.0, std::log(4.0), 10.0, f_mean, f_std);
-    assert(signal_bull == STRONG_BULLISH);
+    // ---------------------------------------------------------
+    // 1. HARD FAILSAFE: High Entropy / Random Walk (order > 0.5)
+    // ---------------------------------------------------------
+    // Even with perfect bullish alignment and flow state, if entropy is 0.6, it should STALL.
+    assert(calculate_fractional_signal(1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.1, 0.6) == STALL);
 
-    // Case 3: STRONG_BEARISH -> Lambda_rel (4.0) > L_rel (2.0), alignment trigger, both ratios < 0
-    // L0 = -1.0 -> L_ratio = 2.0 / -1.0 = -2.0. Lambda = -1.0 -> Lambda_ratio = 4.0 / -1.0 = -4.0
-    int signal_bear = calculate_fractional_signal(-1.0, std::log(2.0), -1.0, std::log(4.0), 10.0, f_mean, f_std);
-    assert(signal_bear == STRONG_BEARISH);
-
-    // Case 4: MEAN_REVERSION_SHORT -> Lambda_rel > L_rel, reversion trigger (f=12.0 > 11.5), L_ratio > 0, Lambda_ratio < 0
-    int signal_rev_short = calculate_fractional_signal(1.0, std::log(2.0), -1.0, std::log(4.0), 12.0, f_mean, f_std);
-    assert(signal_rev_short == MEAN_REVERSION_SHORT);
-
-    // Case 5: MEAN_REVERSION_LONG -> Lambda_rel > L_rel, reversion trigger (f=12.0 > 11.5), L_ratio < 0, Lambda_ratio > 0
-    int signal_rev_long = calculate_fractional_signal(-1.0, std::log(2.0), 1.0, std::log(4.0), 12.0, f_mean, f_std);
-    assert(signal_rev_long == MEAN_REVERSION_LONG);
-
-    // Case 6: STALL (Below bounds) -> Lambda_rel > L_rel, but f is below lower bound (8.0 < 8.5).
-    int signal_below_bounds = calculate_fractional_signal(-1.0, std::log(2.0), -1.0, std::log(4.0), 8.0, f_mean, f_std);
-    assert(signal_below_bounds == STALL);
+    // ---------------------------------------------------------
+    // 2. STRONG TREND (Flow State)
+    // ---------------------------------------------------------
+    // Bullish: f=0.5 (Inside 0.25-0.75). All classical and fractional variables are POSITIVE.
+    assert(calculate_fractional_signal(1.5, 1.2, 0.8, 0.5, 0.4, 0.5, 0.5, 0.1, 0.2) == STRONG_BULLISH);
     
-    // Case 7: STALL (Reversion Trigger but matching signs) -> f=12.0 (reversion), but signs match (not diverging)
-    int signal_rev_stall = calculate_fractional_signal(1.0, std::log(2.0), 1.0, std::log(4.0), 12.0, f_mean, f_std);
-    assert(signal_rev_stall == STALL);
+    // Bearish: f=0.5 (Inside 0.25-0.75). All classical and fractional variables are NEGATIVE.
+    assert(calculate_fractional_signal(-1.5, -1.2, -0.8, -0.5, 0.4, 0.5, 0.5, 0.1, 0.2) == STRONG_BEARISH);
 
-   printf("calculate_fractional_signal_test passed successfully!\n");
+    // ---------------------------------------------------------
+    // 3. MEAN REVERSION (Structural Saturation)
+    // ---------------------------------------------------------
+    // Short Reversal: f=0.85 (Breaches 0.75). Momentum (L) is POSITIVE, Acceleration (Lambda) flipped NEGATIVE.
+    assert(calculate_fractional_signal(1.5, 1.2, -0.8, -0.5, 0.7, 0.85, 0.5, 0.1, 0.2) == MEAN_REVERSION_SHORT);
+
+    // Long Reversal: f=0.85 (Breaches 0.75). Momentum (L) is NEGATIVE, Acceleration (Lambda) flipped POSITIVE.
+    assert(calculate_fractional_signal(-1.5, -1.2, 0.8, 0.5, 0.7, 0.85, 0.5, 0.1, 0.2) == MEAN_REVERSION_LONG);
+
+    // ---------------------------------------------------------
+    // 4. PHASE MISMATCH (Fake-Outs / Incoherent Noise)
+    // ---------------------------------------------------------
+    // Fake-Out Warning: Price is saturating (f=0.85), but classical Lambda (+0.8) and fractional Lambda_hat (-0.5) disagree.
+    assert(calculate_fractional_signal(1.5, 1.2, 0.8, -0.5, 0.7, 0.85, 0.5, 0.1, 0.2) == STALL);
+
+    // Incoherent Noise: Flow state (f=0.5), but neural network L_hat (-1.2) disagrees with classical L (+1.5).
+    assert(calculate_fractional_signal(1.5, -1.2, 0.8, 0.5, 0.4, 0.5, 0.5, 0.1, 0.2) == STALL);
+
+    std::cout << "calculate_fractional_signal_test passed successfully." << std::endl;
 }
 
 void calculate_levels_test() {

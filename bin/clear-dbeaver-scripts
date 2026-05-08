@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+rm ~/Library/DBeaverData/workspace6/General/Scripts/*

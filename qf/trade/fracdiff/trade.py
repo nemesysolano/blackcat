@@ -45,6 +45,7 @@ def trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, t
 
         Lambda = trade_dataset.loc[t, target_name] # Current acceleration
         Lambda_hat  = trade_dataset.loc[t, estimation_name] # Predicted acceleration                
+
         L = trade_dataset.loc[t0, 'L']
         L_hat = trade_dataset.loc[t, 'L']
 

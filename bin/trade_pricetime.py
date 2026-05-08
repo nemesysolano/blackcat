@@ -73,22 +73,26 @@ def main(train_stats_folder, test_results_folder, model_name, max_leverage, plat
 
     with engine.connect() as connection:        
         for quote_name in quotes:
-            if quote_name not in train_stats.index:
-                print(f"Skipping {quote_name} as it is not present in training stats.")
+            try:
+                if quote_name not in train_stats.index:
+                    print(f"Skipping {quote_name} as it is not present in training stats.")
+                    continue
+
+                direction_bias = 1# np.sign(train_stats.loc[quote_name, 'Match %'] - train_stats.loc[quote_name, 'Different %'])
+                print(f"Backtesting {quote_name} with {model_name} model.")
+                output_file = os.path.join(os.getcwd(), test_results_folder, f"{result_name}.csv")
+                details_file = os.path.join(os.getcwd(), test_results_folder, f"{result_name}-{quote_name}-transactions.json")            
+                
+                if os.path.exists(details_file):
+                    continue                    
+
+                _, trade_dataset, feature_names, target_name = create_trade_dataset(connection, redis_connection, quote_name, lookback_periods, model_name, log_acceleration_direction)                  
+                stats, transactions, _ = trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, target_name, f"{target_name}_hat", max_leverage, direction_bias, platform_commission, initial_capital)                
+                write_results(output_file, details_file, stats, transactions)
+            except Exception as cause:
+                print(f"Error backtesting {quote_name}: {cause}")
                 continue
 
-            direction_bias = 1# np.sign(train_stats.loc[quote_name, 'Match %'] - train_stats.loc[quote_name, 'Different %'])
-            print(f"Backtesting {quote_name} with {model_name} model.")
-            output_file = os.path.join(os.getcwd(), test_results_folder, f"{result_name}.csv")
-            details_file = os.path.join(os.getcwd(), test_results_folder, f"{result_name}-{quote_name}-transactions.json")            
-            
-            if os.path.exists(details_file):
-                continue                    
-
-            _, trade_dataset, feature_names, target_name = create_trade_dataset(connection, redis_connection, quote_name, lookback_periods, model_name, log_acceleration_direction)                  
-            stats, transactions, _ = trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, target_name, f"{target_name}_hat", max_leverage, direction_bias, platform_commission, initial_capital)                
-            write_results(output_file, details_file, stats, transactions)
-            quote_csv_file = os.path.join(os.getcwd(), "qf", "nativemath", "resources", f"{quote_name}.csv")
 
         connection.close()
     engine.dispose()

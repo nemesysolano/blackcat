@@ -93,6 +93,29 @@ void F(/* in */ span<const double> Θ, /* in */ span<const double> phi, /* out *
     }        
 }
 
+// Logit Transform : $y(t) = \ln\left(\frac{F(t)}{1 - F(t)}\right)$
+void Y(/* in, out */ std::span<double> y) {
+    size_t N = y.size();
+    
+    for (size_t t = 0; t < N; t++) {
+        double f = y[t];
+        
+        if (std::isnan(f)) {
+            continue;
+        }
+
+        // Clamp to prevent log(0) or division by zero (Inf / -Inf)
+        if (f < 1e-9) {
+            f = 1e-9;
+        } else if (f > 1.0 - 1e-9) {
+            f = 1.0 - 1e-9;
+        }
+        
+        // In-place Logit Transform
+        y[t] = std::log(f / (1.0 - f));
+    }
+}
+
 void F(/* in */ std::span<const double> close_price, /* in */ std::span<const double> high_price, /* in */ std::span<const double> low_price, /* in */ std::span<const double> volume, /* out */ std::span<double> result) {    
     std::vector<double> Θ = calculate_price_time_angles(close_price, high_price, low_price);
     std::vector<double> phi = calculate_volume_time_angles(volume);    

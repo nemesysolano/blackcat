@@ -13,6 +13,7 @@ double Q(double z);
 double FH (double v1, double v2);
 double FW(double theta1, double theta2, double theta3, double theta4);
 void F(/* in */ std::span<const double> Θ, /* in */ std::span<const double> phi, /* out */ std::span<double> result);
+void Y(/* in, out */ std::span<double> y) ;
 void F(/* in */ std::span<const double> close_price, /* in */ std::span<const double> high_price, /* in */ std::span<const double> low_price, /* in */ std::span<const double> volume, /* out */ std::span<double> result);
 std::vector<double> F(/* in */ const std::vector<double> & close_price, /* in */ const std::vector<double> & high_price, /* in */ const std::vector<double> & low_price, /* in */ const std::vector<double> & volume);
 #endif

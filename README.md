@@ -424,27 +424,34 @@ The CDF helps distinguish between Incoherent Noise and a Strong Bullish/Bearish 
 - If $P(t)$ is _high_ but $F(t)$ is _low_, you are at the very beginning of a structural shift (an early entry signal).
 - If both $P(t)$ and $F(t)$ are high, the "Price Particle" is likely at the limit of its "Box," increasing the probability of the Mean Reversion or Hard Boundary states described in your documentation.
 
-However, the two rules above are very heuristic and we need clear cut signals. Let's use the standard deviation $F(t)$ over last $N$ periods as dynamic threshold integrated into our decision table:
+However, because $F(t)$ is strictly bounded between $0$ and $1$, we cannot reliably apply unbounded statistics ($\mu \pm k\sigma$) directly to it without risking boundary violations (e.g., lower bounds falling below zero in low-energy environments).
 
-|Signal Type     |Phase Check (Signs)              |Structural Check ($F(t)$)|Execution Logic                                                                                     |
+To solve this, we map the structural probability into an unbounded topological space using the **Logit Transform**:
+$$y(t) = \ln\left(\frac{F(t)}{1 - F(t)}\right)$$
+
+In this unbounded space $[-\infty, +\infty]$, we can safely calculate the rolling mean $\mu_y(t)$ and standard deviation $\sigma_y(t)$. We then use this transformed state variable $y(t)$ as the dynamic threshold integrated into our decision table:
+
+|Signal Type     |Phase Check (Signs)              |Structural Check ($y(t)$)|Execution Logic                                                                                     |
 |----------------|---------------------------------|-------------------------|----------------------------------------------------------------------------------------------------|
-|Fake-Out Warning|$L,\hat L,\hat Λ$ align $≠ Λ$    |$F(t)>F_u(t)​$            |ABORT ENTRY. Particle is at a volatility-adjusted boundary but acceleration has collapsed.          |
-|Incoherent Noise|$\hat L$ and $Λ$ are out of phase|$F(t)<F_l​(t)$            |IGNORE. The system is in a low energy vacuum where momentum mismatch is statistically insignificant.|
-|Mean Reversion  |$L, \hat L$ align $≠\hat Λ,Λ$    |$F(t)>F_u​(t)$            |ENTER REVERSAL. Structural saturation is reached and acceleration has flipped toward the mean.      |
-|Strong Trend    |All variables align              |$F_l​≤F(t)≤F_u(t)$        |ENTER TREND. The particle is in the flow state, moving through the box with consistent momentum.    |
+|Fake-Out Warning|$L,\hat L,\hat Λ$ align $≠ Λ$    |$y(t) > Y_u(t)​$          |ABORT ENTRY. Particle is at a volatility-adjusted boundary but acceleration has collapsed.          |
+|Incoherent Noise|$\hat L$ and $Λ$ are out of phase|$y(t) < Y_l​(t)$          |IGNORE. The system is in a low energy vacuum where momentum mismatch is statistically insignificant.|
+|Mean Reversion  |$L, \hat L$ align $≠\hat Λ,Λ$    |$y(t) > Y_u​(t)$          |ENTER REVERSAL. Structural saturation is reached and acceleration has flipped toward the mean.      |
+|Strong Trend    |All variables align              |$Y_l​ \le y(t) \le Y_u(t)$|ENTER TREND. The particle is in the flow state, moving through the box with consistent momentum.    |
 
-Where
+Where the dynamic boundaries are defined in the unbounded logit space:
 
-- $F_u(t) = μ_F(t)+kσ_F(t)$,
-- $F_l(t) = μ_F(t)-kσ_F(t)$ and
-- $k≈1.5$ to $2$.
+- $Y_u(t) = μ_y(t) + kσ_y(t)$
+- $Y_l(t) = μ_y(t) - kσ_y(t)$ 
+- $k \approx 2.0$ to $2.5$ (The "Flow State" tolerance factor).
 
 ---
 In short:
 
-- **Mean Reversion** : Only trigger if $F(t) > F_u(t)$. The price has hit a structural wall.
-- **Trend Following** : Only trigger if $F_l(t) < F(t) < F_u(t)$.  The particle is in flow state.
-- **Incoherent Noise**: Ignores signals where $F(t) < F_l(t)$. The vacuum state.
+- **Mean Reversion** : Only trigger if $y(t) > Y_u(t)$. The price has hit a structural wall and energy is saturating.
+- **Trend Following** : Only trigger if $Y_l(t) \le y(t) \le Y_u(t)$. The particle is in a geometrical flow state.
+- **Incoherent Noise**: Ignores signals where $y(t) < Y_l(t)$. The system is in a vacuum and signals are hallucinations.
+
+*(Note: The boundaries $Y_u$ and $Y_l$ can be inverse-transformed back to probability space at any time via $F_{bound}(t) = \frac{1}{1 + e^{-Y_{bound}(t)}}$, ensuring they dynamically asymptote toward $0$ and $1$ but never cross them).*
 
 ## The Normalized OHLC Bar ##
 
