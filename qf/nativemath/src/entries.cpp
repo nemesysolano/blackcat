@@ -24,8 +24,8 @@ int calculate_fractional_signal(double L, double L_hat, double Lambda, double La
     bool reversion_align = (sign_L == sign_L_hat) && (sign_Lambda == sign_Lambda_hat) && (sign_L != sign_Lambda);
 
     // 2. Magnitude Ratios (Safe absolute values)
-    double Lambda_ratio = std::exp(Lambda_hat) / (std::abs(Lambda) + 5e-8);
-    double L_ratio = std::exp(L_hat) / (std::abs(L) + 5e-8);    
+    double Lambda_ratio = Lambda_hat / (std::abs(Lambda) + 5e-8);
+    double L_ratio = L_hat / (std::abs(L) + 5e-8);    
 
     // 3. Structural States
     bool reversion_trigger = (f > upper_f_bound); // Continuous check

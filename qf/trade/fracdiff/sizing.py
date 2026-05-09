@@ -1,5 +1,4 @@
-import math
-import numpy as np
+import pandas as pd
 from qf.trade import F_STD_K_FACTOR, SIGNAL_LABELS, STRONG_BULLISH, STRONG_BEARISH, MEAN_REVERSION_LONG, MEAN_REVERSION_SHORT
 from qf.trade.fracdiff.stats import FracDiffPosition, FracDiffTransaction
 from qf.trade import MAX_RISK_PER_TRADE
@@ -7,13 +6,10 @@ from qf.trade.fracdiff.stats.FracTrailingLimit import FracTrailingLimit
 from qf.nativemath import get_levels as _calculate_levels, get_fractional_qty as calculate_stock_qty, get_fractional_physics_close as fractional_physics_close, get_fractional_update_levels as fractional_update_levels
 
 
-def calculate_levels(current_index, signal, trade_dataset, L, L_hat, Lambda, Lambda_hat, direction_bias, order):
+def calculate_levels(current_index, signal, trade_dataset, f, f_mean, f_stdev, L, L_hat, Lambda, Lambda_hat, direction_bias, order):
     t = trade_dataset.index[current_index]
     row = trade_dataset.loc[t]    
     current_price = row['CLOSE']
-    f = row['f']
-    f_mean = row['f_mean']
-    f_stdev = row['f_stdev']
     high_price = row['HIGH']
     low_price = row['LOW']
 
@@ -90,7 +86,7 @@ def update_position(current_index, trade_dataset, L, Lambda, Lambda_hat, positio
         high_price = trade_dataset.loc[exit_date, 'HIGH']
         position, transaction = try_normal_close(current_index, position, low_price, high_price, exit_date)
     
-    if transaction is None:
+    if transaction is None and not (pd.isna(f_mean) or pd.isna(f_std)):
         position, transaction = try_physics_close(current_index, position, current_price, exit_date, Lambda, Lambda_hat, f, f_mean, f_std)
 
     if transaction is None and current_index == len(trade_dataset) - 2:
@@ -98,9 +94,9 @@ def update_position(current_index, trade_dataset, L, Lambda, Lambda_hat, positio
 
     return position, transaction, gap_hit
 
-def create_position(quote_name, current_index, signal, trade_dataset, L, L_hat, Lambda, Lambda_hat, current_capital, max_leverage_allowed, direction_bias, platform_commission, order):
+def create_position(quote_name, current_index, signal, trade_dataset, f, f_mean, f_stdev, L, L_hat, Lambda, Lambda_hat, current_capital, max_leverage_allowed, direction_bias, platform_commission, order):
     t1 = trade_dataset.index[current_index + 1]
-    take_profit, stop_loss, signal_direction = calculate_levels(current_index, signal, trade_dataset, L, L_hat, Lambda, Lambda_hat, direction_bias, order)
+    take_profit, stop_loss, signal_direction = calculate_levels(current_index, signal, trade_dataset, f, f_mean, f_stdev, L, L_hat, Lambda, Lambda_hat, direction_bias, order)
     entry_price = trade_dataset.loc[t1, 'OPEN']
 
     # qty and actual_leverage used

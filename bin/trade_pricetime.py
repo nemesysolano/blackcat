@@ -3,6 +3,7 @@ import json
 import sys
 import os
 from sqlalchemy import create_engine
+import traceback
 from qf.dbsync import read_quote_names, db_config
 import pandas as pd
 from qf.indicators import log_acceleration_direction
@@ -91,6 +92,8 @@ def main(train_stats_folder, test_results_folder, model_name, max_leverage, plat
                 write_results(output_file, details_file, stats, transactions)
             except Exception as cause:
                 print(f"Error backtesting {quote_name}: {cause}")
+                traceback.print_exc()
+                
                 continue
 
 

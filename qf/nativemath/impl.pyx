@@ -14,9 +14,7 @@ cdef extern from "indicators.h":
         size_t lookback_periods,
         double* LP, 
         double* Lambda, 
-        double* f,
-        double* f_mean,
-        double* f_stdev
+        double* f
     )
 
 cdef extern from "fracdiff.h":
@@ -91,14 +89,10 @@ def get_price_time_indicators(double[:] close_price, double[:] high_price, doubl
     cdef cnp.ndarray[cnp.float64_t, ndim=1] LP_out = np.empty(N, dtype=np.float64)
     cdef cnp.ndarray[cnp.float64_t, ndim=1] Lambda_out = np.empty(N, dtype=np.float64)
     cdef cnp.ndarray[cnp.float64_t, ndim=1] f_out = np.empty(N, dtype=np.float64)
-    cdef cnp.ndarray[cnp.float64_t, ndim=1] f_mean_out = np.empty(N, dtype=np.float64)
-    cdef cnp.ndarray[cnp.float64_t, ndim=1] f_stdev_out = np.empty(N, dtype=np.float64)
     
     cdef double[:] LP_view = LP_out
     cdef double[:] Lambda_view = Lambda_out
     cdef double[:] f_view = f_out
-    cdef double[:] f_mean_view = f_mean_out
-    cdef double[:] f_stdev_view = f_stdev_out
     
     price_time_indicators_cy(
         &close_price[0], 
@@ -109,12 +103,10 @@ def get_price_time_indicators(double[:] close_price, double[:] high_price, doubl
         lookback_periods,
         &LP_view[0], 
         &Lambda_view[0],
-        &f_view[0],
-        &f_mean_view[0],
-        &f_stdev_view[0]
+        &f_view[0]
     )
     
-    return LP_out, Lambda_out, f_out, f_mean_out, f_stdev_out
+    return LP_out, Lambda_out, f_out
 
 # 3. Python-facing function for fractional order
 def get_fractional_order(double Lambda_val, double[:] L):

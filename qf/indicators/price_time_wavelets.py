@@ -30,12 +30,9 @@ def log_acceleration_direction(connection, redis_connection, quote_name, lookbac
     volume = df['volume'].values.astype(np.float64)
         
     
-    L, Lambda, f, f_mean, f_stdev = nativemath.get_price_time_indicators(close_price, high_price, low_price, volume, lookback_periods)
+    L, Lambda, f = nativemath.get_price_time_indicators(close_price, high_price, low_price, volume, lookback_periods)
     df['f'] = f
-    df['f_mean'] = f_mean
-    df['f_stdev'] = f_stdev
     df['L'] = L
     features = add_lagged_feature(df, 'Lambda', Lambda, lookback_periods)
-
     df.dropna(inplace=True)    
     return df, features, 'Lambda'

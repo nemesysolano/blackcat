@@ -19,6 +19,7 @@ def trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, t
     min_leverage, max_leverage = 0, 0
     equity_curve = [initial_capital]    
     gap_hit = False
+    index = trade_dataset.index
 
     def add_transaction(t):
         nonlocal winner_longs, winner_shorts, loser_longs, loser_shorts, current_capital, equity_curve, cost, min_leverage, max_leverage
@@ -35,12 +36,13 @@ def trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, t
         
     # Main simulation loop
     for current_index in range(lookback_periods, len(trade_dataset)-1):       
-        t0 = trade_dataset.index[current_index - 1]        
-        t = trade_dataset.index[current_index]       
+        t0 = index[current_index - 1]        
+        t = index[current_index]       
         f = trade_dataset.loc[t, 'f']
         f0 = trade_dataset.loc[t0, 'f']
-        f_stdev = trade_dataset.loc[t, 'f_stdev']
-        f_mean = trade_dataset.loc[t, 'f_mean']        
+        window_f = trade_dataset['f'].iloc[current_index - lookback_periods : current_index]
+        f_mean = window_f.mean()
+        f_stdev = window_f.std()
         order = trade_dataset.loc[t, 'S']
 
         Lambda = trade_dataset.loc[t, target_name] # Current acceleration
@@ -51,12 +53,12 @@ def trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, t
 
         signal = calculate_signal(L, L_hat, Lambda_hat, Lambda, f0, f, f_mean, f_stdev, order)            
         active_position, transaction, gap_hit = update_position(current_index, trade_dataset, L, Lambda_hat, Lambda, active_position, f, f_mean, f_stdev)
-        
+
         if transaction is not None:     
             add_transaction(transaction)
 
         if active_position is None and not gap_hit:
-            active_position = create_position(quote_name, current_index, signal, trade_dataset, L, L_hat, Lambda_hat, Lambda, current_capital, max_leverage_allowed, direction_bias, platform_commission, order)
+            active_position = create_position(quote_name, current_index, signal, trade_dataset, f, f_mean, f_stdev, L, L_hat, Lambda_hat, Lambda, current_capital, max_leverage_allowed, direction_bias, platform_commission, order)
             long_trades = long_trades + 1 if active_position and active_position.side == 1 else long_trades
             short_trades = short_trades + 1 if active_position and active_position.side == -1 else short_trades
         if active_position is not None:
@@ -108,9 +110,7 @@ def enhance_inputs(X, dataset, model_name, quote_name, feature_names):
         Lambda = dataset.loc[X.index, 'Lambda'],
         Lambda_hat = Lambda_hat,        
         f = dataset.loc[X.index, 'f'],
-        S = np.nan_to_num(S, nan=1.0),
-        f_mean = dataset.loc[X.index, 'f_mean'],
-        f_stdev = dataset.loc[X.index, 'f_stdev']
+        S = np.nan_to_num(S, nan=1.0)
     )
     
     return X
