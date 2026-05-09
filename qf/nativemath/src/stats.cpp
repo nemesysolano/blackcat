@@ -45,46 +45,41 @@ std::vector<double> rolling_mean(/* in */ const std::vector<double> &  source, /
 
 void rolling_stdev(/* in */ std::span<const double> source, /* in */ std::span<const double> mean, /* in */ size_t lookback_periods, /* out */ std::span<double> stdev) {
     size_t N = source.size();
-    
-    // 1. Pre-fill outputs with NaNs
     std::fill(stdev.begin(), stdev.end(), std::numeric_limits<double>::quiet_NaN());
     
-    // 2. Sample standard deviation requires at least 2 periods for Bessel's correction (N - 1)
-    if (lookback_periods < 2 || N == 0) return;
+    if (lookback_periods <= 1 || N == 0) return;
 
     double current_sq_sum = 0.0;
     size_t valid_count = 0;
 
-    // 3. O(N) Sliding Window for Sum of Squares
     for (size_t t = 0; t < N; ++t) {
+        
+        // FIX: Only reset on source NaN. Do NOT reset on mean NaN.
+        // Both functions must process the exact same sliding window simultaneously.
         if (std::isnan(source[t])) {
-            // NaN disruption resets the memory window
             current_sq_sum = 0.0;
             valid_count = 0;
         } else {
-            // Add square of the new element
             current_sq_sum += source[t] * source[t];
             valid_count++;
         }
 
-        // Eject the oldest squared element falling out of the window
+        // Evict the oldest element from the squared sum window
         if (valid_count > lookback_periods) {
             current_sq_sum -= source[t - lookback_periods] * source[t - lookback_periods];
             valid_count--;
         }
 
-        // 4. Calculate standard deviation once the window is fully formed
+        // Only compute the standard deviation if the window is full AND the mean is ready
         if (valid_count == lookback_periods && !std::isnan(mean[t])) {
             // Algebraic identity: Sum(x_i - mu)^2 = Sum(x_i^2) - N * mu^2
             double variance_num = current_sq_sum - (static_cast<double>(lookback_periods) * mean[t] * mean[t]);
             
-            // Floating-point safeguard: catastrophic cancellation can sometimes 
-            // leave a tiny negative number (e.g., -1e-16) when the true variance is 0.
+            // Floating-point safeguard against catastrophic cancellation
             if (variance_num < 0.0) {
                 variance_num = 0.0;
             }
             
-            // Sample standard deviation (Bessel's correction)
             stdev[t] = std::sqrt(variance_num / static_cast<double>(lookback_periods - 1));
         }
     }

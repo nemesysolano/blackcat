@@ -6,6 +6,10 @@ int calculate_fractional_signal(double L, double L_hat, double Lambda, double La
     if (order > 0.5) {
         return STALL;
     }
+// 2. BURN-IN FAILSAFE: Wait for the structural well to form
+    if (std::isnan(f_mean) || std::isnan(f_std) || std::isnan(f0) || std::isnan(f)) {
+        return STALL;
+    }
 
     double upper_f_bound = f_mean + (f_std * F_STD_K_FACTOR);
     double lower_f_bound = f_mean - (f_std * F_STD_K_FACTOR);
