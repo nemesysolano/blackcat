@@ -55,8 +55,8 @@ def remove_non_selected_files(selected_model_name):
             os.remove(file_path)
 
 if __name__ == "__main__":
-    patience = 20
-    epochs = 50
+    patience = 10
+    epochs = 15
     batch_size = 100
     indicator_name = "price-time-wavelet-direction"
     quotes_file = sys.argv[1]
