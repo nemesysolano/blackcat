@@ -3,12 +3,16 @@ layers = tf.keras.layers
 models = tf.keras.models
 regularizers = tf.keras.regularizers
 
-def create_fractional_diff_model(input_dim):
-    # input_dim = 14 (your lags)
+def create_fractional_diff_model(input_dim, kernel_size):
     inputs = layers.Input(shape=(input_dim, 1))
+    if input_dim < 8 or input_dim > 30 or \
+       kernel_size < int(input_dim/4) or \
+       kernel_size > int((input_dim/3) * 2):
+        raise ValueError(f"Invalid input_dim or kernel_size (input_dim = {input_dim}, kernel_size = {kernel_size}). input_dim must be between 8 and 30, and kernel_size must be between {int(input_dim/4)} and {int(input_dim/3) * 2}.")
+
     # 1. Convolutional Layer: Scans for patterns using 32 different "filters"
     # kernel_size=3 means it looks at 3 consecutive lags at a time
-    x = layers.Conv1D(filters=128, kernel_size=3, activation='relu', padding='same')(inputs)
+    x = layers.Conv1D(filters=128, kernel_size= input_dim, activation='relu', padding='same')(inputs)
     x = layers.MaxPooling1D(pool_size=2)(x) # Reduces noise
     
     # 2. Second Scan: Finds more complex combinations of the first patterns
@@ -17,8 +21,8 @@ def create_fractional_diff_model(input_dim):
     
     # 3. Final Decision Layers
     x = layers.Dense(64, activation='relu', kernel_regularizer=regularizers.l2(0.001))(x)
-#   x = layers.BatchNormalization()(x) # Stabilizes learning
-#   x = layers.Dropout(0.1)(x)
+        # x = layers.BatchNormalization()(x) # Stabilizes learning
+    x = layers.Dropout(0.1)(x)
 
     outputs = layers.Dense(1, activation = 'tanh')(x)
     model = models.Model(inputs=inputs, outputs=outputs)
