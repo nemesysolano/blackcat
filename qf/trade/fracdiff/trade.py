@@ -80,7 +80,6 @@ def trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, t
         min_leverage, max_leverage
     )
 
-## Functions for loading individual models.
 def predictor(quote_name, model_name, X_input):
     checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{quote_name}-{model_name}.keras')    
     try:
@@ -120,47 +119,5 @@ def create_trade_dataset(connection, redis_connection, quote_name, lookback_peri
     indicator_data = (dataset, feature_names, target) = indicator(connection, redis_connection, quote_name, lookback_periods)
     _, _, X_test, _, _, _, _ = create_local_datasets(indicator_data)    
     X_test = enhance_inputs(X_test, dataset, model_name, quote_name, feature_names)
-   
-    return None, X_test, feature_names, target
-
-## Functions for loading generic models.
-def generic_predictor(model_name, X_input):
-    checkpoint_filepath = os.path.join(os.getcwd(), 'models', f'{model_name}.keras')    
-    try:
-        if not os.path.exists(checkpoint_filepath):
-            print(f"Warning: Model {checkpoint_filepath} not found.")
-            return None
-
-        model = tf.keras.models.load_model(checkpoint_filepath)    
-    except Exception as e:        
-        print(f"Error loading model: {e}")
-        return None
-    
-    predictions = model.predict(X_input, verbose=0)
-    return predictions
-
-def enhance_generic_inputs(X, dataset, model_name, feature_names):
-    features = X[feature_names]
-    Lambda_hat = generic_predictor(model_name, features)
-    S = fractional_orders(Lambda_hat, features)
-
-    X = X.assign(
-        OPEN = dataset.loc[X.index, 'open_price'],
-        LOW  = dataset.loc[X.index, 'low_price'],
-        HIGH = dataset.loc[X.index, 'high_price'],
-        CLOSE= dataset.loc[X.index, 'close_price'],
-        L = dataset.loc[X.index, 'L'],
-        Lambda = dataset.loc[X.index, 'Lambda'],
-        Lambda_hat = Lambda_hat,        
-        f = dataset.loc[X.index, 'f'],
-        S = np.nan_to_num(S, nan=1.0)
-    )
-    
-    return X
-
-def create_trade_generic_dataset(connection, redis_connection, quote_name, lookback_periods, model_name, indicator):
-    indicator_data = (dataset, feature_names, target) = indicator(connection, redis_connection, quote_name, lookback_periods)
-    _, _, X_test, _, _, _, _ = create_local_datasets(indicator_data)    
-    X_test = enhance_generic_inputs(X_test, dataset, model_name, feature_names)
    
     return None, X_test, feature_names, target

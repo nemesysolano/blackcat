@@ -12,6 +12,3 @@ class FracDiffState(NamedTuple):
     Lambda_hat: float
     L: float
     L_hat: float
-
-
-    
