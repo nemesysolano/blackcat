@@ -92,11 +92,8 @@ def main(train_stats_folder, test_results_folder, model_name, max_leverage, plat
                 write_results(output_file, details_file, stats, transactions)
             except Exception as cause:
                 print(f"Error backtesting {quote_name}: {cause}")
-                traceback.print_exc()
-                
+                traceback.print_exc()                
                 continue
-
-
         connection.close()
     engine.dispose()
 
