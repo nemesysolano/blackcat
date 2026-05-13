@@ -21,7 +21,8 @@ if __name__ == "__main__":
     quote_name = sys.argv[1]
     indicator_name = "price-time-wavelet-direction"
     scale_multiplier = float(sys.argv[3]) if len(sys.argv) > 3 else 1.0
-    lookback_periods = 14
+    lookback_periods = 30
+    kernel_size = 8
     _, sqlalchemy_url, redis_host, redis_port, redis_database = db_config()
     engine = create_engine(sqlalchemy_url)
     redis_connection = redis.Redis(host=redis_host, port=redis_port, db=redis_database, decode_responses=True)
@@ -36,7 +37,7 @@ if __name__ == "__main__":
         X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
         X_val = X_val.reshape((X_val.shape[0], X_val.shape[1], 1))
         X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
-        model = create_fractional_diff_model(X_train.shape[1])
+        model = create_fractional_diff_model(X_train.shape[1], kernel_size)
     
         patience = 30
         epochs = 100
@@ -69,7 +70,7 @@ if __name__ == "__main__":
             callbacks = callbacks
         )    
     
-        best_model = tf.keras.models.load_model(checkpoint_filepath, custom_objects={'directional_mse': directional_mse})
+        best_model = tf.keras.models.load_model(checkpoint_filepath)
         mse, mae = best_model.evaluate(X_test, Y_test, verbose=0) 
         
         # 3. Apply Polarity to Test Set
