@@ -16,7 +16,7 @@ def create_fractional_diff_model(input_dim, kernel_size):
     x = layers.MaxPooling1D(pool_size=2)(x) # Reduces noise
     
     # 2. Second Scan: Finds more complex combinations of the first patterns
-    x = layers.Conv1D(filters=64, kernel_size = kernel_size / 2, activation='relu', padding='same')(x)
+    x = layers.Conv1D(filters=64, kernel_size = int(kernel_size / 2), activation='relu', padding='same')(x)
     x = layers.GlobalAveragePooling1D()(x) # Flattens the data for the final decision
     
     # 3. Final Decision Layers
