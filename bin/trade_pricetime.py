@@ -68,7 +68,7 @@ def main(train_stats_folder, test_results_folder, model_name, max_leverage, plat
     result_name = f"backtest-{model_name}"
     train_stats_file = os.path.join(train_stats_folder, f"report-{model_name}.csv")
     train_stats = pd.read_csv(train_stats_file, index_col="Ticker")        
-    lookback_periods = 14
+    lookback_periods = 30
     engine = create_engine(sqlalchemy_url)
     redis_connection = redis.Redis(host=redis_host, port=redis_port, db=redis_database, decode_responses=True)
 

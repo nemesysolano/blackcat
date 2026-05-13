@@ -12,11 +12,11 @@ def create_fractional_diff_model(input_dim, kernel_size):
 
     # 1. Convolutional Layer: Scans for patterns using 32 different "filters"
     # kernel_size=3 means it looks at 3 consecutive lags at a time
-    x = layers.Conv1D(filters=128, kernel_size= input_dim, activation='relu', padding='same')(inputs)
+    x = layers.Conv1D(filters=128, kernel_size = kernel_size, activation='relu', padding='same')(inputs)
     x = layers.MaxPooling1D(pool_size=2)(x) # Reduces noise
     
     # 2. Second Scan: Finds more complex combinations of the first patterns
-    x = layers.Conv1D(filters=64, kernel_size=3, activation='relu', padding='same')(x)
+    x = layers.Conv1D(filters=64, kernel_size = kernel_size / 2, activation='relu', padding='same')(x)
     x = layers.GlobalAveragePooling1D()(x) # Flattens the data for the final decision
     
     # 3. Final Decision Layers
