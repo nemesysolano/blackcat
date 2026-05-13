@@ -94,6 +94,7 @@ def main(train_stats_folder, test_results_folder, model_name, max_leverage, plat
                 print(f"Error backtesting {quote_name}: {cause}")
                 traceback.print_exc()                
                 continue
+
         connection.close()
     engine.dispose()
 
