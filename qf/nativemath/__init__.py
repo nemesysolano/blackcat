@@ -7,7 +7,9 @@ from .impl import (
     get_levels, 
     get_fractional_qty, 
     get_fractional_physics_close,
-    get_fractional_update_levels  # <--- Add this
+    get_fractional_update_levels,  # <--- Add this,
+    get_energy_weighed_average,
+    get_thrust_weighed_average
 )
 
 __all__ = [
@@ -19,5 +21,7 @@ __all__ = [
     "get_levels", 
     "get_fractional_qty", 
     "get_fractional_physics_close",
-    "get_fractional_update_levels"  # <--- Add this
+    "get_fractional_update_levels" 
+    "get_energy_weighed_average",
+    "get_thrust_weighed_average"
 ]

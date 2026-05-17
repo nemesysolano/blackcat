@@ -93,7 +93,7 @@ void F(/* in */ span<const double> Θ, /* in */ span<const double> phi, /* out *
     }        
 }
 
-// Logit Transform : $y(t) = \ln\left(\frac{F(t)}{1 - F(t)}\right)$
+
 void Y(/* in, out */ std::span<double> y) {
     size_t N = y.size();
     

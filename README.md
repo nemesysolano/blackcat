@@ -429,16 +429,28 @@ However, because $F(t)$ is strictly bounded between $0$ and $1$, we cannot relia
 To solve this, we map the structural probability into an unbounded topological space using the **Logit Transform**:
 $$y(t) = \ln\left(\frac{F(t)}{1 - F(t)}\right)$$
 
-In this unbounded space $[-\infty, +\infty]$, we can safely calculate the rolling mean $\mu_y(t)$ and standard deviation $\sigma_y(t)$. We then use this transformed state variable $y(t)$ as the dynamic threshold integrated into our decision table:
+In this unbounded space $[-\infty, +\infty]$, we can safely calculate the rolling mean $\mu_y(t)$ and standard deviation $\sigma_y(t)$. The Logit-transformed probability $y(t)$ is integrated with kinematic variables to distinguish between **Incoherent Noise**, **Strong Trends**, and **Mean Reversions**. To ensure high conviction, every signal must now pass a global **Kinetic Gate**:
 
-|Signal Type     |Phase Check (Signs)              |Structural Check ($y(t)$)|Execution Logic                                                                                     |
-|----------------|---------------------------------|-------------------------|----------------------------------------------------------------------------------------------------|
-|Fake-Out Warning|$L,\hat L,\hat Λ$ align $≠ Λ$    |$y(t) > Y_u(t)​$          |ABORT ENTRY. Particle is at a volatility-adjusted boundary but acceleration has collapsed.          |
-|Incoherent Noise|$\hat L$ and $Λ$ are out of phase|$y(t) < Y_l​(t)$          |IGNORE. The system is in a low energy vacuum where momentum mismatch is statistically insignificant.|
-|Mean Reversion  |$L, \hat L$ align $≠\hat Λ,Λ$    |$y(t) > Y_u​(t)$          |ENTER REVERSAL. Structural saturation is reached and acceleration has flipped toward the mean.      |
-|Strong Trend    |All variables align              |$Y_l​ \le y(t) \le Y_u(t)$|ENTER TREND. The particle is in the flow state, moving through the box with consistent momentum.    |
+1. **Kinetic Dominance**: $\text{Ratio}_{\Lambda} > \text{Ratio}_{L}$ (where $\text{Ratio} = |\text{Predicted} / (\text{Actual} + \epsilon)|$). This ensures the acceleration vector is the primary driver of the move.
+2. **Structural Coherence**: The fractional order (Entropy) $S$ must be $< 0.1$.
 
-Where the dynamic boundaries are defined in the unbounded logit space:
+| Signal Type | Phase Check (Signs) | Kinetic Gate | Structural Check ($y(t)$) | Execution Logic |
+| --- | --- | --- | --- | --- |
+| **Fake-Out** | $L, \hat L, \hat \Lambda \text{ align } \neq \Lambda$ | Fail or $S \ge 0.1$ | $y(t) > Y_u(t)$ | **ABORT**. Particle is at a boundary but acceleration has collapsed or noise is too high. |
+| **Noise** | $\hat L$ and $\Lambda$ out of phase | N/A | $y(t) < Y_l(t)$ | **IGNORE**. The system is in a low-energy vacuum where signals are statistically insignificant. |
+| **Reversion** | $L, \hat L \text{ align } \neq \hat \Lambda, \Lambda$ | **Pass** & $S < 0.1$ | $y(t) > Y_u(t)$ | **ENTER REVERSAL**. Structural saturation reached and acceleration has flipped toward the mean. |
+| **Strong Trend** | All variables align | **Pass** & $S < 0.1$ | $Y_l \le y(t) \le Y_u$ | **ENTER TREND**. The particle is in a flow state, moving through the box with consistent momentum. |
+
+---
+
+
+* **Kinetic Complementarity**: The condition `Lambda_ratio > L_ratio` ensures that the system is not just moving, but actively accelerating into the new state.
+* **Entropy Filtering**: By enforcing `order < 0.1`, we reject "chaotic" regimes where the fractional integration of price action into momentum is unstable.
+* **Mean Reversion**: Only triggers if $y(t) > Y_u(t)$ and the Kinetic Gate is passed. The price has hit a structural wall and energy is saturating.
+* **Trend Following**: Only triggers if $Y_l(t) \le y(t) \le Y_u(t)$ and the Kinetic Gate is passed. The particle is in a geometrical flow state.
+
+*(Note: The boundaries $Y_u$ and $Y_l$ remain dynamic, calculated as $μ_y(t) \pm 2.5\sigma_y(t)$ in the unbounded logit space).*
+
 
 - $Y_u(t) = μ_y(t) + kσ_y(t)$
 - $Y_l(t) = μ_y(t) - kσ_y(t)$ 
@@ -456,7 +468,7 @@ In short:
 ## The Normalized OHLC Bar ##
 
 Consider the OHLC bar comprising **open** ($o(t)$), **high** ($h(t)$), **low** ($l(t)$) and **close** ($c(t)$) prices at time $t$. 
-We are going explore how blackcat's probability function $P(t)$ can normalize the OHLC bar.
+We are going explore the log return $L(t)$ can normalize the OHLC bar.
 
 Let's define the four **intrabar distances** $đ_1(t)$, $đ_2(t)$, $đ_3(t)$ and $đ_4(t)$ as:
 
@@ -470,15 +482,36 @@ $đ_4(t) = c(t)-l(t)$.
 
 Now let's define the **normalized OHLC bar** $Ƀ(t)$ at time $t$ as
 
-$Ƀ(t) = (đ_1(t), đ_2(t), đ_3(t), đ_4(t))⋅P(t)$. 
+$Ƀ(t) = (đ_1(t), đ_2(t), đ_3(t), đ_4(t))⋅(L(t))$. 
 
 We can also express the bar momentum $B(t)$ at time as entirely in terms of $đ$ functions:
 
 $B(t) = \frac{đ_4(t) - đ_2(t)}{đ_1(t) + đ_4(t)} \quad \text{or} \quad B(t) = \frac{đ_3(t) - đ_1(t)}{đ_3(t) + đ_2(t)}$.
 
-With this framework we can forecast $B(t)$ using a LSTM model which takes $(Ƀ(t-k), ..., Ƀ(t-1))$ as input features
-aiming at $Ƀ(t)$ as target and then use elements in $\hat Ƀ(t)$ vector to forecast $B(t)$
+### Bar Weighed Average $\bar B(t)$  ###
 
+This metric can be used to gauge momentum magnitude and direction it's defined as
+ 
+$\bar B(t) = \frac{\sum^{N-1}_{k=0} |Λ(t-k)| Ƀ(t-k)}{\sum^{N-1}_{k=0} |Λ(t-k)|}$. 
+
+$\bar B(t) = \frac{\sum^{N-1}_{k=0} e^{λ(t-k)} Ƀ(t-k)}{\sum^{N-1}_{k=0} e^{λ(t-k)}}$, where
+$
+λ(t-k) = 
+\begin{cases} 
+Λ(t-k)   & \text{if } B(t) > 0 \\
+-Λ(t-k) & \text{if } B(t) ≤ 0 \\
+\end{cases}
+$
+
+If $B(t)$ and $L(t)$ signs match, then we can bet for trend continuation, otherwise we should
+be prepared for a reversal. Let's enhance decision table in Application to Trading Signals section using $\bar B(t)$:
+
+| Signal Type | Phase Check (Signs) | Bar Momentum ($\bar B(t)$) | Kinetic Gate | Structural Check ($y(t)$) | Execution Logic |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Fake-Out** | $L, \hat L, \hat \Lambda \text{ align } \neq \Lambda$ | Fails to confirm $\hat \Lambda$ | Fail or $S \ge 0.1$ | $y(t) > Y_u(t)$ | **ABORT**. Boundary reached but micro-momentum suggests the move is driven by noise or exhaustion. |
+| **Noise** | $\hat L$ and $\Lambda$ out of phase | N/A | N/A | $y(t) < Y_l(t)$ | **IGNORE**. System in a low-energy state; price action is statistically insignificant. |
+| **Reversion** | $L, \hat L \text{ align } \neq \hat \Lambda, \Lambda$ | **Must align with** $\hat \Lambda$ | **Pass** & $S < 0.1$ | $y(t) > Y_u(t)$ | **ENTER REVERSAL**. Structural saturation reached and bar-level geometry confirms the snap-back toward the mean. |
+| **Strong Trend** | All aligned ($L, \hat L, \Lambda, \hat \Lambda$) | **Must align with** $\hat \Lambda$ | **Pass** & $S < 0.1$ | $Y_l(t) \le y(t) \le Y_u(t)$ | **ENTER TREND**. Macro-acceleration and micro-bar momentum are synchronized, indicating a high-conviction move. |
 ---
 
 

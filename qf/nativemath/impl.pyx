@@ -25,14 +25,37 @@ cdef extern from "fracdiff.h":
 
 # Add this under section "# 1. Bind to the C++ bridge functions"
 cdef extern from "entries.h":
-    int calculate_fractional_signal_cy(double L0, double L, double Lambda, double Lambda_hat, double f0, double f, double f_mean, double f_std, double order)
+    int calculate_fractional_signal_cy(double L0, double L, double Lambda, double Lambda_hat, double f, double f_mean, double f_std, double order, double energy_signal, double thrust_signal)
+
+cdef extern from "ohlc.h":
+    double energy_weighed_average_cy(const double * open_p, const double * high_p, const double * low_p, const double * close_p, int N)
+    double thrust_weighed_average_cy(const double * open_p, const double * high_p, const double * low_p, const double * close_p, int N)
+
+# 2. Add the Python-facing wrappers
+def get_energy_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,
+                               cnp.ndarray[double, ndim=1, mode="c"] high_p,
+                               cnp.ndarray[double, ndim=1, mode="c"] low_p,
+                               cnp.ndarray[double, ndim=1, mode="c"] close_p):
+    """
+    Calculates the Magnitude-Weighted (Energy) average for Reversal confirmation.
+    """
+    return energy_weighed_average_cy(&open_p[0], &high_p[0], &low_p[0], &close_p[0], len(open_p))
+
+def get_thrust_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,
+                               cnp.ndarray[double, ndim=1, mode="c"] high_p,
+                               cnp.ndarray[double, ndim=1, mode="c"] low_p,
+                               cnp.ndarray[double, ndim=1, mode="c"] close_p):
+    """
+    Calculates the Conditional-Exponential (Thrust) average for Trend confirmation.
+    """
+    return thrust_weighed_average_cy(&open_p[0], &high_p[0], &low_p[0], &close_p[0], len(open_p))
 
 # Add this under the existing `cdef extern` blocks (around line 30):
 cdef extern from "sizing.h":
     void calculate_levels_cy(
         int signal, double L0, double L, double Lambda, double Lambda_hat, int direction_bias, 
         double f, double f_mean, double f_stdev, double current_price, 
-        double low_price, double high_price, double order, # Add this
+        double low_price, double high_price, double order, double energy_signal, double thrust_signal,
         double * take_profit, double * stop_loss, int * signal_direction
     )
 
@@ -51,33 +74,33 @@ cdef extern from "sizing.h":
         double * leverage
     )
     void fractional_physics_close_cy(
-            int current_index, 
-            int entry_index, 
-            double entry_price, 
-            int quantity, 
-            int side, 
-            double current_price, 
-            double Lambda, 
-            double Lambda_hat, 
-            double f, 
-            double f_mean, 
-            double f_std,
-            int * exit_reason,
-            double * profit_loss,
-            int * stallness_reason
-        )
+        int current_index, 
+        int entry_index, 
+        double entry_price, 
+        int quantity, 
+        int side, 
+        double current_price, 
+        double Lambda, 
+        double Lambda_hat, 
+        double f, 
+        double f_mean, 
+        double f_std,
+        int * exit_reason,
+        double * profit_loss,
+        int * stallness_reason
+    )
     void fractional_update_levels_cy(
-            int side, 
-            double stop_loss, 
-            double take_profit, 
-            double entry_price, 
-            double low_price, 
-            double high_price, 
-            double L, 
-            double Lambda,
-            double * new_stop_loss,
-            double * new_take_profit
-        )
+        int side, 
+        double stop_loss, 
+        double take_profit, 
+        double entry_price, 
+        double low_price, 
+        double high_price, 
+        double L, 
+        double Lambda,
+        double * new_stop_loss,
+        double * new_take_profit
+    )
 
 # 2. Python-facing function for indicators
 def get_price_time_indicators(double[:] close_price, double[:] high_price, double[:] low_price, double[:] volume, size_t lookback_periods):
@@ -107,6 +130,24 @@ def get_price_time_indicators(double[:] close_price, double[:] high_price, doubl
     )
     
     return LP_out, Lambda_out, f_out
+
+# And update the bridge wrapper:
+def get_energy_weighed_average(double[:] open_price, double[:] high_price, double[:] low_price, double[:] close_price):
+    cdef int N = close_price.shape[0]
+    
+    if open_price.shape[0] != N or high_price.shape[0] != N or low_price.shape[0] != N:
+        raise ValueError("All OHLC arrays must have the same length.")
+        
+    return energy_weighed_average_cy(&open_price[0], &high_price[0], &low_price[0], &close_price[0], N)
+
+def get_thrust_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,
+                               cnp.ndarray[double, ndim=1, mode="c"] high_p,
+                               cnp.ndarray[double, ndim=1, mode="c"] low_p,
+                               cnp.ndarray[double, ndim=1, mode="c"] close_p):
+    """
+    Calculates the Conditional-Exponential (Thrust) average for Trend confirmation.
+    """
+    return thrust_weighed_average_cy(&open_p[0], &high_p[0], &low_p[0], &close_p[0], len(open_p))
 
 # 3. Python-facing function for fractional order
 def get_fractional_order(double Lambda_val, double[:] L):
@@ -138,26 +179,28 @@ def get_fractional_integral_weights(double order, int N):
 
 # Add this at the bottom of the file as a new Python-facing function
 # 6. Python-facing function for trading signals
-def get_fractional_signal(double L0, double L, double Lambda, double Lambda_hat, double f0, double f, double f_mean, double f_std, double order):
-    """
-    Computes the trading signal based on fractional force and momentum parameters using the C++ backend.
-    Returns integers corresponding to STALL (0), STRONG_BULLISH (1), STRONG_BEARISH (-1), etc.
-    """
-    return calculate_fractional_signal_cy(L0, L, Lambda, Lambda_hat, f0, f, f_mean, f_std, order)    
+def get_fractional_signal(double L, double L_hat, double Lambda, double Lambda_hat, 
+                          double y, double y_mean, double y_std, double order, 
+                          double energy_signal, double thrust_signal):
+    return calculate_fractional_signal_cy(
+        L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, energy_signal, thrust_signal
+    )
 
 # Add this at the very bottom of the file:
 # 7. Python-facing function for position sizing levels
-def get_levels(int signal, double L0, double L, double Lambda, double Lambda_hat, 
-               int direction_bias, double f, double f_mean, double f_stdev, 
-               double current_price, double low_price, double high_price, double order): # Add order
+def get_levels(
+        int signal, double L0, double L, double Lambda, double Lambda_hat, 
+        int direction_bias, double f, double f_mean, double f_stdev, 
+        double current_price, double low_price, double high_price, double order,
+        double energy_signal, double thrust_signal
+    ): # Add order
     cdef double take_profit = 0.0
     cdef double stop_loss = 0.0
     cdef int signal_direction = 0
     
     calculate_levels_cy(
         signal, L0, L, Lambda, Lambda_hat, direction_bias, f, f_mean, f_stdev, 
-        current_price, low_price, high_price, order, # Pass order
-        &take_profit, &stop_loss, &signal_direction
+        current_price, low_price, high_price, order, energy_signal, thrust_signal, &take_profit, &stop_loss, &signal_direction
     )
     
     return take_profit, stop_loss, signal_direction

@@ -15,7 +15,7 @@
 #include "absl/types/span.h" // LiteRT uses Abseil spans for buffer memory mapping
 #include "log.h"
 #include "csv-table.h"
-
+#include "ohlc.h"
 using namespace std;
 #ifdef __TEST_MAIN__
 
@@ -216,13 +216,12 @@ void F_test() {
 
     printf("F_test_success passed.\n");
 }
-
 void price_time_indicators_test_success() {
     // 1. Setup market data
-    vector<double> close_price = {100.0, 110.0, 105.0, 120.0};
-    vector<double> high_price  = {105.0, 115.0, 110.0, 125.0};
-    vector<double> low_price   = {90.0,  100.0, 95.0,  115.0}; 
-    vector<double> volume      = {1000.0, 1500.0, 1200.0, 1800.0};
+    std::vector<double> close_price = {100.0, 110.0, 105.0, 120.0};
+    std::vector<double> high_price  = {105.0, 115.0, 110.0, 125.0};
+    std::vector<double> low_price   = {90.0,  100.0, 95.0,  115.0}; 
+    std::vector<double> volume      = {1000.0, 1500.0, 1200.0, 1800.0};
 
     size_t N = close_price.size();
     
@@ -230,16 +229,15 @@ void price_time_indicators_test_success() {
     size_t lookback_periods = 2; 
 
     // 2. Pre-allocate output vectors for the by-reference overload
-    vector<double> LP(N, 0.0);
-    vector<double> lambda(N, 0.0); // Lambda
-    vector<double> f(N, 0.0);
-    vector<double> f_mean(N, 0.0);
-    vector<double> f_stdev(N, 0.0);
+    std::vector<double> LP(N, 0.0);
+    std::vector<double> lambda(N, 0.0); // Lambda
+    std::vector<double> y(N, 0.0);
 
-    // 3. Execute the indicator pipeline
-    price_time_indicators(close_price, high_price, low_price, volume, lookback_periods, LP, lambda, f, f_mean, f_stdev);
+    // 3. Execute the indicator pipeline (Now exclusively outputs LP, Lambda, and Logit y)
+    price_time_indicators(close_price, high_price, low_price, volume, lookback_periods, LP, lambda, y);
 
     // 4. Validate Log Returns (LP)
+    // t=0 has no previous price, so it must return NaN
     assert(std::isnan(LP[0]));
     assert(std::abs(LP[1] - std::log(110.0 / 100.0)) < 1e-6);
     assert(std::abs(LP[2] - std::log(105.0 / 110.0)) < 1e-6);
@@ -251,29 +249,12 @@ void price_time_indicators_test_success() {
     assert(std::abs(lambda[2] - (LP[2] - LP[1])) < 1e-6);
     assert(std::abs(lambda[3] - (LP[3] - LP[2])) < 1e-6);
 
-    // 6. Validate the joint probability function (f)
-    assert(std::isnan(f[0])); 
-    assert(std::isnan(f[1])); 
-    assert(!std::isnan(f[2])); // Market physics fully established here
-    assert(!std::isnan(f[3])); // Zero-order hold successfully forward-fills
-    assert(f[3] == f[2]);
-
-    // 7. Validate Rolling Statistics (3-Sigma Subsystem)
-    assert(std::isnan(f_mean[0]));
-    assert(std::isnan(f_mean[1]));
-    assert(std::isnan(f_mean[2]));  // lookback is 2, but f[1] is NaN, so window isn't fully formed yet
-    assert(!std::isnan(f_mean[3])); // Window successfully forms using f[2] and f[3]
-    
-    assert(std::isnan(f_stdev[0]));
-    assert(std::isnan(f_stdev[1]));
-    assert(std::isnan(f_stdev[2]));
-    assert(!std::isnan(f_stdev[3])); 
-
-    // Since the zero-order hold keeps f[2] == f[3], the mean equals the value itself
-    assert(std::abs(f_mean[3] - f[3]) < 1e-6);
-    
-    // And standard deviation evaluates to exactly 0.0 (safeguarding against catastrophic cancellation)
-    assert(std::abs(f_stdev[3] - 0.0) < 1e-6);
+    // 6. Validate the Logit-transformed probability function (y)
+    assert(std::isnan(y[0])); // Insufficient data to form probability well
+    assert(std::isnan(y[1])); 
+    assert(!std::isnan(y[2])); // Market physics fully established here
+    assert(!std::isnan(y[3])); // Zero-order hold successfully forward-fills the probability
+    assert(y[3] == y[2]);
 
     printf("price_time_indicators_test_success passed.\n");
 }
@@ -393,96 +374,173 @@ void rolling_stdev_test() {
 }
 
 void calculate_fractional_signal_test() {
-    // Function Signature Reminder:
-    // calculate_fractional_signal(double L, double L_hat, double Lambda, double Lambda_hat, double f0, double f, double f_mean, double f_std, double order)
+    std::cout << "Running calculate_fractional_signal_test..." << std::endl;
 
-    // Setup Baseline Probability Bounds
-    // Assuming F_STD_K_FACTOR = 2.5
-    // If f_mean = 0.5 and f_std = 0.1, boundaries are:
-    // Lower = 0.25, Upper = 0.75
-
-    // ---------------------------------------------------------
-    // 1. HARD FAILSAFE: High Entropy / Random Walk (order > 0.5)
-    // ---------------------------------------------------------
-    // Even with perfect bullish alignment and flow state, if entropy is 0.6, it should STALL.
-    assert(calculate_fractional_signal(1.0, 1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.1, 0.6) == STALL);
+    // Common setup variables
+    double y_mean = 0.0;
+    double y_std = 1.0;
+    double order = 0.05; // Below the 0.1 threshold to allow entry
 
     // ---------------------------------------------------------
-    // 2. STRONG TREND (Flow State)
+    // TEST 1: STRONG BULLISH TREND (Alignment Trigger)
     // ---------------------------------------------------------
-    // Bullish: f=0.5 (Inside 0.25-0.75). All classical and fractional variables are POSITIVE.
-    assert(calculate_fractional_signal(1.5, 1.2, 0.8, 0.5, 0.4, 0.5, 0.5, 0.1, 0.2) == STRONG_BULLISH);
-    
-    // Bearish: f=0.5 (Inside 0.25-0.75). All classical and fractional variables are NEGATIVE.
-    assert(calculate_fractional_signal(-1.5, -1.2, -0.8, -0.5, 0.4, 0.5, 0.5, 0.1, 0.2) == STRONG_BEARISH);
+    // Predicted: Upward velocity increasing (L=1.0 -> L_hat=2.0, Lambda=1e-4 -> Lambda_hat=3e-4)
+    // Structural: Inside the well (y=0.0)
+    // Gate: Requires thrust_signal alignment
+    {
+        double L = 1.0, L_hat = 2.0;
+        double Lambda = 1e-4, Lambda_hat = 3e-4; 
+        double y = 0.0; 
+
+        // 1A: Thrust aligns (Bullish), Energy contradicts (Bearish) -> SHOULD ENTER
+        assert(calculate_fractional_signal(L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, -1.0, 1.0) == STRONG_BULLISH);
+
+        // 1B: Thrust contradicts (Bearish), Energy aligns (Bullish) -> SHOULD STALL
+        assert(calculate_fractional_signal(L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, 1.0, -1.0) == STALL);
+        
+        std::cout << "[PASS] Strong Bullish Trend Gates" << std::endl;
+    }
 
     // ---------------------------------------------------------
-    // 3. MEAN REVERSION (Structural Saturation)
+    // TEST 2: MEAN REVERSION SHORT (Reversion Trigger at Top)
     // ---------------------------------------------------------
-    // Short Reversal: f=0.85 (Breaches 0.75). Momentum (L) is POSITIVE, Acceleration (Lambda) flipped NEGATIVE.
-    assert(calculate_fractional_signal(1.5, 1.2, -0.8, -0.5, 0.7, 0.85, 0.5, 0.1, 0.2) == MEAN_REVERSION_SHORT);
+    // Predicted: High upward velocity (L=1.0), but acceleration flipped down (Lambda_hat = -3e-4)
+    // Structural: Outside upper bound (y=5.0)
+    // Gate: Requires energy_signal alignment
+    {
+        double L = 1.0, L_hat = 2.0;
+        double Lambda = -1e-4, Lambda_hat = -3e-4; 
+        double y = 5.0; 
 
-    // Long Reversal: f=0.85 (Breaches 0.75). Momentum (L) is NEGATIVE, Acceleration (Lambda) flipped POSITIVE.
-    assert(calculate_fractional_signal(-1.5, -1.2, 0.8, 0.5, 0.7, 0.85, 0.5, 0.1, 0.2) == MEAN_REVERSION_LONG);
+        // 2A: Energy aligns (Bearish), Thrust contradicts (Bullish) -> SHOULD ENTER
+        assert(calculate_fractional_signal(L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, -1.0, 1.0) == MEAN_REVERSION_SHORT);
+
+        // 2B: Energy contradicts (Bullish), Thrust aligns (Bearish) -> SHOULD STALL
+        assert(calculate_fractional_signal(L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, 1.0, -1.0) == STALL);
+
+        std::cout << "[PASS] Mean Reversion Short Gates" << std::endl;
+    }
 
     // ---------------------------------------------------------
-    // 4. PHASE MISMATCH (Fake-Outs / Incoherent Noise)
+    // TEST 3: KINETIC RATIO FAILSAFE (Macro Filter)
     // ---------------------------------------------------------
-    // Fake-Out Warning: Price is saturating (f=0.85), but classical Lambda (+0.8) and fractional Lambda_hat (-0.5) disagree.
-    assert(calculate_fractional_signal(1.5, 1.2, 0.8, -0.5, 0.7, 0.85, 0.5, 0.1, 0.2) == STALL);
+    // Even if signals align, if Lambda_ratio <= L_ratio, we must STALL.
+    {
+        double L = 1.0, L_hat = 3.0;      // L_ratio = 3.0
+        double Lambda = 1e-4, Lambda_hat = 2e-4; // Lambda_ratio = 2.0
+        double y = 0.0;
+        
+        // Everything aligns perfectly, but the kinetic move is too "sluggish"
+        assert(calculate_fractional_signal(L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, 1.0, 1.0) == STALL);
+        
+        std::cout << "[PASS] Kinetic Ratio Filter" << std::endl;
+    }
 
-    // Incoherent Noise: Flow state (f=0.5), but neural network L_hat (-1.2) disagrees with classical L (+1.5).
-    assert(calculate_fractional_signal(1.5, -1.2, 0.8, 0.5, 0.4, 0.5, 0.5, 0.1, 0.2) == STALL);
+    // ---------------------------------------------------------
+    // TEST 4: NOISE / FLAT CANDLES
+    // ---------------------------------------------------------
+    // If micro-momentum is zero, we should never enter regardless of macro prediction.
+    {
+        double L = 1.0, L_hat = 2.0;
+        double Lambda = 1e-4, Lambda_hat = 3e-4;
+        double y = 0.0;
 
-    std::cout << "calculate_fractional_signal_test passed successfully." << std::endl;
+        assert(calculate_fractional_signal(L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, 0.0, 0.0) == STALL);
+        
+        std::cout << "[PASS] Noise/Zero-Signal Filter" << std::endl;
+    }
+
+    // ---------------------------------------------------------
+    // TEST 5: ORDER BURN-IN / HIGH FRACTIONAL NOISE
+    // ---------------------------------------------------------
+    // If the calculated fractional order 'S' is too high (> 0.5), it's a fake-out.
+    {
+        double high_order = 0.6;
+        assert(calculate_fractional_signal(1.0, 2.0, 1e-4, 3e-4, 0.0, 0.0, 1.0, high_order, 1.0, 1.0) == STALL);
+        
+        std::cout << "[PASS] High Fractional Order Failsafe" << std::endl;
+    }
+
+    std::cout << "All calculate_fractional_signal tests PASSED." << std::endl;
 }
 
 void calculate_levels_test() {
-    // Shared baseline parameters
+    std::cout << "Running calculate_levels_test (Fixing Epsilon Assertion)..." << std::endl;
+
     double current_price = 100.0;
-    double low_price = 99.0;
-    double high_price = 101.0; 
-    // base_potential_barrier = 2.0
-
-    double f_mean = 10.0;
-    double f_stdev = 1.0;
+    double f_mean = 0.0;
+    double tolerance = 1e-4; 
     
-    double L0 = 1.0;
-    // Set L = log(1.0) so L_ratio = exp(0)/1.0 = 1.0 (Neutral baseline)
-    double L = std::log(1.0); 
-    double Lambda = 1.0;
-    double Lambda_hat = std::log(2.0); // Lambda_ratio = 1.0, memory_scalar = log1p(1) ~= 0.693
+    // ---------------------------------------------------------
+    // TEST 1: PHYSICAL FLOOR (The Epsilon Fix)
+    // ---------------------------------------------------------
+    // To trigger the floor, we use a tiny f_stdev so base_dist < 0.05
+    {
+        double tiny_f_stdev = 0.0001; 
+        int signal = MEAN_REVERSION_LONG;
+        double energy_signal = 1.0;   
+        double order = 0.0;           
+        
+        auto levels = calculate_levels(
+            signal, 0, 0, 1e-4, 3e-4, 0, -0.05, f_mean, tiny_f_stdev, 
+            current_price, 99.0, 101.0, order, energy_signal, 0.0
+        );
 
-    // Case 1: STALL -> Should return zeroes
-    auto lvl_stall = calculate_levels(STALL, L0, L, Lambda, Lambda_hat, 0, 10.0, f_mean, f_stdev, current_price, low_price, high_price, 0.5);
-    assert(lvl_stall->signal_direction == 0);
-    assert(lvl_stall->take_profit == 0.0);
+        double sl_dist = std::abs(levels->stop_loss - current_price);
+        double price_epsilon = current_price * 0.0005; // 0.05
 
-    // Case 2: Pure Memory Regime (Neutral Velocity, Neutral Bias)
-    // total_buffer = 2.0. scalars = 1.0. 
-    auto lvl_memory = calculate_levels(STRONG_BULLISH, L0, L, Lambda, Lambda_hat, 0, 10.0, f_mean, f_stdev, current_price, low_price, high_price, 0.0);
-    double tp_dist_mem = std::abs(lvl_memory->take_profit - current_price);
-    
-    // Case 3: Kinetic Velocity Stretch (L >> L0)
-    // Set L = log(3.0) -> L_ratio = 3.0. Clamped velocity_scalar = 2.0.
-    // TP distance should strictly double compared to Case 2.
-    auto lvl_velocity = calculate_levels(STRONG_BULLISH, L0, std::log(3.0), Lambda, Lambda_hat, 0, 10.0, f_mean, f_stdev, current_price, low_price, high_price, 0.0);
-    double tp_dist_vel = std::abs(lvl_velocity->take_profit - current_price);
-    assert(std::abs(tp_dist_vel - (tp_dist_mem * 2.0)) < 1e-3);
+        // Verify the floor was hit and correctly clamped the distance
+        if (!(std::abs(sl_dist - price_epsilon) <= tolerance)) {
+            std::cerr << "Floor Test Failed! SL Dist: " << sl_dist 
+                      << " Expected: " << price_epsilon << std::endl;
+        }
+        assert(std::abs(sl_dist - price_epsilon) <= tolerance);
+        std::cout << "[PASS] Physical Floor (Epsilon) Verification" << std::endl;
+    }
 
-    // Case 4: Trend Alignment (bias matches side)
-    // bias_scalar = 1.5
-    auto lvl_aligned = calculate_levels(STRONG_BULLISH, L0, L, Lambda, Lambda_hat, 1, 10.0, f_mean, f_stdev, current_price, low_price, high_price, 0.0);
-    double tp_dist_aligned = std::abs(lvl_aligned->take_profit - current_price);
-    assert(std::abs(tp_dist_aligned - (tp_dist_mem * 1.5)) < 1e-3);
+    // ---------------------------------------------------------
+    // TEST 2: TREND THRUST EXPANSION
+    // ---------------------------------------------------------
+    {
+        double f_stdev = 0.02;
+        int signal = STRONG_BULLISH;
+        double thrust_signal = 0.9;
+        double Lambda_hat = 4e-4;
+        double Lambda = 1e-4;
 
-    // Case 5: Counter-Trend Penalty (bias opposes side)
-    // bias_scalar = 0.8
-    auto lvl_counter = calculate_levels(STRONG_BULLISH, L0, L, Lambda, Lambda_hat, -1, 10.0, f_mean, f_stdev, current_price, low_price, high_price, 0.0);
-    double tp_dist_counter = std::abs(lvl_counter->take_profit - current_price);
-    assert(std::abs(tp_dist_counter - (tp_dist_mem * 0.8)) < 1e-3);
+        auto levels = calculate_levels(
+            signal, 0, 0, Lambda, Lambda_hat, 0, 0.01, f_mean, f_stdev, 
+            current_price, 99.0, 101.0, 0.1, 0.0, thrust_signal
+        );
 
-    printf("calculate_levels_test (Omni-Parameter) passed successfully!\n");
+        double base_dist = current_price * f_stdev * F_STD_K_FACTOR; // 5.0
+        double tp_dist = std::abs(levels->take_profit - current_price);
+
+        assert(tp_dist > base_dist);
+        assert(levels->signal_direction == 1);
+        std::cout << "[PASS] Trend Thrust Expansion" << std::endl;
+    }
+
+    // ---------------------------------------------------------
+    // TEST 3: MEAN REVERSION TARGETING
+    // ---------------------------------------------------------
+    {
+        int signal = MEAN_REVERSION_SHORT;
+        double f = 0.04; 
+        auto levels = calculate_levels(
+            signal, 0, 0, 0, 0, 0, f, f_mean, 0.02, 
+            current_price, 99.0, 101.0, 0.1, 0.5, 0.0
+        );
+
+        double tp_dist = std::abs(levels->take_profit - current_price);
+        double expected_target = std::abs(current_price * (f - f_mean)); // 4.0
+
+        assert(std::abs(tp_dist - expected_target) <= tolerance);
+        assert(levels->signal_direction == -1);
+        std::cout << "[PASS] Reversal Mean Center Targeting" << std::endl;
+    }
+
+    std::cout << "All calculate_levels tests PASSED." << std::endl;
 }
 
 void calculate_fractional_qty_test() {
@@ -754,6 +812,45 @@ void test_cnn_inference_success() {
 
 }
 
+void energy_weighed_average_test() {
+    // 1. Market data setup
+    std::vector<double> open_price  = {90.0,  100.0, 110.0, 130.0};
+    std::vector<double> high_price  = {105.0, 115.0, 135.0, 165.0};
+    std::vector<double> low_price   = {85.0,  95.0,  105.0, 125.0}; 
+    std::vector<double> close_price = {100.0, 110.0, 130.0, 160.0};
+
+    // --- EXPECTATIONS BASED ON CORRECTED ohlc.cpp LOGIC (Center of Mass) ---
+    // The loop starts at index = MINIMUM_BARS - 1 (which is 2)
+    
+    // Step t=2:
+    // đ_1 = 135 - 130 = 5  |  đ_2 = 110 - 105 = 5  |  đ_4 = 130 - 105 = 25
+    // Lambda = log(130 / (110 + 1e-6)) - log(110 / (100 + 1e-6)) = 0.07174390
+    // B = (25 - 5) / (5 + 25) = 20 / 30 = 0.66666667
+    // Weighted_B += (0.07174390 * 0.66666667) = 0.04782927
+    
+    // Step t=3:
+    // đ_1 = 165 - 160 = 5  |  đ_2 = 130 - 125 = 5  |  đ_4 = 160 - 125 = 35
+    // Lambda = log(160 / (130 + 1e-6)) - log(130 / (110 + 1e-6)) = 0.04058528
+    // B = (35 - 5) / (5 + 35) = 30 / 40 = 0.75
+    // Weighted_B += (0.04058528 * 0.75) = 0.03043896
+
+    // Correct Center of Mass calculation:
+    // Sum(Lambda * B) = 0.04782927 + 0.03043896 = 0.07826823
+    // Sum(Lambda)     = 0.07174390 + 0.04058528 = 0.11232918
+    // Result = 0.07826823 / 0.11232918 = 0.6967755535
+    
+    double expected_result = 0.6967755535;
+    
+    // Executecd
+    double result = energy_weighed_average(open_price, high_price, low_price, close_price);
+    
+    // Validate
+    assert(!std::isnan(result));
+    assert(std::abs(result - expected_result) < 1e-6);
+
+    std::cout << "energy_weighed_average_test passed." << std::endl;
+}
+
 int main(int argc, char* argv[]) {
     (void)argc;
     (void)argv;
@@ -775,6 +872,7 @@ int main(int argc, char* argv[]) {
     fractional_physics_close_test();
     fractional_update_levels_test();
     test_cnn_inference_success();
+    energy_weighed_average_test();
     return 0;
 }
 #endif // __TEST_MAIN__

@@ -30,7 +30,9 @@ std::unique_ptr<LEVELS> calculate_levels(
     double current_price, 
     double low_price, 
     double high_price,
-    double order
+    double order,    
+    double energy_signal, 
+    double thrust_signal
 );
 
 void calculate_levels_cy(
@@ -45,8 +47,10 @@ void calculate_levels_cy(
     double f_stdev, 
     double current_price, 
     double low_price, 
-    double high_price,
+    double high_price,    
     double order,
+    double energy_signal, 
+    double thrust_signal,    
     double * take_profit,
     double * stop_loss,
     int * signal_direction

@@ -22,7 +22,8 @@ ext = Extension(
         f"{native_dir}/src/fracdiff.cpp",
         f"{native_dir}/src/stats.cpp",
         f"{native_dir}/src/entries.cpp",
-        f"{native_dir}/src/sizing.cpp"
+        f"{native_dir}/src/sizing.cpp",
+        f"{native_dir}/src/ohlc.cpp"
     ],
     language="c++",
     extra_compile_args=compile_args,

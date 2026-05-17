@@ -12,6 +12,7 @@
             "qf/nativemath/src/entries.h",
             "qf/nativemath/src/fracdiff.h",
             "qf/nativemath/src/indicators.h",
+            "qf/nativemath/src/ohlc.h",
             "qf/nativemath/src/sizing.h"
         ],
         "extra_compile_args": [
@@ -32,7 +33,8 @@
             "qf/nativemath/src/fracdiff.cpp",
             "qf/nativemath/src/stats.cpp",
             "qf/nativemath/src/entries.cpp",
-            "qf/nativemath/src/sizing.cpp"
+            "qf/nativemath/src/sizing.cpp",
+            "qf/nativemath/src/ohlc.cpp"
         ]
     },
     "module_name": "qf.nativemath.impl"
@@ -1181,6 +1183,7 @@ static int __Pyx_init_co_variables(void) {
 #include "indicators.h"
 #include "fracdiff.h"
 #include "entries.h"
+#include "ohlc.h"
 #include "sizing.h"
 #include "pythread.h"
 #include <stdlib.h>
@@ -2730,24 +2733,6 @@ static CYTHON_INLINE long __Pyx_div_long(long, long, int b_is_constant);
 /* PyImportError_Check.proto */
 #define __Pyx_PyExc_ImportError_Check(obj)  __Pyx_TypeCheck(obj, PyExc_ImportError)
 
-/* PyObjectVectorCallKwBuilder.proto */
-CYTHON_UNUSED static int __Pyx_VectorcallBuilder_AddArg_Check(PyObject *key, PyObject *value, PyObject *builder, PyObject **args, int n);
-#if CYTHON_VECTORCALL
-#if PY_VERSION_HEX >= 0x03090000
-#define __Pyx_Object_Vectorcall_CallFromBuilder PyObject_Vectorcall
-#else
-#define __Pyx_Object_Vectorcall_CallFromBuilder _PyObject_Vectorcall
-#endif
-#define __Pyx_MakeVectorcallBuilderKwds(n) PyTuple_New(n)
-static int __Pyx_VectorcallBuilder_AddArg(PyObject *key, PyObject *value, PyObject *builder, PyObject **args, int n);
-static int __Pyx_VectorcallBuilder_AddArgStr(const char *key, PyObject *value, PyObject *builder, PyObject **args, int n);
-#else
-#define __Pyx_Object_Vectorcall_CallFromBuilder __Pyx_PyObject_FastCallDict
-#define __Pyx_MakeVectorcallBuilderKwds(n) __Pyx_PyDict_NewPresized(n)
-#define __Pyx_VectorcallBuilder_AddArg(key, value, builder, args, n) PyDict_SetItem(builder, key, value)
-#define __Pyx_VectorcallBuilder_AddArgStr(key, value, builder, args, n) PyDict_SetItemString(builder, key, value)
-#endif
-
 /* IsLittleEndian.proto (used by BufferFormatCheck) */
 static CYTHON_INLINE int __Pyx_Is_Little_Endian(void);
 
@@ -2771,6 +2756,25 @@ static Py_ssize_t __Pyx_zeros[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 /* BufferIndexError.proto */
 static void __Pyx_RaiseBufferIndexError(int axis);
+
+#define __Pyx_BufPtrCContig1d(type, buf, i0, s0) ((type)buf + i0)
+/* PyObjectVectorCallKwBuilder.proto */
+CYTHON_UNUSED static int __Pyx_VectorcallBuilder_AddArg_Check(PyObject *key, PyObject *value, PyObject *builder, PyObject **args, int n);
+#if CYTHON_VECTORCALL
+#if PY_VERSION_HEX >= 0x03090000
+#define __Pyx_Object_Vectorcall_CallFromBuilder PyObject_Vectorcall
+#else
+#define __Pyx_Object_Vectorcall_CallFromBuilder _PyObject_Vectorcall
+#endif
+#define __Pyx_MakeVectorcallBuilderKwds(n) PyTuple_New(n)
+static int __Pyx_VectorcallBuilder_AddArg(PyObject *key, PyObject *value, PyObject *builder, PyObject **args, int n);
+static int __Pyx_VectorcallBuilder_AddArgStr(const char *key, PyObject *value, PyObject *builder, PyObject **args, int n);
+#else
+#define __Pyx_Object_Vectorcall_CallFromBuilder __Pyx_PyObject_FastCallDict
+#define __Pyx_MakeVectorcallBuilderKwds(n) __Pyx_PyDict_NewPresized(n)
+#define __Pyx_VectorcallBuilder_AddArg(key, value, builder, args, n) PyDict_SetItem(builder, key, value)
+#define __Pyx_VectorcallBuilder_AddArgStr(key, value, builder, args, n) PyDict_SetItemString(builder, key, value)
+#endif
 
 #define __Pyx_BufPtrStrided1d(type, buf, i0, s0) (type)((char*)buf + i0 * s0)
 /* AllocateExtensionType.proto */
@@ -3369,8 +3373,8 @@ static void __pyx_memoryview_slice_assign_scalar(__Pyx_memviewslice *, int, size
 static void __pyx_memoryview__slice_assign_scalar(char *, Py_ssize_t *, Py_ssize_t *, int, size_t, void *); /*proto*/
 static PyObject *__pyx_unpickle_Enum__set_state(struct __pyx_MemviewEnum_obj *, PyObject *); /*proto*/
 /* #### Code section: typeinfo ### */
-static const __Pyx_TypeInfo __Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t = { "float64_t", NULL, sizeof(__pyx_t_5numpy_float64_t), { 0 }, 0, 'R', 0, 0 };
 static const __Pyx_TypeInfo __Pyx_TypeInfo_double = { "double", NULL, sizeof(double), { 0 }, 0, 'R', 0, 0 };
+static const __Pyx_TypeInfo __Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t = { "float64_t", NULL, sizeof(__pyx_t_5numpy_float64_t), { 0 }, 0, 'R', 0, 0 };
 /* #### Code section: before_global_var ### */
 #define __Pyx_MODULE_NAME "qf.nativemath.impl"
 extern int __pyx_module_is_main_qf__nativemath__impl;
@@ -3428,15 +3432,19 @@ static void __pyx_memoryviewslice___pyx_pf_15View_dot_MemoryView_16_memoryviewsl
 static PyObject *__pyx_pf___pyx_memoryviewslice___reduce_cython__(CYTHON_UNUSED struct __pyx_memoryviewslice_obj *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf___pyx_memoryviewslice_2__setstate_cython__(CYTHON_UNUSED struct __pyx_memoryviewslice_obj *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
 static PyObject *__pyx_pf_15View_dot_MemoryView___pyx_unpickle_Enum(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v___pyx_type, long __pyx_v___pyx_checksum, PyObject *__pyx_v___pyx_state); /* proto */
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_close_price, __Pyx_memviewslice __pyx_v_high_price, __Pyx_memviewslice __pyx_v_low_price, __Pyx_memviewslice __pyx_v_volume, size_t __pyx_v_lookback_periods); /* proto */
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_2get_fractional_order(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_Lambda_val, __Pyx_memviewslice __pyx_v_L); /* proto */
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_fractional_integral(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_weights, __Pyx_memviewslice __pyx_v_values); /* proto */
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weights(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_order, int __pyx_v_N); /* proto */
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_8get_fractional_signal(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_f0, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_std, double __pyx_v_order); /* proto */
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_10get_levels(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_signal, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, int __pyx_v_direction_bias, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_stdev, double __pyx_v_current_price, double __pyx_v_low_price, double __pyx_v_high_price, double __pyx_v_order); /* proto */
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_12get_fractional_qty(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_entry_price, double __pyx_v_stop_loss, double __pyx_v_current_capital, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_max_leverage_allowed, double __pyx_v_platform_commission, double __pyx_v_order); /* proto */
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_physics_close(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_current_index, int __pyx_v_entry_index, double __pyx_v_entry_price, int __pyx_v_quantity, int __pyx_v_side, double __pyx_v_current_price, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_std); /* proto */
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_16get_fractional_update_levels(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_side, double __pyx_v_stop_loss, double __pyx_v_take_profit, double __pyx_v_entry_price, double __pyx_v_low_price, double __pyx_v_high_price, double __pyx_v_L, double __pyx_v_Lambda); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_energy_weighed_average(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_open_p, PyArrayObject *__pyx_v_high_p, PyArrayObject *__pyx_v_low_p, PyArrayObject *__pyx_v_close_p); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_2get_thrust_weighed_average(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_open_p, PyArrayObject *__pyx_v_high_p, PyArrayObject *__pyx_v_low_p, PyArrayObject *__pyx_v_close_p); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_price_time_indicators(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_close_price, __Pyx_memviewslice __pyx_v_high_price, __Pyx_memviewslice __pyx_v_low_price, __Pyx_memviewslice __pyx_v_volume, size_t __pyx_v_lookback_periods); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_energy_weighed_average(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_open_price, __Pyx_memviewslice __pyx_v_high_price, __Pyx_memviewslice __pyx_v_low_price, __Pyx_memviewslice __pyx_v_close_price); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_8get_thrust_weighed_average(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_open_p, PyArrayObject *__pyx_v_high_p, PyArrayObject *__pyx_v_low_p, PyArrayObject *__pyx_v_close_p); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_10get_fractional_order(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_Lambda_val, __Pyx_memviewslice __pyx_v_L); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_12get_fractional_integral(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_weights, __Pyx_memviewslice __pyx_v_values); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_integral_weights(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_order, int __pyx_v_N); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_16get_fractional_signal(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_L, double __pyx_v_L_hat, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_y, double __pyx_v_y_mean, double __pyx_v_y_std, double __pyx_v_order, double __pyx_v_energy_signal, double __pyx_v_thrust_signal); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_18get_levels(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_signal, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, int __pyx_v_direction_bias, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_stdev, double __pyx_v_current_price, double __pyx_v_low_price, double __pyx_v_high_price, double __pyx_v_order, double __pyx_v_energy_signal, double __pyx_v_thrust_signal); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_20get_fractional_qty(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_entry_price, double __pyx_v_stop_loss, double __pyx_v_current_capital, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_max_leverage_allowed, double __pyx_v_platform_commission, double __pyx_v_order); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_22get_fractional_physics_close(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_current_index, int __pyx_v_entry_index, double __pyx_v_entry_price, int __pyx_v_quantity, int __pyx_v_side, double __pyx_v_current_price, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_std); /* proto */
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_24get_fractional_update_levels(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_side, double __pyx_v_stop_loss, double __pyx_v_take_profit, double __pyx_v_entry_price, double __pyx_v_low_price, double __pyx_v_high_price, double __pyx_v_L, double __pyx_v_Lambda); /* proto */
 static PyObject *__pyx_tp_new_array(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_Enum(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_memoryview(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
@@ -3490,8 +3498,8 @@ typedef struct {
   __Pyx_CachedCFunction __pyx_umethod_PyDict_Type_values;
   PyObject *__pyx_slice[1];
   PyObject *__pyx_tuple[1];
-  PyObject *__pyx_codeobj_tab[9];
-  PyObject *__pyx_string_tab[187];
+  PyObject *__pyx_codeobj_tab[13];
+  PyObject *__pyx_string_tab[202];
   PyObject *__pyx_number_tab[4];
 /* #### Code section: module_state_contents ### */
 /* CommonTypesMetaclass.module_state_decls */
@@ -3534,192 +3542,207 @@ static __pyx_mstatetype * const __pyx_mstate_global = &__pyx_mstate_global_stati
 #endif
 /* #### Code section: constant_name_defines ### */
 #define __pyx_kp_u_ __pyx_string_tab[0]
-#define __pyx_kp_u_All_dimensions_preceding_dimensi __pyx_string_tab[1]
-#define __pyx_kp_u_All_input_arrays_must_have_the_s __pyx_string_tab[2]
-#define __pyx_kp_u_Buffer_view_does_not_expose_stri __pyx_string_tab[3]
-#define __pyx_kp_u_Can_only_create_a_buffer_that_is __pyx_string_tab[4]
-#define __pyx_kp_u_Cannot_assign_to_read_only_memor __pyx_string_tab[5]
-#define __pyx_kp_u_Cannot_create_writable_memory_vi __pyx_string_tab[6]
-#define __pyx_kp_u_Cannot_index_with_type __pyx_string_tab[7]
-#define __pyx_kp_u_Cannot_transpose_memoryview_with __pyx_string_tab[8]
-#define __pyx_kp_u_Dimension_d_is_not_direct __pyx_string_tab[9]
-#define __pyx_kp_u_Empty_shape_tuple_for_cython_arr __pyx_string_tab[10]
-#define __pyx_kp_u_Index_out_of_bounds_axis_d __pyx_string_tab[11]
-#define __pyx_kp_u_Indirect_dimensions_not_supporte __pyx_string_tab[12]
-#define __pyx_kp_u_Invalid_mode_expected_c_or_fortr __pyx_string_tab[13]
-#define __pyx_kp_u_Invalid_shape_in_axis __pyx_string_tab[14]
-#define __pyx_kp_u_MemoryView_of __pyx_string_tab[15]
-#define __pyx_kp_u_N_must_be_a_positive_integer __pyx_string_tab[16]
-#define __pyx_kp_u_Note_that_Cython_is_deliberately __pyx_string_tab[17]
-#define __pyx_kp_u_Out_of_bounds_on_buffer_access_a __pyx_string_tab[18]
-#define __pyx_kp_u_Step_may_not_be_zero_axis_d __pyx_string_tab[19]
-#define __pyx_kp_u_Unable_to_convert_item_to_object __pyx_string_tab[20]
-#define __pyx_kp_u_Weights_and_values_arrays_must_h __pyx_string_tab[21]
-#define __pyx_kp_u__2 __pyx_string_tab[22]
-#define __pyx_kp_u__3 __pyx_string_tab[23]
-#define __pyx_kp_u__4 __pyx_string_tab[24]
-#define __pyx_kp_u__5 __pyx_string_tab[25]
-#define __pyx_kp_u__6 __pyx_string_tab[26]
-#define __pyx_kp_u_add_note __pyx_string_tab[27]
-#define __pyx_kp_u_and __pyx_string_tab[28]
-#define __pyx_kp_u_at_0x __pyx_string_tab[29]
-#define __pyx_kp_u_collections_abc __pyx_string_tab[30]
-#define __pyx_kp_u_contiguous_and_direct __pyx_string_tab[31]
-#define __pyx_kp_u_contiguous_and_indirect __pyx_string_tab[32]
-#define __pyx_kp_u_disable __pyx_string_tab[33]
-#define __pyx_kp_u_enable __pyx_string_tab[34]
-#define __pyx_kp_u_gc __pyx_string_tab[35]
-#define __pyx_kp_u_got __pyx_string_tab[36]
-#define __pyx_kp_u_got_differing_extents_in_dimensi __pyx_string_tab[37]
-#define __pyx_kp_u_isenabled __pyx_string_tab[38]
-#define __pyx_kp_u_itemsize_0_for_cython_array __pyx_string_tab[39]
-#define __pyx_kp_u_no_default___reduce___due_to_non __pyx_string_tab[40]
-#define __pyx_kp_u_numpy_core_multiarray_failed_to __pyx_string_tab[41]
-#define __pyx_kp_u_numpy_core_umath_failed_to_impor __pyx_string_tab[42]
-#define __pyx_kp_u_object __pyx_string_tab[43]
-#define __pyx_kp_u_qf_nativemath_impl_pyx __pyx_string_tab[44]
-#define __pyx_kp_u_strided_and_direct __pyx_string_tab[45]
-#define __pyx_kp_u_strided_and_direct_or_indirect __pyx_string_tab[46]
-#define __pyx_kp_u_strided_and_indirect __pyx_string_tab[47]
-#define __pyx_kp_u_unable_to_allocate_array_data __pyx_string_tab[48]
-#define __pyx_kp_u_unable_to_allocate_shape_and_str __pyx_string_tab[49]
-#define __pyx_n_u_ASCII __pyx_string_tab[50]
-#define __pyx_n_u_Ellipsis __pyx_string_tab[51]
-#define __pyx_n_u_L __pyx_string_tab[52]
-#define __pyx_n_u_L0 __pyx_string_tab[53]
-#define __pyx_n_u_LP_out __pyx_string_tab[54]
-#define __pyx_n_u_LP_view __pyx_string_tab[55]
-#define __pyx_n_u_Lambda __pyx_string_tab[56]
-#define __pyx_n_u_Lambda_hat __pyx_string_tab[57]
-#define __pyx_n_u_Lambda_out __pyx_string_tab[58]
-#define __pyx_n_u_Lambda_val __pyx_string_tab[59]
-#define __pyx_n_u_Lambda_view __pyx_string_tab[60]
-#define __pyx_n_u_N __pyx_string_tab[61]
-#define __pyx_n_u_Pyx_PyDict_NextRef __pyx_string_tab[62]
-#define __pyx_n_u_Sequence __pyx_string_tab[63]
-#define __pyx_n_u_View_MemoryView __pyx_string_tab[64]
-#define __pyx_n_u_abc __pyx_string_tab[65]
-#define __pyx_n_u_allocate_buffer __pyx_string_tab[66]
-#define __pyx_n_u_asyncio_coroutines __pyx_string_tab[67]
-#define __pyx_n_u_base __pyx_string_tab[68]
-#define __pyx_n_u_c __pyx_string_tab[69]
-#define __pyx_n_u_class __pyx_string_tab[70]
-#define __pyx_n_u_class_getitem __pyx_string_tab[71]
-#define __pyx_n_u_cline_in_traceback __pyx_string_tab[72]
-#define __pyx_n_u_close_price __pyx_string_tab[73]
-#define __pyx_n_u_count __pyx_string_tab[74]
-#define __pyx_n_u_current_capital __pyx_string_tab[75]
-#define __pyx_n_u_current_index __pyx_string_tab[76]
-#define __pyx_n_u_current_price __pyx_string_tab[77]
-#define __pyx_n_u_dict __pyx_string_tab[78]
-#define __pyx_n_u_direction_bias __pyx_string_tab[79]
-#define __pyx_n_u_dtype __pyx_string_tab[80]
-#define __pyx_n_u_dtype_is_object __pyx_string_tab[81]
-#define __pyx_n_u_empty __pyx_string_tab[82]
-#define __pyx_n_u_encode __pyx_string_tab[83]
-#define __pyx_n_u_entry_index __pyx_string_tab[84]
-#define __pyx_n_u_entry_price __pyx_string_tab[85]
-#define __pyx_n_u_enumerate __pyx_string_tab[86]
-#define __pyx_n_u_error __pyx_string_tab[87]
-#define __pyx_n_u_exit_reason __pyx_string_tab[88]
-#define __pyx_n_u_f __pyx_string_tab[89]
-#define __pyx_n_u_f0 __pyx_string_tab[90]
-#define __pyx_n_u_f_mean __pyx_string_tab[91]
-#define __pyx_n_u_f_out __pyx_string_tab[92]
-#define __pyx_n_u_f_std __pyx_string_tab[93]
-#define __pyx_n_u_f_stdev __pyx_string_tab[94]
-#define __pyx_n_u_f_view __pyx_string_tab[95]
-#define __pyx_n_u_flags __pyx_string_tab[96]
-#define __pyx_n_u_float64 __pyx_string_tab[97]
-#define __pyx_n_u_format __pyx_string_tab[98]
-#define __pyx_n_u_fortran __pyx_string_tab[99]
-#define __pyx_n_u_func __pyx_string_tab[100]
-#define __pyx_n_u_get_fractional_integral __pyx_string_tab[101]
-#define __pyx_n_u_get_fractional_integral_weights __pyx_string_tab[102]
-#define __pyx_n_u_get_fractional_order __pyx_string_tab[103]
-#define __pyx_n_u_get_fractional_physics_close __pyx_string_tab[104]
-#define __pyx_n_u_get_fractional_qty __pyx_string_tab[105]
-#define __pyx_n_u_get_fractional_signal __pyx_string_tab[106]
-#define __pyx_n_u_get_fractional_update_levels __pyx_string_tab[107]
-#define __pyx_n_u_get_levels __pyx_string_tab[108]
-#define __pyx_n_u_get_price_time_indicators __pyx_string_tab[109]
-#define __pyx_n_u_getstate __pyx_string_tab[110]
-#define __pyx_n_u_high_price __pyx_string_tab[111]
-#define __pyx_n_u_id __pyx_string_tab[112]
-#define __pyx_n_u_import __pyx_string_tab[113]
-#define __pyx_n_u_index __pyx_string_tab[114]
-#define __pyx_n_u_is_coroutine __pyx_string_tab[115]
-#define __pyx_n_u_items __pyx_string_tab[116]
-#define __pyx_n_u_itemsize __pyx_string_tab[117]
-#define __pyx_n_u_leverage __pyx_string_tab[118]
-#define __pyx_n_u_lookback_periods __pyx_string_tab[119]
-#define __pyx_n_u_low_price __pyx_string_tab[120]
-#define __pyx_n_u_main __pyx_string_tab[121]
-#define __pyx_n_u_max_leverage_allowed __pyx_string_tab[122]
-#define __pyx_n_u_memview __pyx_string_tab[123]
-#define __pyx_n_u_mode __pyx_string_tab[124]
-#define __pyx_n_u_module __pyx_string_tab[125]
-#define __pyx_n_u_name __pyx_string_tab[126]
-#define __pyx_n_u_name_2 __pyx_string_tab[127]
-#define __pyx_n_u_ndim __pyx_string_tab[128]
-#define __pyx_n_u_new __pyx_string_tab[129]
-#define __pyx_n_u_new_sl __pyx_string_tab[130]
-#define __pyx_n_u_new_tp __pyx_string_tab[131]
-#define __pyx_n_u_np __pyx_string_tab[132]
-#define __pyx_n_u_numpy __pyx_string_tab[133]
-#define __pyx_n_u_obj __pyx_string_tab[134]
-#define __pyx_n_u_order __pyx_string_tab[135]
-#define __pyx_n_u_pack __pyx_string_tab[136]
-#define __pyx_n_u_platform_commission __pyx_string_tab[137]
-#define __pyx_n_u_pop __pyx_string_tab[138]
-#define __pyx_n_u_profit_loss __pyx_string_tab[139]
-#define __pyx_n_u_pyx_checksum __pyx_string_tab[140]
-#define __pyx_n_u_pyx_state __pyx_string_tab[141]
-#define __pyx_n_u_pyx_type __pyx_string_tab[142]
-#define __pyx_n_u_pyx_unpickle_Enum __pyx_string_tab[143]
-#define __pyx_n_u_pyx_vtable __pyx_string_tab[144]
-#define __pyx_n_u_qf_nativemath_impl __pyx_string_tab[145]
-#define __pyx_n_u_qty __pyx_string_tab[146]
-#define __pyx_n_u_qualname __pyx_string_tab[147]
-#define __pyx_n_u_quantity __pyx_string_tab[148]
-#define __pyx_n_u_reduce __pyx_string_tab[149]
-#define __pyx_n_u_reduce_cython __pyx_string_tab[150]
-#define __pyx_n_u_reduce_ex __pyx_string_tab[151]
-#define __pyx_n_u_register __pyx_string_tab[152]
-#define __pyx_n_u_set_name __pyx_string_tab[153]
-#define __pyx_n_u_setdefault __pyx_string_tab[154]
-#define __pyx_n_u_setstate __pyx_string_tab[155]
-#define __pyx_n_u_setstate_cython __pyx_string_tab[156]
-#define __pyx_n_u_shape __pyx_string_tab[157]
-#define __pyx_n_u_side __pyx_string_tab[158]
-#define __pyx_n_u_signal __pyx_string_tab[159]
-#define __pyx_n_u_signal_direction __pyx_string_tab[160]
-#define __pyx_n_u_size __pyx_string_tab[161]
-#define __pyx_n_u_stallness_reason __pyx_string_tab[162]
-#define __pyx_n_u_start __pyx_string_tab[163]
-#define __pyx_n_u_step __pyx_string_tab[164]
-#define __pyx_n_u_stop __pyx_string_tab[165]
-#define __pyx_n_u_stop_loss __pyx_string_tab[166]
-#define __pyx_n_u_struct __pyx_string_tab[167]
-#define __pyx_n_u_take_profit __pyx_string_tab[168]
-#define __pyx_n_u_test __pyx_string_tab[169]
-#define __pyx_n_u_unpack __pyx_string_tab[170]
-#define __pyx_n_u_update __pyx_string_tab[171]
-#define __pyx_n_u_values __pyx_string_tab[172]
-#define __pyx_n_u_volume __pyx_string_tab[173]
-#define __pyx_n_u_weights __pyx_string_tab[174]
-#define __pyx_n_u_weights_out __pyx_string_tab[175]
-#define __pyx_n_u_x __pyx_string_tab[176]
-#define __pyx_kp_b_iso88591_1_1_q_Cxq_31_aq_5 __pyx_string_tab[177]
-#define __pyx_kp_b_iso88591_1_a_q_M_1_x_3ha_a_AQ_Q __pyx_string_tab[178]
-#define __pyx_kp_b_iso88591_F_1_z_q_3b_9F_3c_3fF_3cQR_j_5Rv __pyx_string_tab[179]
-#define __pyx_kp_b_iso88591_a_3aq __pyx_string_tab[180]
-#define __pyx_kp_b_iso88591_a_A_q_Cx_3ha_a_a_1_1 __pyx_string_tab[181]
-#define __pyx_kp_b_iso88591_aq_vV1Cs_j_QgQd_6 __pyx_string_tab[182]
-#define __pyx_kp_b_iso88591_c_T_HT __pyx_string_tab[183]
-#define __pyx_kp_b_iso88591_q_k_m_l_Q_81 __pyx_string_tab[184]
-#define __pyx_kp_b_iso88591_r_A_j_F_3fBa_7_Qk_1 __pyx_string_tab[185]
-#define __pyx_n_b_O __pyx_string_tab[186]
+#define __pyx_kp_u_All_OHLC_arrays_must_have_the_sa __pyx_string_tab[1]
+#define __pyx_kp_u_All_dimensions_preceding_dimensi __pyx_string_tab[2]
+#define __pyx_kp_u_All_input_arrays_must_have_the_s __pyx_string_tab[3]
+#define __pyx_kp_u_Buffer_view_does_not_expose_stri __pyx_string_tab[4]
+#define __pyx_kp_u_Can_only_create_a_buffer_that_is __pyx_string_tab[5]
+#define __pyx_kp_u_Cannot_assign_to_read_only_memor __pyx_string_tab[6]
+#define __pyx_kp_u_Cannot_create_writable_memory_vi __pyx_string_tab[7]
+#define __pyx_kp_u_Cannot_index_with_type __pyx_string_tab[8]
+#define __pyx_kp_u_Cannot_transpose_memoryview_with __pyx_string_tab[9]
+#define __pyx_kp_u_Dimension_d_is_not_direct __pyx_string_tab[10]
+#define __pyx_kp_u_Empty_shape_tuple_for_cython_arr __pyx_string_tab[11]
+#define __pyx_kp_u_Index_out_of_bounds_axis_d __pyx_string_tab[12]
+#define __pyx_kp_u_Indirect_dimensions_not_supporte __pyx_string_tab[13]
+#define __pyx_kp_u_Invalid_mode_expected_c_or_fortr __pyx_string_tab[14]
+#define __pyx_kp_u_Invalid_shape_in_axis __pyx_string_tab[15]
+#define __pyx_kp_u_MemoryView_of __pyx_string_tab[16]
+#define __pyx_kp_u_N_must_be_a_positive_integer __pyx_string_tab[17]
+#define __pyx_kp_u_Note_that_Cython_is_deliberately __pyx_string_tab[18]
+#define __pyx_kp_u_Out_of_bounds_on_buffer_access_a __pyx_string_tab[19]
+#define __pyx_kp_u_Step_may_not_be_zero_axis_d __pyx_string_tab[20]
+#define __pyx_kp_u_Unable_to_convert_item_to_object __pyx_string_tab[21]
+#define __pyx_kp_u_Weights_and_values_arrays_must_h __pyx_string_tab[22]
+#define __pyx_kp_u__2 __pyx_string_tab[23]
+#define __pyx_kp_u__3 __pyx_string_tab[24]
+#define __pyx_kp_u__4 __pyx_string_tab[25]
+#define __pyx_kp_u__5 __pyx_string_tab[26]
+#define __pyx_kp_u__6 __pyx_string_tab[27]
+#define __pyx_kp_u_add_note __pyx_string_tab[28]
+#define __pyx_kp_u_and __pyx_string_tab[29]
+#define __pyx_kp_u_at_0x __pyx_string_tab[30]
+#define __pyx_kp_u_collections_abc __pyx_string_tab[31]
+#define __pyx_kp_u_contiguous_and_direct __pyx_string_tab[32]
+#define __pyx_kp_u_contiguous_and_indirect __pyx_string_tab[33]
+#define __pyx_kp_u_disable __pyx_string_tab[34]
+#define __pyx_kp_u_enable __pyx_string_tab[35]
+#define __pyx_kp_u_gc __pyx_string_tab[36]
+#define __pyx_kp_u_got __pyx_string_tab[37]
+#define __pyx_kp_u_got_differing_extents_in_dimensi __pyx_string_tab[38]
+#define __pyx_kp_u_isenabled __pyx_string_tab[39]
+#define __pyx_kp_u_itemsize_0_for_cython_array __pyx_string_tab[40]
+#define __pyx_kp_u_no_default___reduce___due_to_non __pyx_string_tab[41]
+#define __pyx_kp_u_numpy_core_multiarray_failed_to __pyx_string_tab[42]
+#define __pyx_kp_u_numpy_core_umath_failed_to_impor __pyx_string_tab[43]
+#define __pyx_kp_u_object __pyx_string_tab[44]
+#define __pyx_kp_u_qf_nativemath_impl_pyx __pyx_string_tab[45]
+#define __pyx_kp_u_strided_and_direct __pyx_string_tab[46]
+#define __pyx_kp_u_strided_and_direct_or_indirect __pyx_string_tab[47]
+#define __pyx_kp_u_strided_and_indirect __pyx_string_tab[48]
+#define __pyx_kp_u_unable_to_allocate_array_data __pyx_string_tab[49]
+#define __pyx_kp_u_unable_to_allocate_shape_and_str __pyx_string_tab[50]
+#define __pyx_n_u_ASCII __pyx_string_tab[51]
+#define __pyx_n_u_Ellipsis __pyx_string_tab[52]
+#define __pyx_n_u_L __pyx_string_tab[53]
+#define __pyx_n_u_L0 __pyx_string_tab[54]
+#define __pyx_n_u_LP_out __pyx_string_tab[55]
+#define __pyx_n_u_LP_view __pyx_string_tab[56]
+#define __pyx_n_u_L_hat __pyx_string_tab[57]
+#define __pyx_n_u_Lambda __pyx_string_tab[58]
+#define __pyx_n_u_Lambda_hat __pyx_string_tab[59]
+#define __pyx_n_u_Lambda_out __pyx_string_tab[60]
+#define __pyx_n_u_Lambda_val __pyx_string_tab[61]
+#define __pyx_n_u_Lambda_view __pyx_string_tab[62]
+#define __pyx_n_u_N __pyx_string_tab[63]
+#define __pyx_n_u_Pyx_PyDict_NextRef __pyx_string_tab[64]
+#define __pyx_n_u_Sequence __pyx_string_tab[65]
+#define __pyx_n_u_View_MemoryView __pyx_string_tab[66]
+#define __pyx_n_u_abc __pyx_string_tab[67]
+#define __pyx_n_u_allocate_buffer __pyx_string_tab[68]
+#define __pyx_n_u_asyncio_coroutines __pyx_string_tab[69]
+#define __pyx_n_u_base __pyx_string_tab[70]
+#define __pyx_n_u_c __pyx_string_tab[71]
+#define __pyx_n_u_class __pyx_string_tab[72]
+#define __pyx_n_u_class_getitem __pyx_string_tab[73]
+#define __pyx_n_u_cline_in_traceback __pyx_string_tab[74]
+#define __pyx_n_u_close_p __pyx_string_tab[75]
+#define __pyx_n_u_close_price __pyx_string_tab[76]
+#define __pyx_n_u_count __pyx_string_tab[77]
+#define __pyx_n_u_current_capital __pyx_string_tab[78]
+#define __pyx_n_u_current_index __pyx_string_tab[79]
+#define __pyx_n_u_current_price __pyx_string_tab[80]
+#define __pyx_n_u_dict __pyx_string_tab[81]
+#define __pyx_n_u_direction_bias __pyx_string_tab[82]
+#define __pyx_n_u_dtype __pyx_string_tab[83]
+#define __pyx_n_u_dtype_is_object __pyx_string_tab[84]
+#define __pyx_n_u_empty __pyx_string_tab[85]
+#define __pyx_n_u_encode __pyx_string_tab[86]
+#define __pyx_n_u_energy_signal __pyx_string_tab[87]
+#define __pyx_n_u_entry_index __pyx_string_tab[88]
+#define __pyx_n_u_entry_price __pyx_string_tab[89]
+#define __pyx_n_u_enumerate __pyx_string_tab[90]
+#define __pyx_n_u_error __pyx_string_tab[91]
+#define __pyx_n_u_exit_reason __pyx_string_tab[92]
+#define __pyx_n_u_f __pyx_string_tab[93]
+#define __pyx_n_u_f_mean __pyx_string_tab[94]
+#define __pyx_n_u_f_out __pyx_string_tab[95]
+#define __pyx_n_u_f_std __pyx_string_tab[96]
+#define __pyx_n_u_f_stdev __pyx_string_tab[97]
+#define __pyx_n_u_f_view __pyx_string_tab[98]
+#define __pyx_n_u_flags __pyx_string_tab[99]
+#define __pyx_n_u_float64 __pyx_string_tab[100]
+#define __pyx_n_u_format __pyx_string_tab[101]
+#define __pyx_n_u_fortran __pyx_string_tab[102]
+#define __pyx_n_u_func __pyx_string_tab[103]
+#define __pyx_n_u_get_energy_weighed_average __pyx_string_tab[104]
+#define __pyx_n_u_get_fractional_integral __pyx_string_tab[105]
+#define __pyx_n_u_get_fractional_integral_weights __pyx_string_tab[106]
+#define __pyx_n_u_get_fractional_order __pyx_string_tab[107]
+#define __pyx_n_u_get_fractional_physics_close __pyx_string_tab[108]
+#define __pyx_n_u_get_fractional_qty __pyx_string_tab[109]
+#define __pyx_n_u_get_fractional_signal __pyx_string_tab[110]
+#define __pyx_n_u_get_fractional_update_levels __pyx_string_tab[111]
+#define __pyx_n_u_get_levels __pyx_string_tab[112]
+#define __pyx_n_u_get_price_time_indicators __pyx_string_tab[113]
+#define __pyx_n_u_get_thrust_weighed_average __pyx_string_tab[114]
+#define __pyx_n_u_getstate __pyx_string_tab[115]
+#define __pyx_n_u_high_p __pyx_string_tab[116]
+#define __pyx_n_u_high_price __pyx_string_tab[117]
+#define __pyx_n_u_id __pyx_string_tab[118]
+#define __pyx_n_u_import __pyx_string_tab[119]
+#define __pyx_n_u_index __pyx_string_tab[120]
+#define __pyx_n_u_is_coroutine __pyx_string_tab[121]
+#define __pyx_n_u_items __pyx_string_tab[122]
+#define __pyx_n_u_itemsize __pyx_string_tab[123]
+#define __pyx_n_u_leverage __pyx_string_tab[124]
+#define __pyx_n_u_lookback_periods __pyx_string_tab[125]
+#define __pyx_n_u_low_p __pyx_string_tab[126]
+#define __pyx_n_u_low_price __pyx_string_tab[127]
+#define __pyx_n_u_main __pyx_string_tab[128]
+#define __pyx_n_u_max_leverage_allowed __pyx_string_tab[129]
+#define __pyx_n_u_memview __pyx_string_tab[130]
+#define __pyx_n_u_mode __pyx_string_tab[131]
+#define __pyx_n_u_module __pyx_string_tab[132]
+#define __pyx_n_u_name __pyx_string_tab[133]
+#define __pyx_n_u_name_2 __pyx_string_tab[134]
+#define __pyx_n_u_ndim __pyx_string_tab[135]
+#define __pyx_n_u_new __pyx_string_tab[136]
+#define __pyx_n_u_new_sl __pyx_string_tab[137]
+#define __pyx_n_u_new_tp __pyx_string_tab[138]
+#define __pyx_n_u_np __pyx_string_tab[139]
+#define __pyx_n_u_numpy __pyx_string_tab[140]
+#define __pyx_n_u_obj __pyx_string_tab[141]
+#define __pyx_n_u_open_p __pyx_string_tab[142]
+#define __pyx_n_u_open_price __pyx_string_tab[143]
+#define __pyx_n_u_order __pyx_string_tab[144]
+#define __pyx_n_u_pack __pyx_string_tab[145]
+#define __pyx_n_u_platform_commission __pyx_string_tab[146]
+#define __pyx_n_u_pop __pyx_string_tab[147]
+#define __pyx_n_u_profit_loss __pyx_string_tab[148]
+#define __pyx_n_u_pyx_checksum __pyx_string_tab[149]
+#define __pyx_n_u_pyx_state __pyx_string_tab[150]
+#define __pyx_n_u_pyx_type __pyx_string_tab[151]
+#define __pyx_n_u_pyx_unpickle_Enum __pyx_string_tab[152]
+#define __pyx_n_u_pyx_vtable __pyx_string_tab[153]
+#define __pyx_n_u_qf_nativemath_impl __pyx_string_tab[154]
+#define __pyx_n_u_qty __pyx_string_tab[155]
+#define __pyx_n_u_qualname __pyx_string_tab[156]
+#define __pyx_n_u_quantity __pyx_string_tab[157]
+#define __pyx_n_u_reduce __pyx_string_tab[158]
+#define __pyx_n_u_reduce_cython __pyx_string_tab[159]
+#define __pyx_n_u_reduce_ex __pyx_string_tab[160]
+#define __pyx_n_u_register __pyx_string_tab[161]
+#define __pyx_n_u_set_name __pyx_string_tab[162]
+#define __pyx_n_u_setdefault __pyx_string_tab[163]
+#define __pyx_n_u_setstate __pyx_string_tab[164]
+#define __pyx_n_u_setstate_cython __pyx_string_tab[165]
+#define __pyx_n_u_shape __pyx_string_tab[166]
+#define __pyx_n_u_side __pyx_string_tab[167]
+#define __pyx_n_u_signal __pyx_string_tab[168]
+#define __pyx_n_u_signal_direction __pyx_string_tab[169]
+#define __pyx_n_u_size __pyx_string_tab[170]
+#define __pyx_n_u_stallness_reason __pyx_string_tab[171]
+#define __pyx_n_u_start __pyx_string_tab[172]
+#define __pyx_n_u_step __pyx_string_tab[173]
+#define __pyx_n_u_stop __pyx_string_tab[174]
+#define __pyx_n_u_stop_loss __pyx_string_tab[175]
+#define __pyx_n_u_struct __pyx_string_tab[176]
+#define __pyx_n_u_take_profit __pyx_string_tab[177]
+#define __pyx_n_u_test __pyx_string_tab[178]
+#define __pyx_n_u_thrust_signal __pyx_string_tab[179]
+#define __pyx_n_u_unpack __pyx_string_tab[180]
+#define __pyx_n_u_update __pyx_string_tab[181]
+#define __pyx_n_u_values __pyx_string_tab[182]
+#define __pyx_n_u_volume __pyx_string_tab[183]
+#define __pyx_n_u_weights __pyx_string_tab[184]
+#define __pyx_n_u_weights_out __pyx_string_tab[185]
+#define __pyx_n_u_x __pyx_string_tab[186]
+#define __pyx_n_u_y __pyx_string_tab[187]
+#define __pyx_n_u_y_mean __pyx_string_tab[188]
+#define __pyx_n_u_y_std __pyx_string_tab[189]
+#define __pyx_kp_b_iso88591_1_1_q_Cxq_31_aq_5 __pyx_string_tab[190]
+#define __pyx_kp_b_iso88591_1_a_q_M_1_x_3ha_a_AQ_Q __pyx_string_tab[191]
+#define __pyx_kp_b_iso88591_7_c_a __pyx_string_tab[192]
+#define __pyx_kp_b_iso88591_AQfAT_Qe1D_PQQUUXXYYZ __pyx_string_tab[193]
+#define __pyx_kp_b_iso88591_F_1_z_q_3b_9F_3c_3fF_3cQR_j_5Rv __pyx_string_tab[194]
+#define __pyx_kp_b_iso88591_F_1_z_q_3b_V1Cs_Cy_asRUUV_j_AQj __pyx_string_tab[195]
+#define __pyx_kp_b_iso88591_a_3aq __pyx_string_tab[196]
+#define __pyx_kp_b_iso88591_a_A_q_Cx_3ha_g_OSTTaabbmmnno_1 __pyx_string_tab[197]
+#define __pyx_kp_b_iso88591_aq_vV1Cs_j_QgQd_6 __pyx_string_tab[198]
+#define __pyx_kp_b_iso88591_q_k_m_l_Q_81 __pyx_string_tab[199]
+#define __pyx_kp_b_iso88591_r_A_j_F_3fBa_7_Qk_1 __pyx_string_tab[200]
+#define __pyx_n_b_O __pyx_string_tab[201]
 #define __pyx_int_0 __pyx_number_tab[0]
 #define __pyx_int_neg_1 __pyx_number_tab[1]
 #define __pyx_int_1 __pyx_number_tab[2]
@@ -3764,8 +3787,8 @@ static CYTHON_SMALL_CODE int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_type___pyx_memoryviewslice);
   for (int i=0; i<1; ++i) { Py_CLEAR(clear_module_state->__pyx_slice[i]); }
   for (int i=0; i<1; ++i) { Py_CLEAR(clear_module_state->__pyx_tuple[i]); }
-  for (int i=0; i<9; ++i) { Py_CLEAR(clear_module_state->__pyx_codeobj_tab[i]); }
-  for (int i=0; i<187; ++i) { Py_CLEAR(clear_module_state->__pyx_string_tab[i]); }
+  for (int i=0; i<13; ++i) { Py_CLEAR(clear_module_state->__pyx_codeobj_tab[i]); }
+  for (int i=0; i<202; ++i) { Py_CLEAR(clear_module_state->__pyx_string_tab[i]); }
   for (int i=0; i<4; ++i) { Py_CLEAR(clear_module_state->__pyx_number_tab[i]); }
 /* #### Code section: module_state_clear_contents ### */
 /* CommonTypesMetaclass.module_state_clear */
@@ -3815,8 +3838,8 @@ static CYTHON_SMALL_CODE int __pyx_m_traverse(PyObject *m, visitproc visit, void
   Py_VISIT(traverse_module_state->__pyx_type___pyx_memoryviewslice);
   for (int i=0; i<1; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_slice[i]); }
   for (int i=0; i<1; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_tuple[i]); }
-  for (int i=0; i<9; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_codeobj_tab[i]); }
-  for (int i=0; i<187; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_string_tab[i]); }
+  for (int i=0; i<13; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_codeobj_tab[i]); }
+  for (int i=0; i<202; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_string_tab[i]); }
   for (int i=0; i<4; ++i) { __Pyx_VISIT_CONST(traverse_module_state->__pyx_number_tab[i]); }
 /* #### Code section: module_state_traverse_contents ### */
 /* CommonTypesMetaclass.module_state_traverse */
@@ -18390,7 +18413,565 @@ static CYTHON_INLINE NPY_DATETIMEUNIT __pyx_f_5numpy_get_datetime64_unit(PyObjec
   return __pyx_r;
 }
 
-/* "qf/nativemath/impl.pyx":83
+/* "qf/nativemath/impl.pyx":35
+ * 
+ * # 2. Add the Python-facing wrappers
+ * def get_energy_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,             # <<<<<<<<<<<<<<
+ *                                cnp.ndarray[double, ndim=1, mode="c"] high_p,
+ *                                cnp.ndarray[double, ndim=1, mode="c"] low_p,
+*/
+
+/* Python wrapper */
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_1get_energy_weighed_average(PyObject *__pyx_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_get_energy_weighed_average, "\n    Calculates the Magnitude-Weighted (Energy) average for Reversal confirmation.\n    ");
+static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_1get_energy_weighed_average = {"get_energy_weighed_average", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_1get_energy_weighed_average, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_get_energy_weighed_average};
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_1get_energy_weighed_average(PyObject *__pyx_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+) {
+  PyArrayObject *__pyx_v_open_p = 0;
+  PyArrayObject *__pyx_v_high_p = 0;
+  PyArrayObject *__pyx_v_low_p = 0;
+  PyArrayObject *__pyx_v_close_p = 0;
+  #if !CYTHON_METH_FASTCALL
+  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
+  #endif
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject* values[4] = {0,0,0,0};
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("get_energy_weighed_average (wrapper)", 0);
+  #if !CYTHON_METH_FASTCALL
+  #if CYTHON_ASSUME_SAFE_SIZE
+  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
+  #else
+  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return NULL;
+  #endif
+  #endif
+  __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
+  {
+    PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_open_p,&__pyx_mstate_global->__pyx_n_u_high_p,&__pyx_mstate_global->__pyx_n_u_low_p,&__pyx_mstate_global->__pyx_n_u_close_p,0};
+    const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 35, __pyx_L3_error)
+    if (__pyx_kwds_len > 0) {
+      switch (__pyx_nargs) {
+        case  4:
+        values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 35, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  3:
+        values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 35, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  2:
+        values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 35, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  1:
+        values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 35, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      const Py_ssize_t kwd_pos_args = __pyx_nargs;
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_energy_weighed_average", 0) < (0)) __PYX_ERR(0, 35, __pyx_L3_error)
+      for (Py_ssize_t i = __pyx_nargs; i < 4; i++) {
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_energy_weighed_average", 1, 4, 4, i); __PYX_ERR(0, 35, __pyx_L3_error) }
+      }
+    } else if (unlikely(__pyx_nargs != 4)) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 35, __pyx_L3_error)
+      values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 35, __pyx_L3_error)
+      values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 35, __pyx_L3_error)
+      values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 35, __pyx_L3_error)
+    }
+    __pyx_v_open_p = ((PyArrayObject *)values[0]);
+    __pyx_v_high_p = ((PyArrayObject *)values[1]);
+    __pyx_v_low_p = ((PyArrayObject *)values[2]);
+    __pyx_v_close_p = ((PyArrayObject *)values[3]);
+  }
+  goto __pyx_L6_skip;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("get_energy_weighed_average", 1, 4, 4, __pyx_nargs); __PYX_ERR(0, 35, __pyx_L3_error)
+  __pyx_L6_skip:;
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L3_error:;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __Pyx_AddTraceback("qf.nativemath.impl.get_energy_weighed_average", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_open_p), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "open_p", 0))) __PYX_ERR(0, 35, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_high_p), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "high_p", 0))) __PYX_ERR(0, 36, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_low_p), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "low_p", 0))) __PYX_ERR(0, 37, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_close_p), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "close_p", 0))) __PYX_ERR(0, 38, __pyx_L1_error)
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_get_energy_weighed_average(__pyx_self, __pyx_v_open_p, __pyx_v_high_p, __pyx_v_low_p, __pyx_v_close_p);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  goto __pyx_L7_cleaned_up;
+  __pyx_L0:;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __pyx_L7_cleaned_up:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_energy_weighed_average(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_open_p, PyArrayObject *__pyx_v_high_p, PyArrayObject *__pyx_v_low_p, PyArrayObject *__pyx_v_close_p) {
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_close_p;
+  __Pyx_Buffer __pyx_pybuffer_close_p;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_high_p;
+  __Pyx_Buffer __pyx_pybuffer_high_p;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_low_p;
+  __Pyx_Buffer __pyx_pybuffer_low_p;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_open_p;
+  __Pyx_Buffer __pyx_pybuffer_open_p;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  Py_ssize_t __pyx_t_1;
+  int __pyx_t_2;
+  Py_ssize_t __pyx_t_3;
+  Py_ssize_t __pyx_t_4;
+  Py_ssize_t __pyx_t_5;
+  Py_ssize_t __pyx_t_6;
+  PyObject *__pyx_t_7 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("get_energy_weighed_average", 0);
+  __pyx_pybuffer_open_p.pybuffer.buf = NULL;
+  __pyx_pybuffer_open_p.refcount = 0;
+  __pyx_pybuffernd_open_p.data = NULL;
+  __pyx_pybuffernd_open_p.rcbuffer = &__pyx_pybuffer_open_p;
+  __pyx_pybuffer_high_p.pybuffer.buf = NULL;
+  __pyx_pybuffer_high_p.refcount = 0;
+  __pyx_pybuffernd_high_p.data = NULL;
+  __pyx_pybuffernd_high_p.rcbuffer = &__pyx_pybuffer_high_p;
+  __pyx_pybuffer_low_p.pybuffer.buf = NULL;
+  __pyx_pybuffer_low_p.refcount = 0;
+  __pyx_pybuffernd_low_p.data = NULL;
+  __pyx_pybuffernd_low_p.rcbuffer = &__pyx_pybuffer_low_p;
+  __pyx_pybuffer_close_p.pybuffer.buf = NULL;
+  __pyx_pybuffer_close_p.refcount = 0;
+  __pyx_pybuffernd_close_p.data = NULL;
+  __pyx_pybuffernd_close_p.rcbuffer = &__pyx_pybuffer_close_p;
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_open_p.rcbuffer->pybuffer, (PyObject*)__pyx_v_open_p, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 35, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_open_p.diminfo[0].strides = __pyx_pybuffernd_open_p.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_open_p.diminfo[0].shape = __pyx_pybuffernd_open_p.rcbuffer->pybuffer.shape[0];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_high_p.rcbuffer->pybuffer, (PyObject*)__pyx_v_high_p, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 35, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_high_p.diminfo[0].strides = __pyx_pybuffernd_high_p.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_high_p.diminfo[0].shape = __pyx_pybuffernd_high_p.rcbuffer->pybuffer.shape[0];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_low_p.rcbuffer->pybuffer, (PyObject*)__pyx_v_low_p, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 35, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_low_p.diminfo[0].strides = __pyx_pybuffernd_low_p.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_low_p.diminfo[0].shape = __pyx_pybuffernd_low_p.rcbuffer->pybuffer.shape[0];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_close_p.rcbuffer->pybuffer, (PyObject*)__pyx_v_close_p, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 35, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_close_p.diminfo[0].strides = __pyx_pybuffernd_close_p.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_close_p.diminfo[0].shape = __pyx_pybuffernd_close_p.rcbuffer->pybuffer.shape[0];
+
+  /* "qf/nativemath/impl.pyx":42
+ *     Calculates the Magnitude-Weighted (Energy) average for Reversal confirmation.
+ *     """
+ *     return energy_weighed_average_cy(&open_p[0], &high_p[0], &low_p[0], &close_p[0], len(open_p))             # <<<<<<<<<<<<<<
+ * 
+ * def get_thrust_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,
+*/
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = 0;
+  __pyx_t_2 = -1;
+  if (__pyx_t_1 < 0) {
+    __pyx_t_1 += __pyx_pybuffernd_open_p.diminfo[0].shape;
+    if (unlikely(__pyx_t_1 < 0)) __pyx_t_2 = 0;
+  } else if (unlikely(__pyx_t_1 >= __pyx_pybuffernd_open_p.diminfo[0].shape)) __pyx_t_2 = 0;
+  if (unlikely(__pyx_t_2 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_2);
+    __PYX_ERR(0, 42, __pyx_L1_error)
+  }
+  __pyx_t_3 = 0;
+  __pyx_t_2 = -1;
+  if (__pyx_t_3 < 0) {
+    __pyx_t_3 += __pyx_pybuffernd_high_p.diminfo[0].shape;
+    if (unlikely(__pyx_t_3 < 0)) __pyx_t_2 = 0;
+  } else if (unlikely(__pyx_t_3 >= __pyx_pybuffernd_high_p.diminfo[0].shape)) __pyx_t_2 = 0;
+  if (unlikely(__pyx_t_2 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_2);
+    __PYX_ERR(0, 42, __pyx_L1_error)
+  }
+  __pyx_t_4 = 0;
+  __pyx_t_2 = -1;
+  if (__pyx_t_4 < 0) {
+    __pyx_t_4 += __pyx_pybuffernd_low_p.diminfo[0].shape;
+    if (unlikely(__pyx_t_4 < 0)) __pyx_t_2 = 0;
+  } else if (unlikely(__pyx_t_4 >= __pyx_pybuffernd_low_p.diminfo[0].shape)) __pyx_t_2 = 0;
+  if (unlikely(__pyx_t_2 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_2);
+    __PYX_ERR(0, 42, __pyx_L1_error)
+  }
+  __pyx_t_5 = 0;
+  __pyx_t_2 = -1;
+  if (__pyx_t_5 < 0) {
+    __pyx_t_5 += __pyx_pybuffernd_close_p.diminfo[0].shape;
+    if (unlikely(__pyx_t_5 < 0)) __pyx_t_2 = 0;
+  } else if (unlikely(__pyx_t_5 >= __pyx_pybuffernd_close_p.diminfo[0].shape)) __pyx_t_2 = 0;
+  if (unlikely(__pyx_t_2 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_2);
+    __PYX_ERR(0, 42, __pyx_L1_error)
+  }
+  __pyx_t_6 = PyObject_Length(((PyObject *)__pyx_v_open_p)); if (unlikely(__pyx_t_6 == ((Py_ssize_t)-1))) __PYX_ERR(0, 42, __pyx_L1_error)
+  __pyx_t_7 = PyFloat_FromDouble(energy_weighed_average_cy((&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_open_p.rcbuffer->pybuffer.buf, __pyx_t_1, __pyx_pybuffernd_open_p.diminfo[0].strides))), (&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_high_p.rcbuffer->pybuffer.buf, __pyx_t_3, __pyx_pybuffernd_high_p.diminfo[0].strides))), (&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_low_p.rcbuffer->pybuffer.buf, __pyx_t_4, __pyx_pybuffernd_low_p.diminfo[0].strides))), (&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_close_p.rcbuffer->pybuffer.buf, __pyx_t_5, __pyx_pybuffernd_close_p.diminfo[0].strides))), __pyx_t_6)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_r = __pyx_t_7;
+  __pyx_t_7 = 0;
+  goto __pyx_L0;
+
+  /* "qf/nativemath/impl.pyx":35
+ * 
+ * # 2. Add the Python-facing wrappers
+ * def get_energy_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,             # <<<<<<<<<<<<<<
+ *                                cnp.ndarray[double, ndim=1, mode="c"] high_p,
+ *                                cnp.ndarray[double, ndim=1, mode="c"] low_p,
+*/
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_7);
+  { PyObject *__pyx_type, *__pyx_value, *__pyx_tb;
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ErrFetch(&__pyx_type, &__pyx_value, &__pyx_tb);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_close_p.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_high_p.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_low_p.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_open_p.rcbuffer->pybuffer);
+  __Pyx_ErrRestore(__pyx_type, __pyx_value, __pyx_tb);}
+  __Pyx_AddTraceback("qf.nativemath.impl.get_energy_weighed_average", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  goto __pyx_L2;
+  __pyx_L0:;
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_close_p.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_high_p.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_low_p.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_open_p.rcbuffer->pybuffer);
+  __pyx_L2:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "qf/nativemath/impl.pyx":44
+ *     return energy_weighed_average_cy(&open_p[0], &high_p[0], &low_p[0], &close_p[0], len(open_p))
+ * 
+ * def get_thrust_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,             # <<<<<<<<<<<<<<
+ *                                cnp.ndarray[double, ndim=1, mode="c"] high_p,
+ *                                cnp.ndarray[double, ndim=1, mode="c"] low_p,
+*/
+
+/* Python wrapper */
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_3get_thrust_weighed_average(PyObject *__pyx_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_2get_thrust_weighed_average, "\n    Calculates the Conditional-Exponential (Thrust) average for Trend confirmation.\n    ");
+static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_3get_thrust_weighed_average = {"get_thrust_weighed_average", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_3get_thrust_weighed_average, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_2get_thrust_weighed_average};
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_3get_thrust_weighed_average(PyObject *__pyx_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+) {
+  PyArrayObject *__pyx_v_open_p = 0;
+  PyArrayObject *__pyx_v_high_p = 0;
+  PyArrayObject *__pyx_v_low_p = 0;
+  PyArrayObject *__pyx_v_close_p = 0;
+  #if !CYTHON_METH_FASTCALL
+  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
+  #endif
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject* values[4] = {0,0,0,0};
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("get_thrust_weighed_average (wrapper)", 0);
+  #if !CYTHON_METH_FASTCALL
+  #if CYTHON_ASSUME_SAFE_SIZE
+  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
+  #else
+  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return NULL;
+  #endif
+  #endif
+  __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
+  {
+    PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_open_p,&__pyx_mstate_global->__pyx_n_u_high_p,&__pyx_mstate_global->__pyx_n_u_low_p,&__pyx_mstate_global->__pyx_n_u_close_p,0};
+    const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 44, __pyx_L3_error)
+    if (__pyx_kwds_len > 0) {
+      switch (__pyx_nargs) {
+        case  4:
+        values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 44, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  3:
+        values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 44, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  2:
+        values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 44, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  1:
+        values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 44, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      const Py_ssize_t kwd_pos_args = __pyx_nargs;
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_thrust_weighed_average", 0) < (0)) __PYX_ERR(0, 44, __pyx_L3_error)
+      for (Py_ssize_t i = __pyx_nargs; i < 4; i++) {
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_thrust_weighed_average", 1, 4, 4, i); __PYX_ERR(0, 44, __pyx_L3_error) }
+      }
+    } else if (unlikely(__pyx_nargs != 4)) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 44, __pyx_L3_error)
+      values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 44, __pyx_L3_error)
+      values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 44, __pyx_L3_error)
+      values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 44, __pyx_L3_error)
+    }
+    __pyx_v_open_p = ((PyArrayObject *)values[0]);
+    __pyx_v_high_p = ((PyArrayObject *)values[1]);
+    __pyx_v_low_p = ((PyArrayObject *)values[2]);
+    __pyx_v_close_p = ((PyArrayObject *)values[3]);
+  }
+  goto __pyx_L6_skip;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("get_thrust_weighed_average", 1, 4, 4, __pyx_nargs); __PYX_ERR(0, 44, __pyx_L3_error)
+  __pyx_L6_skip:;
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L3_error:;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __Pyx_AddTraceback("qf.nativemath.impl.get_thrust_weighed_average", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_open_p), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "open_p", 0))) __PYX_ERR(0, 44, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_high_p), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "high_p", 0))) __PYX_ERR(0, 45, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_low_p), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "low_p", 0))) __PYX_ERR(0, 46, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_close_p), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "close_p", 0))) __PYX_ERR(0, 47, __pyx_L1_error)
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_2get_thrust_weighed_average(__pyx_self, __pyx_v_open_p, __pyx_v_high_p, __pyx_v_low_p, __pyx_v_close_p);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  goto __pyx_L7_cleaned_up;
+  __pyx_L0:;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __pyx_L7_cleaned_up:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_2get_thrust_weighed_average(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_open_p, PyArrayObject *__pyx_v_high_p, PyArrayObject *__pyx_v_low_p, PyArrayObject *__pyx_v_close_p) {
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_close_p;
+  __Pyx_Buffer __pyx_pybuffer_close_p;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_high_p;
+  __Pyx_Buffer __pyx_pybuffer_high_p;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_low_p;
+  __Pyx_Buffer __pyx_pybuffer_low_p;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_open_p;
+  __Pyx_Buffer __pyx_pybuffer_open_p;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  Py_ssize_t __pyx_t_1;
+  int __pyx_t_2;
+  Py_ssize_t __pyx_t_3;
+  Py_ssize_t __pyx_t_4;
+  Py_ssize_t __pyx_t_5;
+  Py_ssize_t __pyx_t_6;
+  PyObject *__pyx_t_7 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("get_thrust_weighed_average", 0);
+  __pyx_pybuffer_open_p.pybuffer.buf = NULL;
+  __pyx_pybuffer_open_p.refcount = 0;
+  __pyx_pybuffernd_open_p.data = NULL;
+  __pyx_pybuffernd_open_p.rcbuffer = &__pyx_pybuffer_open_p;
+  __pyx_pybuffer_high_p.pybuffer.buf = NULL;
+  __pyx_pybuffer_high_p.refcount = 0;
+  __pyx_pybuffernd_high_p.data = NULL;
+  __pyx_pybuffernd_high_p.rcbuffer = &__pyx_pybuffer_high_p;
+  __pyx_pybuffer_low_p.pybuffer.buf = NULL;
+  __pyx_pybuffer_low_p.refcount = 0;
+  __pyx_pybuffernd_low_p.data = NULL;
+  __pyx_pybuffernd_low_p.rcbuffer = &__pyx_pybuffer_low_p;
+  __pyx_pybuffer_close_p.pybuffer.buf = NULL;
+  __pyx_pybuffer_close_p.refcount = 0;
+  __pyx_pybuffernd_close_p.data = NULL;
+  __pyx_pybuffernd_close_p.rcbuffer = &__pyx_pybuffer_close_p;
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_open_p.rcbuffer->pybuffer, (PyObject*)__pyx_v_open_p, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 44, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_open_p.diminfo[0].strides = __pyx_pybuffernd_open_p.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_open_p.diminfo[0].shape = __pyx_pybuffernd_open_p.rcbuffer->pybuffer.shape[0];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_high_p.rcbuffer->pybuffer, (PyObject*)__pyx_v_high_p, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 44, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_high_p.diminfo[0].strides = __pyx_pybuffernd_high_p.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_high_p.diminfo[0].shape = __pyx_pybuffernd_high_p.rcbuffer->pybuffer.shape[0];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_low_p.rcbuffer->pybuffer, (PyObject*)__pyx_v_low_p, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 44, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_low_p.diminfo[0].strides = __pyx_pybuffernd_low_p.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_low_p.diminfo[0].shape = __pyx_pybuffernd_low_p.rcbuffer->pybuffer.shape[0];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_close_p.rcbuffer->pybuffer, (PyObject*)__pyx_v_close_p, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 44, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_close_p.diminfo[0].strides = __pyx_pybuffernd_close_p.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_close_p.diminfo[0].shape = __pyx_pybuffernd_close_p.rcbuffer->pybuffer.shape[0];
+
+  /* "qf/nativemath/impl.pyx":51
+ *     Calculates the Conditional-Exponential (Thrust) average for Trend confirmation.
+ *     """
+ *     return thrust_weighed_average_cy(&open_p[0], &high_p[0], &low_p[0], &close_p[0], len(open_p))             # <<<<<<<<<<<<<<
+ * 
+ * # Add this under the existing `cdef extern` blocks (around line 30):
+*/
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = 0;
+  __pyx_t_2 = -1;
+  if (__pyx_t_1 < 0) {
+    __pyx_t_1 += __pyx_pybuffernd_open_p.diminfo[0].shape;
+    if (unlikely(__pyx_t_1 < 0)) __pyx_t_2 = 0;
+  } else if (unlikely(__pyx_t_1 >= __pyx_pybuffernd_open_p.diminfo[0].shape)) __pyx_t_2 = 0;
+  if (unlikely(__pyx_t_2 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_2);
+    __PYX_ERR(0, 51, __pyx_L1_error)
+  }
+  __pyx_t_3 = 0;
+  __pyx_t_2 = -1;
+  if (__pyx_t_3 < 0) {
+    __pyx_t_3 += __pyx_pybuffernd_high_p.diminfo[0].shape;
+    if (unlikely(__pyx_t_3 < 0)) __pyx_t_2 = 0;
+  } else if (unlikely(__pyx_t_3 >= __pyx_pybuffernd_high_p.diminfo[0].shape)) __pyx_t_2 = 0;
+  if (unlikely(__pyx_t_2 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_2);
+    __PYX_ERR(0, 51, __pyx_L1_error)
+  }
+  __pyx_t_4 = 0;
+  __pyx_t_2 = -1;
+  if (__pyx_t_4 < 0) {
+    __pyx_t_4 += __pyx_pybuffernd_low_p.diminfo[0].shape;
+    if (unlikely(__pyx_t_4 < 0)) __pyx_t_2 = 0;
+  } else if (unlikely(__pyx_t_4 >= __pyx_pybuffernd_low_p.diminfo[0].shape)) __pyx_t_2 = 0;
+  if (unlikely(__pyx_t_2 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_2);
+    __PYX_ERR(0, 51, __pyx_L1_error)
+  }
+  __pyx_t_5 = 0;
+  __pyx_t_2 = -1;
+  if (__pyx_t_5 < 0) {
+    __pyx_t_5 += __pyx_pybuffernd_close_p.diminfo[0].shape;
+    if (unlikely(__pyx_t_5 < 0)) __pyx_t_2 = 0;
+  } else if (unlikely(__pyx_t_5 >= __pyx_pybuffernd_close_p.diminfo[0].shape)) __pyx_t_2 = 0;
+  if (unlikely(__pyx_t_2 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_2);
+    __PYX_ERR(0, 51, __pyx_L1_error)
+  }
+  __pyx_t_6 = PyObject_Length(((PyObject *)__pyx_v_open_p)); if (unlikely(__pyx_t_6 == ((Py_ssize_t)-1))) __PYX_ERR(0, 51, __pyx_L1_error)
+  __pyx_t_7 = PyFloat_FromDouble(thrust_weighed_average_cy((&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_open_p.rcbuffer->pybuffer.buf, __pyx_t_1, __pyx_pybuffernd_open_p.diminfo[0].strides))), (&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_high_p.rcbuffer->pybuffer.buf, __pyx_t_3, __pyx_pybuffernd_high_p.diminfo[0].strides))), (&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_low_p.rcbuffer->pybuffer.buf, __pyx_t_4, __pyx_pybuffernd_low_p.diminfo[0].strides))), (&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_close_p.rcbuffer->pybuffer.buf, __pyx_t_5, __pyx_pybuffernd_close_p.diminfo[0].strides))), __pyx_t_6)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 51, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_r = __pyx_t_7;
+  __pyx_t_7 = 0;
+  goto __pyx_L0;
+
+  /* "qf/nativemath/impl.pyx":44
+ *     return energy_weighed_average_cy(&open_p[0], &high_p[0], &low_p[0], &close_p[0], len(open_p))
+ * 
+ * def get_thrust_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,             # <<<<<<<<<<<<<<
+ *                                cnp.ndarray[double, ndim=1, mode="c"] high_p,
+ *                                cnp.ndarray[double, ndim=1, mode="c"] low_p,
+*/
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_7);
+  { PyObject *__pyx_type, *__pyx_value, *__pyx_tb;
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ErrFetch(&__pyx_type, &__pyx_value, &__pyx_tb);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_close_p.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_high_p.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_low_p.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_open_p.rcbuffer->pybuffer);
+  __Pyx_ErrRestore(__pyx_type, __pyx_value, __pyx_tb);}
+  __Pyx_AddTraceback("qf.nativemath.impl.get_thrust_weighed_average", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  goto __pyx_L2;
+  __pyx_L0:;
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_close_p.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_high_p.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_low_p.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_open_p.rcbuffer->pybuffer);
+  __pyx_L2:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "qf/nativemath/impl.pyx":106
  * 
  * # 2. Python-facing function for indicators
  * def get_price_time_indicators(double[:] close_price, double[:] high_price, double[:] low_price, double[:] volume, size_t lookback_periods):             # <<<<<<<<<<<<<<
@@ -18399,15 +18980,15 @@ static CYTHON_INLINE NPY_DATETIMEUNIT __pyx_f_5numpy_get_datetime64_unit(PyObjec
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_1get_price_time_indicators(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_5get_price_time_indicators(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_1get_price_time_indicators = {"get_price_time_indicators", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_1get_price_time_indicators, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_1get_price_time_indicators(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_5get_price_time_indicators = {"get_price_time_indicators", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_5get_price_time_indicators, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_5get_price_time_indicators(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -18441,60 +19022,60 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_close_price,&__pyx_mstate_global->__pyx_n_u_high_price,&__pyx_mstate_global->__pyx_n_u_low_price,&__pyx_mstate_global->__pyx_n_u_volume,&__pyx_mstate_global->__pyx_n_u_lookback_periods,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 83, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 106, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  5:
         values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 83, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 106, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 83, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 106, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  3:
         values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 83, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 106, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 83, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 106, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 83, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 106, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_price_time_indicators", 0) < (0)) __PYX_ERR(0, 83, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_price_time_indicators", 0) < (0)) __PYX_ERR(0, 106, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 5; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_price_time_indicators", 1, 5, 5, i); __PYX_ERR(0, 83, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_price_time_indicators", 1, 5, 5, i); __PYX_ERR(0, 106, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 5)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 83, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 106, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 83, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 106, __pyx_L3_error)
       values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 83, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 106, __pyx_L3_error)
       values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 83, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 106, __pyx_L3_error)
       values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 83, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 106, __pyx_L3_error)
     }
-    __pyx_v_close_price = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_close_price.memview)) __PYX_ERR(0, 83, __pyx_L3_error)
-    __pyx_v_high_price = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_high_price.memview)) __PYX_ERR(0, 83, __pyx_L3_error)
-    __pyx_v_low_price = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_low_price.memview)) __PYX_ERR(0, 83, __pyx_L3_error)
-    __pyx_v_volume = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_volume.memview)) __PYX_ERR(0, 83, __pyx_L3_error)
-    __pyx_v_lookback_periods = __Pyx_PyLong_As_size_t(values[4]); if (unlikely((__pyx_v_lookback_periods == (size_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 83, __pyx_L3_error)
+    __pyx_v_close_price = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_close_price.memview)) __PYX_ERR(0, 106, __pyx_L3_error)
+    __pyx_v_high_price = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_high_price.memview)) __PYX_ERR(0, 106, __pyx_L3_error)
+    __pyx_v_low_price = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_low_price.memview)) __PYX_ERR(0, 106, __pyx_L3_error)
+    __pyx_v_volume = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_volume.memview)) __PYX_ERR(0, 106, __pyx_L3_error)
+    __pyx_v_lookback_periods = __Pyx_PyLong_As_size_t(values[4]); if (unlikely((__pyx_v_lookback_periods == (size_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 106, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_price_time_indicators", 1, 5, 5, __pyx_nargs); __PYX_ERR(0, 83, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_price_time_indicators", 1, 5, 5, __pyx_nargs); __PYX_ERR(0, 106, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -18509,7 +19090,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(__pyx_self, __pyx_v_close_price, __pyx_v_high_price, __pyx_v_low_price, __pyx_v_volume, __pyx_v_lookback_periods);
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_4get_price_time_indicators(__pyx_self, __pyx_v_close_price, __pyx_v_high_price, __pyx_v_low_price, __pyx_v_volume, __pyx_v_lookback_periods);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -18523,7 +19104,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_close_price, __Pyx_memviewslice __pyx_v_high_price, __Pyx_memviewslice __pyx_v_low_price, __Pyx_memviewslice __pyx_v_volume, size_t __pyx_v_lookback_periods) {
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_price_time_indicators(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_close_price, __Pyx_memviewslice __pyx_v_high_price, __Pyx_memviewslice __pyx_v_low_price, __Pyx_memviewslice __pyx_v_volume, size_t __pyx_v_lookback_periods) {
   int __pyx_v_N;
   PyArrayObject *__pyx_v_LP_out = 0;
   PyArrayObject *__pyx_v_Lambda_out = 0;
@@ -18574,7 +19155,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
   __pyx_pybuffernd_f_out.data = NULL;
   __pyx_pybuffernd_f_out.rcbuffer = &__pyx_pybuffer_f_out;
 
-  /* "qf/nativemath/impl.pyx":84
+  /* "qf/nativemath/impl.pyx":107
  * # 2. Python-facing function for indicators
  * def get_price_time_indicators(double[:] close_price, double[:] high_price, double[:] low_price, double[:] volume, size_t lookback_periods):
  *     cdef int N = close_price.shape[0]             # <<<<<<<<<<<<<<
@@ -18583,7 +19164,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
 */
   __pyx_v_N = (__pyx_v_close_price.shape[0]);
 
-  /* "qf/nativemath/impl.pyx":86
+  /* "qf/nativemath/impl.pyx":109
  *     cdef int N = close_price.shape[0]
  * 
  *     if high_price.shape[0] != N or low_price.shape[0] != N or volume.shape[0] != N:             # <<<<<<<<<<<<<<
@@ -18607,7 +19188,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
   __pyx_L4_bool_binop_done:;
   if (unlikely(__pyx_t_1)) {
 
-    /* "qf/nativemath/impl.pyx":87
+    /* "qf/nativemath/impl.pyx":110
  * 
  *     if high_price.shape[0] != N or low_price.shape[0] != N or volume.shape[0] != N:
  *         raise ValueError("All input arrays must have the same length.")             # <<<<<<<<<<<<<<
@@ -18620,14 +19201,14 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
       PyObject *__pyx_callargs[2] = {__pyx_t_4, __pyx_mstate_global->__pyx_kp_u_All_input_arrays_must_have_the_s};
       __pyx_t_3 = __Pyx_PyObject_FastCall((PyObject*)(((PyTypeObject*)PyExc_ValueError)), __pyx_callargs+__pyx_t_5, (2-__pyx_t_5) | (__pyx_t_5*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
       __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-      if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 87, __pyx_L1_error)
+      if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 110, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
     }
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __PYX_ERR(0, 87, __pyx_L1_error)
+    __PYX_ERR(0, 110, __pyx_L1_error)
 
-    /* "qf/nativemath/impl.pyx":86
+    /* "qf/nativemath/impl.pyx":109
  *     cdef int N = close_price.shape[0]
  * 
  *     if high_price.shape[0] != N or low_price.shape[0] != N or volume.shape[0] != N:             # <<<<<<<<<<<<<<
@@ -18636,7 +19217,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
 */
   }
 
-  /* "qf/nativemath/impl.pyx":89
+  /* "qf/nativemath/impl.pyx":112
  *         raise ValueError("All input arrays must have the same length.")
  * 
  *     cdef cnp.ndarray[cnp.float64_t, ndim=1] LP_out = np.empty(N, dtype=np.float64)             # <<<<<<<<<<<<<<
@@ -18644,16 +19225,16 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
  *     cdef cnp.ndarray[cnp.float64_t, ndim=1] f_out = np.empty(N, dtype=np.float64)
 */
   __pyx_t_4 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 89, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 112, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_empty); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 89, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_empty); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 112, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_N); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 89, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_N); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 112, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 89, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 112, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
-  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 89, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 112, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
   __pyx_t_5 = 1;
@@ -18670,31 +19251,31 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_4, __pyx_t_6};
-    __pyx_t_8 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 89, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 112, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_9, __pyx_t_8, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 89, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_9, __pyx_t_8, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 112, __pyx_L1_error)
     __pyx_t_3 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_7, __pyx_callargs+__pyx_t_5, (2-__pyx_t_5) | (__pyx_t_5*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_8);
     __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 89, __pyx_L1_error)
+    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 112, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
   }
-  if (!(likely(((__pyx_t_3) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_3, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 89, __pyx_L1_error)
+  if (!(likely(((__pyx_t_3) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_3, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 112, __pyx_L1_error)
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
     if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_LP_out.rcbuffer->pybuffer, (PyObject*)((PyArrayObject *)__pyx_t_3), &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {
       __pyx_v_LP_out = ((PyArrayObject *)Py_None); __Pyx_INCREF(Py_None); __pyx_pybuffernd_LP_out.rcbuffer->pybuffer.buf = NULL;
-      __PYX_ERR(0, 89, __pyx_L1_error)
+      __PYX_ERR(0, 112, __pyx_L1_error)
     } else {__pyx_pybuffernd_LP_out.diminfo[0].strides = __pyx_pybuffernd_LP_out.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_LP_out.diminfo[0].shape = __pyx_pybuffernd_LP_out.rcbuffer->pybuffer.shape[0];
     }
   }
   __pyx_v_LP_out = ((PyArrayObject *)__pyx_t_3);
   __pyx_t_3 = 0;
 
-  /* "qf/nativemath/impl.pyx":90
+  /* "qf/nativemath/impl.pyx":113
  * 
  *     cdef cnp.ndarray[cnp.float64_t, ndim=1] LP_out = np.empty(N, dtype=np.float64)
  *     cdef cnp.ndarray[cnp.float64_t, ndim=1] Lambda_out = np.empty(N, dtype=np.float64)             # <<<<<<<<<<<<<<
@@ -18702,16 +19283,16 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
  * 
 */
   __pyx_t_7 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 90, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 113, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
-  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_empty); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 90, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_empty); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 113, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-  __pyx_t_8 = __Pyx_PyLong_From_int(__pyx_v_N); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 90, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyLong_From_int(__pyx_v_N); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 113, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 90, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 113, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 90, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 113, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   __pyx_t_5 = 1;
@@ -18728,31 +19309,31 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_7, __pyx_t_8};
-    __pyx_t_6 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 90, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 113, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_4, __pyx_t_6, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 90, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_4, __pyx_t_6, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 113, __pyx_L1_error)
     __pyx_t_3 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_9, __pyx_callargs+__pyx_t_5, (2-__pyx_t_5) | (__pyx_t_5*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_6);
     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 90, __pyx_L1_error)
+    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 113, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
   }
-  if (!(likely(((__pyx_t_3) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_3, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 90, __pyx_L1_error)
+  if (!(likely(((__pyx_t_3) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_3, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 113, __pyx_L1_error)
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
     if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_Lambda_out.rcbuffer->pybuffer, (PyObject*)((PyArrayObject *)__pyx_t_3), &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {
       __pyx_v_Lambda_out = ((PyArrayObject *)Py_None); __Pyx_INCREF(Py_None); __pyx_pybuffernd_Lambda_out.rcbuffer->pybuffer.buf = NULL;
-      __PYX_ERR(0, 90, __pyx_L1_error)
+      __PYX_ERR(0, 113, __pyx_L1_error)
     } else {__pyx_pybuffernd_Lambda_out.diminfo[0].strides = __pyx_pybuffernd_Lambda_out.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_Lambda_out.diminfo[0].shape = __pyx_pybuffernd_Lambda_out.rcbuffer->pybuffer.shape[0];
     }
   }
   __pyx_v_Lambda_out = ((PyArrayObject *)__pyx_t_3);
   __pyx_t_3 = 0;
 
-  /* "qf/nativemath/impl.pyx":91
+  /* "qf/nativemath/impl.pyx":114
  *     cdef cnp.ndarray[cnp.float64_t, ndim=1] LP_out = np.empty(N, dtype=np.float64)
  *     cdef cnp.ndarray[cnp.float64_t, ndim=1] Lambda_out = np.empty(N, dtype=np.float64)
  *     cdef cnp.ndarray[cnp.float64_t, ndim=1] f_out = np.empty(N, dtype=np.float64)             # <<<<<<<<<<<<<<
@@ -18760,16 +19341,16 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
  *     cdef double[:] LP_view = LP_out
 */
   __pyx_t_9 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 91, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 114, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_empty); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 91, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_mstate_global->__pyx_n_u_empty); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 114, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_N); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 91, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyLong_From_int(__pyx_v_N); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 114, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 91, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 114, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
-  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 91, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 114, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
   __pyx_t_5 = 1;
@@ -18786,67 +19367,67 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_9, __pyx_t_6};
-    __pyx_t_8 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 91, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 114, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_7, __pyx_t_8, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 91, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_7, __pyx_t_8, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 114, __pyx_L1_error)
     __pyx_t_3 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_4, __pyx_callargs+__pyx_t_5, (2-__pyx_t_5) | (__pyx_t_5*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_8);
     __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 91, __pyx_L1_error)
+    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 114, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
   }
-  if (!(likely(((__pyx_t_3) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_3, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 91, __pyx_L1_error)
+  if (!(likely(((__pyx_t_3) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_3, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 114, __pyx_L1_error)
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
     if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_f_out.rcbuffer->pybuffer, (PyObject*)((PyArrayObject *)__pyx_t_3), &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {
       __pyx_v_f_out = ((PyArrayObject *)Py_None); __Pyx_INCREF(Py_None); __pyx_pybuffernd_f_out.rcbuffer->pybuffer.buf = NULL;
-      __PYX_ERR(0, 91, __pyx_L1_error)
+      __PYX_ERR(0, 114, __pyx_L1_error)
     } else {__pyx_pybuffernd_f_out.diminfo[0].strides = __pyx_pybuffernd_f_out.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_f_out.diminfo[0].shape = __pyx_pybuffernd_f_out.rcbuffer->pybuffer.shape[0];
     }
   }
   __pyx_v_f_out = ((PyArrayObject *)__pyx_t_3);
   __pyx_t_3 = 0;
 
-  /* "qf/nativemath/impl.pyx":93
+  /* "qf/nativemath/impl.pyx":116
  *     cdef cnp.ndarray[cnp.float64_t, ndim=1] f_out = np.empty(N, dtype=np.float64)
  * 
  *     cdef double[:] LP_view = LP_out             # <<<<<<<<<<<<<<
  *     cdef double[:] Lambda_view = Lambda_out
  *     cdef double[:] f_view = f_out
 */
-  __pyx_t_10 = __Pyx_PyObject_to_MemoryviewSlice_ds_double(((PyObject *)__pyx_v_LP_out), PyBUF_WRITABLE); if (unlikely(!__pyx_t_10.memview)) __PYX_ERR(0, 93, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyObject_to_MemoryviewSlice_ds_double(((PyObject *)__pyx_v_LP_out), PyBUF_WRITABLE); if (unlikely(!__pyx_t_10.memview)) __PYX_ERR(0, 116, __pyx_L1_error)
   __pyx_v_LP_view = __pyx_t_10;
   __pyx_t_10.memview = NULL;
   __pyx_t_10.data = NULL;
 
-  /* "qf/nativemath/impl.pyx":94
+  /* "qf/nativemath/impl.pyx":117
  * 
  *     cdef double[:] LP_view = LP_out
  *     cdef double[:] Lambda_view = Lambda_out             # <<<<<<<<<<<<<<
  *     cdef double[:] f_view = f_out
  * 
 */
-  __pyx_t_10 = __Pyx_PyObject_to_MemoryviewSlice_ds_double(((PyObject *)__pyx_v_Lambda_out), PyBUF_WRITABLE); if (unlikely(!__pyx_t_10.memview)) __PYX_ERR(0, 94, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyObject_to_MemoryviewSlice_ds_double(((PyObject *)__pyx_v_Lambda_out), PyBUF_WRITABLE); if (unlikely(!__pyx_t_10.memview)) __PYX_ERR(0, 117, __pyx_L1_error)
   __pyx_v_Lambda_view = __pyx_t_10;
   __pyx_t_10.memview = NULL;
   __pyx_t_10.data = NULL;
 
-  /* "qf/nativemath/impl.pyx":95
+  /* "qf/nativemath/impl.pyx":118
  *     cdef double[:] LP_view = LP_out
  *     cdef double[:] Lambda_view = Lambda_out
  *     cdef double[:] f_view = f_out             # <<<<<<<<<<<<<<
  * 
  *     price_time_indicators_cy(
 */
-  __pyx_t_10 = __Pyx_PyObject_to_MemoryviewSlice_ds_double(((PyObject *)__pyx_v_f_out), PyBUF_WRITABLE); if (unlikely(!__pyx_t_10.memview)) __PYX_ERR(0, 95, __pyx_L1_error)
+  __pyx_t_10 = __Pyx_PyObject_to_MemoryviewSlice_ds_double(((PyObject *)__pyx_v_f_out), PyBUF_WRITABLE); if (unlikely(!__pyx_t_10.memview)) __PYX_ERR(0, 118, __pyx_L1_error)
   __pyx_v_f_view = __pyx_t_10;
   __pyx_t_10.memview = NULL;
   __pyx_t_10.data = NULL;
 
-  /* "qf/nativemath/impl.pyx":98
+  /* "qf/nativemath/impl.pyx":121
  * 
  *     price_time_indicators_cy(
  *         &close_price[0],             # <<<<<<<<<<<<<<
@@ -18861,10 +19442,10 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
   } else if (unlikely(__pyx_t_11 >= __pyx_v_close_price.shape[0])) __pyx_t_12 = 0;
   if (unlikely(__pyx_t_12 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_12);
-    __PYX_ERR(0, 98, __pyx_L1_error)
+    __PYX_ERR(0, 121, __pyx_L1_error)
   }
 
-  /* "qf/nativemath/impl.pyx":99
+  /* "qf/nativemath/impl.pyx":122
  *     price_time_indicators_cy(
  *         &close_price[0],
  *         &high_price[0],             # <<<<<<<<<<<<<<
@@ -18879,10 +19460,10 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
   } else if (unlikely(__pyx_t_13 >= __pyx_v_high_price.shape[0])) __pyx_t_12 = 0;
   if (unlikely(__pyx_t_12 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_12);
-    __PYX_ERR(0, 99, __pyx_L1_error)
+    __PYX_ERR(0, 122, __pyx_L1_error)
   }
 
-  /* "qf/nativemath/impl.pyx":100
+  /* "qf/nativemath/impl.pyx":123
  *         &close_price[0],
  *         &high_price[0],
  *         &low_price[0],             # <<<<<<<<<<<<<<
@@ -18897,10 +19478,10 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
   } else if (unlikely(__pyx_t_14 >= __pyx_v_low_price.shape[0])) __pyx_t_12 = 0;
   if (unlikely(__pyx_t_12 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_12);
-    __PYX_ERR(0, 100, __pyx_L1_error)
+    __PYX_ERR(0, 123, __pyx_L1_error)
   }
 
-  /* "qf/nativemath/impl.pyx":101
+  /* "qf/nativemath/impl.pyx":124
  *         &high_price[0],
  *         &low_price[0],
  *         &volume[0],             # <<<<<<<<<<<<<<
@@ -18915,10 +19496,10 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
   } else if (unlikely(__pyx_t_15 >= __pyx_v_volume.shape[0])) __pyx_t_12 = 0;
   if (unlikely(__pyx_t_12 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_12);
-    __PYX_ERR(0, 101, __pyx_L1_error)
+    __PYX_ERR(0, 124, __pyx_L1_error)
   }
 
-  /* "qf/nativemath/impl.pyx":104
+  /* "qf/nativemath/impl.pyx":127
  *         N,
  *         lookback_periods,
  *         &LP_view[0],             # <<<<<<<<<<<<<<
@@ -18933,10 +19514,10 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
   } else if (unlikely(__pyx_t_16 >= __pyx_v_LP_view.shape[0])) __pyx_t_12 = 0;
   if (unlikely(__pyx_t_12 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_12);
-    __PYX_ERR(0, 104, __pyx_L1_error)
+    __PYX_ERR(0, 127, __pyx_L1_error)
   }
 
-  /* "qf/nativemath/impl.pyx":105
+  /* "qf/nativemath/impl.pyx":128
  *         lookback_periods,
  *         &LP_view[0],
  *         &Lambda_view[0],             # <<<<<<<<<<<<<<
@@ -18951,10 +19532,10 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
   } else if (unlikely(__pyx_t_17 >= __pyx_v_Lambda_view.shape[0])) __pyx_t_12 = 0;
   if (unlikely(__pyx_t_12 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_12);
-    __PYX_ERR(0, 105, __pyx_L1_error)
+    __PYX_ERR(0, 128, __pyx_L1_error)
   }
 
-  /* "qf/nativemath/impl.pyx":106
+  /* "qf/nativemath/impl.pyx":129
  *         &LP_view[0],
  *         &Lambda_view[0],
  *         &f_view[0]             # <<<<<<<<<<<<<<
@@ -18969,10 +19550,10 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
   } else if (unlikely(__pyx_t_18 >= __pyx_v_f_view.shape[0])) __pyx_t_12 = 0;
   if (unlikely(__pyx_t_12 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_12);
-    __PYX_ERR(0, 106, __pyx_L1_error)
+    __PYX_ERR(0, 129, __pyx_L1_error)
   }
 
-  /* "qf/nativemath/impl.pyx":97
+  /* "qf/nativemath/impl.pyx":120
  *     cdef double[:] f_view = f_out
  * 
  *     price_time_indicators_cy(             # <<<<<<<<<<<<<<
@@ -18981,30 +19562,30 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
 */
   price_time_indicators_cy((&(*((double *) ( /* dim=0 */ (__pyx_v_close_price.data + __pyx_t_11 * __pyx_v_close_price.strides[0]) )))), (&(*((double *) ( /* dim=0 */ (__pyx_v_high_price.data + __pyx_t_13 * __pyx_v_high_price.strides[0]) )))), (&(*((double *) ( /* dim=0 */ (__pyx_v_low_price.data + __pyx_t_14 * __pyx_v_low_price.strides[0]) )))), (&(*((double *) ( /* dim=0 */ (__pyx_v_volume.data + __pyx_t_15 * __pyx_v_volume.strides[0]) )))), __pyx_v_N, __pyx_v_lookback_periods, (&(*((double *) ( /* dim=0 */ (__pyx_v_LP_view.data + __pyx_t_16 * __pyx_v_LP_view.strides[0]) )))), (&(*((double *) ( /* dim=0 */ (__pyx_v_Lambda_view.data + __pyx_t_17 * __pyx_v_Lambda_view.strides[0]) )))), (&(*((double *) ( /* dim=0 */ (__pyx_v_f_view.data + __pyx_t_18 * __pyx_v_f_view.strides[0]) )))));
 
-  /* "qf/nativemath/impl.pyx":109
+  /* "qf/nativemath/impl.pyx":132
  *     )
  * 
  *     return LP_out, Lambda_out, f_out             # <<<<<<<<<<<<<<
  * 
- * # 3. Python-facing function for fractional order
+ * # And update the bridge wrapper:
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_3 = PyTuple_New(3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 109, __pyx_L1_error)
+  __pyx_t_3 = PyTuple_New(3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 132, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_INCREF((PyObject *)__pyx_v_LP_out);
   __Pyx_GIVEREF((PyObject *)__pyx_v_LP_out);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 0, ((PyObject *)__pyx_v_LP_out)) != (0)) __PYX_ERR(0, 109, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 0, ((PyObject *)__pyx_v_LP_out)) != (0)) __PYX_ERR(0, 132, __pyx_L1_error);
   __Pyx_INCREF((PyObject *)__pyx_v_Lambda_out);
   __Pyx_GIVEREF((PyObject *)__pyx_v_Lambda_out);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 1, ((PyObject *)__pyx_v_Lambda_out)) != (0)) __PYX_ERR(0, 109, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 1, ((PyObject *)__pyx_v_Lambda_out)) != (0)) __PYX_ERR(0, 132, __pyx_L1_error);
   __Pyx_INCREF((PyObject *)__pyx_v_f_out);
   __Pyx_GIVEREF((PyObject *)__pyx_v_f_out);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 2, ((PyObject *)__pyx_v_f_out)) != (0)) __PYX_ERR(0, 109, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 2, ((PyObject *)__pyx_v_f_out)) != (0)) __PYX_ERR(0, 132, __pyx_L1_error);
   __pyx_r = __pyx_t_3;
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "qf/nativemath/impl.pyx":83
+  /* "qf/nativemath/impl.pyx":106
  * 
  * # 2. Python-facing function for indicators
  * def get_price_time_indicators(double[:] close_price, double[:] high_price, double[:] low_price, double[:] volume, size_t lookback_periods):             # <<<<<<<<<<<<<<
@@ -19048,7 +19629,566 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
   return __pyx_r;
 }
 
-/* "qf/nativemath/impl.pyx":112
+/* "qf/nativemath/impl.pyx":135
+ * 
+ * # And update the bridge wrapper:
+ * def get_energy_weighed_average(double[:] open_price, double[:] high_price, double[:] low_price, double[:] close_price):             # <<<<<<<<<<<<<<
+ *     cdef int N = close_price.shape[0]
+ * 
+*/
+
+/* Python wrapper */
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_7get_energy_weighed_average(PyObject *__pyx_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_7get_energy_weighed_average = {"get_energy_weighed_average", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_7get_energy_weighed_average, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_7get_energy_weighed_average(PyObject *__pyx_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+) {
+  __Pyx_memviewslice __pyx_v_open_price = { 0, 0, { 0 }, { 0 }, { 0 } };
+  __Pyx_memviewslice __pyx_v_high_price = { 0, 0, { 0 }, { 0 }, { 0 } };
+  __Pyx_memviewslice __pyx_v_low_price = { 0, 0, { 0 }, { 0 }, { 0 } };
+  __Pyx_memviewslice __pyx_v_close_price = { 0, 0, { 0 }, { 0 }, { 0 } };
+  #if !CYTHON_METH_FASTCALL
+  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
+  #endif
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject* values[4] = {0,0,0,0};
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("get_energy_weighed_average (wrapper)", 0);
+  #if !CYTHON_METH_FASTCALL
+  #if CYTHON_ASSUME_SAFE_SIZE
+  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
+  #else
+  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return NULL;
+  #endif
+  #endif
+  __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
+  {
+    PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_open_price,&__pyx_mstate_global->__pyx_n_u_high_price,&__pyx_mstate_global->__pyx_n_u_low_price,&__pyx_mstate_global->__pyx_n_u_close_price,0};
+    const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 135, __pyx_L3_error)
+    if (__pyx_kwds_len > 0) {
+      switch (__pyx_nargs) {
+        case  4:
+        values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 135, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  3:
+        values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 135, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  2:
+        values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 135, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  1:
+        values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 135, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      const Py_ssize_t kwd_pos_args = __pyx_nargs;
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_energy_weighed_average", 0) < (0)) __PYX_ERR(0, 135, __pyx_L3_error)
+      for (Py_ssize_t i = __pyx_nargs; i < 4; i++) {
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_energy_weighed_average", 1, 4, 4, i); __PYX_ERR(0, 135, __pyx_L3_error) }
+      }
+    } else if (unlikely(__pyx_nargs != 4)) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 135, __pyx_L3_error)
+      values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 135, __pyx_L3_error)
+      values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 135, __pyx_L3_error)
+      values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 135, __pyx_L3_error)
+    }
+    __pyx_v_open_price = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_open_price.memview)) __PYX_ERR(0, 135, __pyx_L3_error)
+    __pyx_v_high_price = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_high_price.memview)) __PYX_ERR(0, 135, __pyx_L3_error)
+    __pyx_v_low_price = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_low_price.memview)) __PYX_ERR(0, 135, __pyx_L3_error)
+    __pyx_v_close_price = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_close_price.memview)) __PYX_ERR(0, 135, __pyx_L3_error)
+  }
+  goto __pyx_L6_skip;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("get_energy_weighed_average", 1, 4, 4, __pyx_nargs); __PYX_ERR(0, 135, __pyx_L3_error)
+  __pyx_L6_skip:;
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L3_error:;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __PYX_XCLEAR_MEMVIEW(&__pyx_v_open_price, 1);
+  __PYX_XCLEAR_MEMVIEW(&__pyx_v_high_price, 1);
+  __PYX_XCLEAR_MEMVIEW(&__pyx_v_low_price, 1);
+  __PYX_XCLEAR_MEMVIEW(&__pyx_v_close_price, 1);
+  __Pyx_AddTraceback("qf.nativemath.impl.get_energy_weighed_average", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_6get_energy_weighed_average(__pyx_self, __pyx_v_open_price, __pyx_v_high_price, __pyx_v_low_price, __pyx_v_close_price);
+
+  /* function exit code */
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __PYX_XCLEAR_MEMVIEW(&__pyx_v_open_price, 1);
+  __PYX_XCLEAR_MEMVIEW(&__pyx_v_high_price, 1);
+  __PYX_XCLEAR_MEMVIEW(&__pyx_v_low_price, 1);
+  __PYX_XCLEAR_MEMVIEW(&__pyx_v_close_price, 1);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_energy_weighed_average(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_open_price, __Pyx_memviewslice __pyx_v_high_price, __Pyx_memviewslice __pyx_v_low_price, __Pyx_memviewslice __pyx_v_close_price) {
+  int __pyx_v_N;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  int __pyx_t_1;
+  int __pyx_t_2;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  size_t __pyx_t_5;
+  Py_ssize_t __pyx_t_6;
+  int __pyx_t_7;
+  Py_ssize_t __pyx_t_8;
+  Py_ssize_t __pyx_t_9;
+  Py_ssize_t __pyx_t_10;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("get_energy_weighed_average", 0);
+
+  /* "qf/nativemath/impl.pyx":136
+ * # And update the bridge wrapper:
+ * def get_energy_weighed_average(double[:] open_price, double[:] high_price, double[:] low_price, double[:] close_price):
+ *     cdef int N = close_price.shape[0]             # <<<<<<<<<<<<<<
+ * 
+ *     if open_price.shape[0] != N or high_price.shape[0] != N or low_price.shape[0] != N:
+*/
+  __pyx_v_N = (__pyx_v_close_price.shape[0]);
+
+  /* "qf/nativemath/impl.pyx":138
+ *     cdef int N = close_price.shape[0]
+ * 
+ *     if open_price.shape[0] != N or high_price.shape[0] != N or low_price.shape[0] != N:             # <<<<<<<<<<<<<<
+ *         raise ValueError("All OHLC arrays must have the same length.")
+ * 
+*/
+  __pyx_t_2 = ((__pyx_v_open_price.shape[0]) != __pyx_v_N);
+  if (!__pyx_t_2) {
+  } else {
+    __pyx_t_1 = __pyx_t_2;
+    goto __pyx_L4_bool_binop_done;
+  }
+  __pyx_t_2 = ((__pyx_v_high_price.shape[0]) != __pyx_v_N);
+  if (!__pyx_t_2) {
+  } else {
+    __pyx_t_1 = __pyx_t_2;
+    goto __pyx_L4_bool_binop_done;
+  }
+  __pyx_t_2 = ((__pyx_v_low_price.shape[0]) != __pyx_v_N);
+  __pyx_t_1 = __pyx_t_2;
+  __pyx_L4_bool_binop_done:;
+  if (unlikely(__pyx_t_1)) {
+
+    /* "qf/nativemath/impl.pyx":139
+ * 
+ *     if open_price.shape[0] != N or high_price.shape[0] != N or low_price.shape[0] != N:
+ *         raise ValueError("All OHLC arrays must have the same length.")             # <<<<<<<<<<<<<<
+ * 
+ *     return energy_weighed_average_cy(&open_price[0], &high_price[0], &low_price[0], &close_price[0], N)
+*/
+    __pyx_t_4 = NULL;
+    __pyx_t_5 = 1;
+    {
+      PyObject *__pyx_callargs[2] = {__pyx_t_4, __pyx_mstate_global->__pyx_kp_u_All_OHLC_arrays_must_have_the_sa};
+      __pyx_t_3 = __Pyx_PyObject_FastCall((PyObject*)(((PyTypeObject*)PyExc_ValueError)), __pyx_callargs+__pyx_t_5, (2-__pyx_t_5) | (__pyx_t_5*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
+      __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+      if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 139, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_3);
+    }
+    __Pyx_Raise(__pyx_t_3, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __PYX_ERR(0, 139, __pyx_L1_error)
+
+    /* "qf/nativemath/impl.pyx":138
+ *     cdef int N = close_price.shape[0]
+ * 
+ *     if open_price.shape[0] != N or high_price.shape[0] != N or low_price.shape[0] != N:             # <<<<<<<<<<<<<<
+ *         raise ValueError("All OHLC arrays must have the same length.")
+ * 
+*/
+  }
+
+  /* "qf/nativemath/impl.pyx":141
+ *         raise ValueError("All OHLC arrays must have the same length.")
+ * 
+ *     return energy_weighed_average_cy(&open_price[0], &high_price[0], &low_price[0], &close_price[0], N)             # <<<<<<<<<<<<<<
+ * 
+ * def get_thrust_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,
+*/
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_6 = 0;
+  __pyx_t_7 = -1;
+  if (__pyx_t_6 < 0) {
+    __pyx_t_6 += __pyx_v_open_price.shape[0];
+    if (unlikely(__pyx_t_6 < 0)) __pyx_t_7 = 0;
+  } else if (unlikely(__pyx_t_6 >= __pyx_v_open_price.shape[0])) __pyx_t_7 = 0;
+  if (unlikely(__pyx_t_7 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_7);
+    __PYX_ERR(0, 141, __pyx_L1_error)
+  }
+  __pyx_t_8 = 0;
+  __pyx_t_7 = -1;
+  if (__pyx_t_8 < 0) {
+    __pyx_t_8 += __pyx_v_high_price.shape[0];
+    if (unlikely(__pyx_t_8 < 0)) __pyx_t_7 = 0;
+  } else if (unlikely(__pyx_t_8 >= __pyx_v_high_price.shape[0])) __pyx_t_7 = 0;
+  if (unlikely(__pyx_t_7 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_7);
+    __PYX_ERR(0, 141, __pyx_L1_error)
+  }
+  __pyx_t_9 = 0;
+  __pyx_t_7 = -1;
+  if (__pyx_t_9 < 0) {
+    __pyx_t_9 += __pyx_v_low_price.shape[0];
+    if (unlikely(__pyx_t_9 < 0)) __pyx_t_7 = 0;
+  } else if (unlikely(__pyx_t_9 >= __pyx_v_low_price.shape[0])) __pyx_t_7 = 0;
+  if (unlikely(__pyx_t_7 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_7);
+    __PYX_ERR(0, 141, __pyx_L1_error)
+  }
+  __pyx_t_10 = 0;
+  __pyx_t_7 = -1;
+  if (__pyx_t_10 < 0) {
+    __pyx_t_10 += __pyx_v_close_price.shape[0];
+    if (unlikely(__pyx_t_10 < 0)) __pyx_t_7 = 0;
+  } else if (unlikely(__pyx_t_10 >= __pyx_v_close_price.shape[0])) __pyx_t_7 = 0;
+  if (unlikely(__pyx_t_7 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_7);
+    __PYX_ERR(0, 141, __pyx_L1_error)
+  }
+  __pyx_t_3 = PyFloat_FromDouble(energy_weighed_average_cy((&(*((double *) ( /* dim=0 */ (__pyx_v_open_price.data + __pyx_t_6 * __pyx_v_open_price.strides[0]) )))), (&(*((double *) ( /* dim=0 */ (__pyx_v_high_price.data + __pyx_t_8 * __pyx_v_high_price.strides[0]) )))), (&(*((double *) ( /* dim=0 */ (__pyx_v_low_price.data + __pyx_t_9 * __pyx_v_low_price.strides[0]) )))), (&(*((double *) ( /* dim=0 */ (__pyx_v_close_price.data + __pyx_t_10 * __pyx_v_close_price.strides[0]) )))), __pyx_v_N)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 141, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_r = __pyx_t_3;
+  __pyx_t_3 = 0;
+  goto __pyx_L0;
+
+  /* "qf/nativemath/impl.pyx":135
+ * 
+ * # And update the bridge wrapper:
+ * def get_energy_weighed_average(double[:] open_price, double[:] high_price, double[:] low_price, double[:] close_price):             # <<<<<<<<<<<<<<
+ *     cdef int N = close_price.shape[0]
+ * 
+*/
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_AddTraceback("qf.nativemath.impl.get_energy_weighed_average", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "qf/nativemath/impl.pyx":143
+ *     return energy_weighed_average_cy(&open_price[0], &high_price[0], &low_price[0], &close_price[0], N)
+ * 
+ * def get_thrust_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,             # <<<<<<<<<<<<<<
+ *                                cnp.ndarray[double, ndim=1, mode="c"] high_p,
+ *                                cnp.ndarray[double, ndim=1, mode="c"] low_p,
+*/
+
+/* Python wrapper */
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_9get_thrust_weighed_average(PyObject *__pyx_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_8get_thrust_weighed_average, "\n    Calculates the Conditional-Exponential (Thrust) average for Trend confirmation.\n    ");
+static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_9get_thrust_weighed_average = {"get_thrust_weighed_average", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_9get_thrust_weighed_average, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_8get_thrust_weighed_average};
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_9get_thrust_weighed_average(PyObject *__pyx_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+) {
+  PyArrayObject *__pyx_v_open_p = 0;
+  PyArrayObject *__pyx_v_high_p = 0;
+  PyArrayObject *__pyx_v_low_p = 0;
+  PyArrayObject *__pyx_v_close_p = 0;
+  #if !CYTHON_METH_FASTCALL
+  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
+  #endif
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject* values[4] = {0,0,0,0};
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("get_thrust_weighed_average (wrapper)", 0);
+  #if !CYTHON_METH_FASTCALL
+  #if CYTHON_ASSUME_SAFE_SIZE
+  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
+  #else
+  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return NULL;
+  #endif
+  #endif
+  __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
+  {
+    PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_open_p,&__pyx_mstate_global->__pyx_n_u_high_p,&__pyx_mstate_global->__pyx_n_u_low_p,&__pyx_mstate_global->__pyx_n_u_close_p,0};
+    const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 143, __pyx_L3_error)
+    if (__pyx_kwds_len > 0) {
+      switch (__pyx_nargs) {
+        case  4:
+        values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 143, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  3:
+        values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 143, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  2:
+        values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 143, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  1:
+        values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 143, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      const Py_ssize_t kwd_pos_args = __pyx_nargs;
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_thrust_weighed_average", 0) < (0)) __PYX_ERR(0, 143, __pyx_L3_error)
+      for (Py_ssize_t i = __pyx_nargs; i < 4; i++) {
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_thrust_weighed_average", 1, 4, 4, i); __PYX_ERR(0, 143, __pyx_L3_error) }
+      }
+    } else if (unlikely(__pyx_nargs != 4)) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 143, __pyx_L3_error)
+      values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 143, __pyx_L3_error)
+      values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 143, __pyx_L3_error)
+      values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 143, __pyx_L3_error)
+    }
+    __pyx_v_open_p = ((PyArrayObject *)values[0]);
+    __pyx_v_high_p = ((PyArrayObject *)values[1]);
+    __pyx_v_low_p = ((PyArrayObject *)values[2]);
+    __pyx_v_close_p = ((PyArrayObject *)values[3]);
+  }
+  goto __pyx_L6_skip;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("get_thrust_weighed_average", 1, 4, 4, __pyx_nargs); __PYX_ERR(0, 143, __pyx_L3_error)
+  __pyx_L6_skip:;
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L3_error:;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __Pyx_AddTraceback("qf.nativemath.impl.get_thrust_weighed_average", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_open_p), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "open_p", 0))) __PYX_ERR(0, 143, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_high_p), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "high_p", 0))) __PYX_ERR(0, 144, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_low_p), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "low_p", 0))) __PYX_ERR(0, 145, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_close_p), __pyx_mstate_global->__pyx_ptype_5numpy_ndarray, 1, "close_p", 0))) __PYX_ERR(0, 146, __pyx_L1_error)
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_8get_thrust_weighed_average(__pyx_self, __pyx_v_open_p, __pyx_v_high_p, __pyx_v_low_p, __pyx_v_close_p);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  goto __pyx_L7_cleaned_up;
+  __pyx_L0:;
+  for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+    Py_XDECREF(values[__pyx_temp]);
+  }
+  __pyx_L7_cleaned_up:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_8get_thrust_weighed_average(CYTHON_UNUSED PyObject *__pyx_self, PyArrayObject *__pyx_v_open_p, PyArrayObject *__pyx_v_high_p, PyArrayObject *__pyx_v_low_p, PyArrayObject *__pyx_v_close_p) {
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_close_p;
+  __Pyx_Buffer __pyx_pybuffer_close_p;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_high_p;
+  __Pyx_Buffer __pyx_pybuffer_high_p;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_low_p;
+  __Pyx_Buffer __pyx_pybuffer_low_p;
+  __Pyx_LocalBuf_ND __pyx_pybuffernd_open_p;
+  __Pyx_Buffer __pyx_pybuffer_open_p;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  Py_ssize_t __pyx_t_1;
+  int __pyx_t_2;
+  Py_ssize_t __pyx_t_3;
+  Py_ssize_t __pyx_t_4;
+  Py_ssize_t __pyx_t_5;
+  Py_ssize_t __pyx_t_6;
+  PyObject *__pyx_t_7 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("get_thrust_weighed_average", 0);
+  __pyx_pybuffer_open_p.pybuffer.buf = NULL;
+  __pyx_pybuffer_open_p.refcount = 0;
+  __pyx_pybuffernd_open_p.data = NULL;
+  __pyx_pybuffernd_open_p.rcbuffer = &__pyx_pybuffer_open_p;
+  __pyx_pybuffer_high_p.pybuffer.buf = NULL;
+  __pyx_pybuffer_high_p.refcount = 0;
+  __pyx_pybuffernd_high_p.data = NULL;
+  __pyx_pybuffernd_high_p.rcbuffer = &__pyx_pybuffer_high_p;
+  __pyx_pybuffer_low_p.pybuffer.buf = NULL;
+  __pyx_pybuffer_low_p.refcount = 0;
+  __pyx_pybuffernd_low_p.data = NULL;
+  __pyx_pybuffernd_low_p.rcbuffer = &__pyx_pybuffer_low_p;
+  __pyx_pybuffer_close_p.pybuffer.buf = NULL;
+  __pyx_pybuffer_close_p.refcount = 0;
+  __pyx_pybuffernd_close_p.data = NULL;
+  __pyx_pybuffernd_close_p.rcbuffer = &__pyx_pybuffer_close_p;
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_open_p.rcbuffer->pybuffer, (PyObject*)__pyx_v_open_p, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 143, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_open_p.diminfo[0].strides = __pyx_pybuffernd_open_p.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_open_p.diminfo[0].shape = __pyx_pybuffernd_open_p.rcbuffer->pybuffer.shape[0];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_high_p.rcbuffer->pybuffer, (PyObject*)__pyx_v_high_p, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 143, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_high_p.diminfo[0].strides = __pyx_pybuffernd_high_p.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_high_p.diminfo[0].shape = __pyx_pybuffernd_high_p.rcbuffer->pybuffer.shape[0];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_low_p.rcbuffer->pybuffer, (PyObject*)__pyx_v_low_p, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 143, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_low_p.diminfo[0].strides = __pyx_pybuffernd_low_p.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_low_p.diminfo[0].shape = __pyx_pybuffernd_low_p.rcbuffer->pybuffer.shape[0];
+  {
+    __Pyx_BufFmt_StackElem __pyx_stack[1];
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_close_p.rcbuffer->pybuffer, (PyObject*)__pyx_v_close_p, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) __PYX_ERR(0, 143, __pyx_L1_error)
+  }
+  __pyx_pybuffernd_close_p.diminfo[0].strides = __pyx_pybuffernd_close_p.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_close_p.diminfo[0].shape = __pyx_pybuffernd_close_p.rcbuffer->pybuffer.shape[0];
+
+  /* "qf/nativemath/impl.pyx":150
+ *     Calculates the Conditional-Exponential (Thrust) average for Trend confirmation.
+ *     """
+ *     return thrust_weighed_average_cy(&open_p[0], &high_p[0], &low_p[0], &close_p[0], len(open_p))             # <<<<<<<<<<<<<<
+ * 
+ * # 3. Python-facing function for fractional order
+*/
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = 0;
+  __pyx_t_2 = -1;
+  if (__pyx_t_1 < 0) {
+    __pyx_t_1 += __pyx_pybuffernd_open_p.diminfo[0].shape;
+    if (unlikely(__pyx_t_1 < 0)) __pyx_t_2 = 0;
+  } else if (unlikely(__pyx_t_1 >= __pyx_pybuffernd_open_p.diminfo[0].shape)) __pyx_t_2 = 0;
+  if (unlikely(__pyx_t_2 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_2);
+    __PYX_ERR(0, 150, __pyx_L1_error)
+  }
+  __pyx_t_3 = 0;
+  __pyx_t_2 = -1;
+  if (__pyx_t_3 < 0) {
+    __pyx_t_3 += __pyx_pybuffernd_high_p.diminfo[0].shape;
+    if (unlikely(__pyx_t_3 < 0)) __pyx_t_2 = 0;
+  } else if (unlikely(__pyx_t_3 >= __pyx_pybuffernd_high_p.diminfo[0].shape)) __pyx_t_2 = 0;
+  if (unlikely(__pyx_t_2 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_2);
+    __PYX_ERR(0, 150, __pyx_L1_error)
+  }
+  __pyx_t_4 = 0;
+  __pyx_t_2 = -1;
+  if (__pyx_t_4 < 0) {
+    __pyx_t_4 += __pyx_pybuffernd_low_p.diminfo[0].shape;
+    if (unlikely(__pyx_t_4 < 0)) __pyx_t_2 = 0;
+  } else if (unlikely(__pyx_t_4 >= __pyx_pybuffernd_low_p.diminfo[0].shape)) __pyx_t_2 = 0;
+  if (unlikely(__pyx_t_2 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_2);
+    __PYX_ERR(0, 150, __pyx_L1_error)
+  }
+  __pyx_t_5 = 0;
+  __pyx_t_2 = -1;
+  if (__pyx_t_5 < 0) {
+    __pyx_t_5 += __pyx_pybuffernd_close_p.diminfo[0].shape;
+    if (unlikely(__pyx_t_5 < 0)) __pyx_t_2 = 0;
+  } else if (unlikely(__pyx_t_5 >= __pyx_pybuffernd_close_p.diminfo[0].shape)) __pyx_t_2 = 0;
+  if (unlikely(__pyx_t_2 != -1)) {
+    __Pyx_RaiseBufferIndexError(__pyx_t_2);
+    __PYX_ERR(0, 150, __pyx_L1_error)
+  }
+  __pyx_t_6 = PyObject_Length(((PyObject *)__pyx_v_open_p)); if (unlikely(__pyx_t_6 == ((Py_ssize_t)-1))) __PYX_ERR(0, 150, __pyx_L1_error)
+  __pyx_t_7 = PyFloat_FromDouble(thrust_weighed_average_cy((&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_open_p.rcbuffer->pybuffer.buf, __pyx_t_1, __pyx_pybuffernd_open_p.diminfo[0].strides))), (&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_high_p.rcbuffer->pybuffer.buf, __pyx_t_3, __pyx_pybuffernd_high_p.diminfo[0].strides))), (&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_low_p.rcbuffer->pybuffer.buf, __pyx_t_4, __pyx_pybuffernd_low_p.diminfo[0].strides))), (&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_close_p.rcbuffer->pybuffer.buf, __pyx_t_5, __pyx_pybuffernd_close_p.diminfo[0].strides))), __pyx_t_6)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 150, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_r = __pyx_t_7;
+  __pyx_t_7 = 0;
+  goto __pyx_L0;
+
+  /* "qf/nativemath/impl.pyx":143
+ *     return energy_weighed_average_cy(&open_price[0], &high_price[0], &low_price[0], &close_price[0], N)
+ * 
+ * def get_thrust_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,             # <<<<<<<<<<<<<<
+ *                                cnp.ndarray[double, ndim=1, mode="c"] high_p,
+ *                                cnp.ndarray[double, ndim=1, mode="c"] low_p,
+*/
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_7);
+  { PyObject *__pyx_type, *__pyx_value, *__pyx_tb;
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ErrFetch(&__pyx_type, &__pyx_value, &__pyx_tb);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_close_p.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_high_p.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_low_p.rcbuffer->pybuffer);
+    __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_open_p.rcbuffer->pybuffer);
+  __Pyx_ErrRestore(__pyx_type, __pyx_value, __pyx_tb);}
+  __Pyx_AddTraceback("qf.nativemath.impl.get_thrust_weighed_average", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  goto __pyx_L2;
+  __pyx_L0:;
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_close_p.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_high_p.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_low_p.rcbuffer->pybuffer);
+  __Pyx_SafeReleaseBuffer(&__pyx_pybuffernd_open_p.rcbuffer->pybuffer);
+  __pyx_L2:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "qf/nativemath/impl.pyx":153
  * 
  * # 3. Python-facing function for fractional order
  * def get_fractional_order(double Lambda_val, double[:] L):             # <<<<<<<<<<<<<<
@@ -19057,15 +20197,15 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_get_price_time_indicators(CYTHO
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_3get_fractional_order(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_11get_fractional_order(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_3get_fractional_order = {"get_fractional_order", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_3get_fractional_order, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_3get_fractional_order(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_11get_fractional_order = {"get_fractional_order", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_11get_fractional_order, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_11get_fractional_order(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -19096,39 +20236,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_Lambda_val,&__pyx_mstate_global->__pyx_n_u_L,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 112, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 153, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 112, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 153, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 112, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 153, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_order", 0) < (0)) __PYX_ERR(0, 112, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_order", 0) < (0)) __PYX_ERR(0, 153, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_order", 1, 2, 2, i); __PYX_ERR(0, 112, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_order", 1, 2, 2, i); __PYX_ERR(0, 153, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 112, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 153, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 112, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 153, __pyx_L3_error)
     }
-    __pyx_v_Lambda_val = __Pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_Lambda_val == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 112, __pyx_L3_error)
-    __pyx_v_L = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_L.memview)) __PYX_ERR(0, 112, __pyx_L3_error)
+    __pyx_v_Lambda_val = __Pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_Lambda_val == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 153, __pyx_L3_error)
+    __pyx_v_L = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_L.memview)) __PYX_ERR(0, 153, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_fractional_order", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 112, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_fractional_order", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 153, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -19140,7 +20280,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_2get_fractional_order(__pyx_self, __pyx_v_Lambda_val, __pyx_v_L);
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_10get_fractional_order(__pyx_self, __pyx_v_Lambda_val, __pyx_v_L);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -19151,7 +20291,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_2get_fractional_order(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_Lambda_val, __Pyx_memviewslice __pyx_v_L) {
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_10get_fractional_order(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_Lambda_val, __Pyx_memviewslice __pyx_v_L) {
   int __pyx_v_N;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -19163,7 +20303,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_2get_fractional_order(CYTHON_UN
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_fractional_order", 0);
 
-  /* "qf/nativemath/impl.pyx":113
+  /* "qf/nativemath/impl.pyx":154
  * # 3. Python-facing function for fractional order
  * def get_fractional_order(double Lambda_val, double[:] L):
  *     cdef int N = L.shape[0]             # <<<<<<<<<<<<<<
@@ -19172,7 +20312,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_2get_fractional_order(CYTHON_UN
 */
   __pyx_v_N = (__pyx_v_L.shape[0]);
 
-  /* "qf/nativemath/impl.pyx":114
+  /* "qf/nativemath/impl.pyx":155
  * def get_fractional_order(double Lambda_val, double[:] L):
  *     cdef int N = L.shape[0]
  *     return fractional_order_cy(Lambda_val, N, &L[0])             # <<<<<<<<<<<<<<
@@ -19188,15 +20328,15 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_2get_fractional_order(CYTHON_UN
   } else if (unlikely(__pyx_t_1 >= __pyx_v_L.shape[0])) __pyx_t_2 = 0;
   if (unlikely(__pyx_t_2 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_2);
-    __PYX_ERR(0, 114, __pyx_L1_error)
+    __PYX_ERR(0, 155, __pyx_L1_error)
   }
-  __pyx_t_3 = PyFloat_FromDouble(fractional_order_cy(__pyx_v_Lambda_val, __pyx_v_N, (&(*((double *) ( /* dim=0 */ (__pyx_v_L.data + __pyx_t_1 * __pyx_v_L.strides[0]) )))))); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 114, __pyx_L1_error)
+  __pyx_t_3 = PyFloat_FromDouble(fractional_order_cy(__pyx_v_Lambda_val, __pyx_v_N, (&(*((double *) ( /* dim=0 */ (__pyx_v_L.data + __pyx_t_1 * __pyx_v_L.strides[0]) )))))); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 155, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_r = __pyx_t_3;
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "qf/nativemath/impl.pyx":112
+  /* "qf/nativemath/impl.pyx":153
  * 
  * # 3. Python-facing function for fractional order
  * def get_fractional_order(double Lambda_val, double[:] L):             # <<<<<<<<<<<<<<
@@ -19215,7 +20355,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_2get_fractional_order(CYTHON_UN
   return __pyx_r;
 }
 
-/* "qf/nativemath/impl.pyx":117
+/* "qf/nativemath/impl.pyx":158
  * 
  * # 4. Python-facing function for fractional integral
  * def get_fractional_integral(double[:] weights, double[:] values):             # <<<<<<<<<<<<<<
@@ -19224,16 +20364,16 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_2get_fractional_order(CYTHON_UN
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_5get_fractional_integral(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_13get_fractional_integral(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_4get_fractional_integral, "\n    Computes the fractional integral (dot product) using the C++ backend.\n    ");
-static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_5get_fractional_integral = {"get_fractional_integral", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_5get_fractional_integral, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_4get_fractional_integral};
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_5get_fractional_integral(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_12get_fractional_integral, "\n    Computes the fractional integral (dot product) using the C++ backend.\n    ");
+static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_13get_fractional_integral = {"get_fractional_integral", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_13get_fractional_integral, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_12get_fractional_integral};
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_13get_fractional_integral(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -19264,39 +20404,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_weights,&__pyx_mstate_global->__pyx_n_u_values,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 117, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 158, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 117, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 158, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 117, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 158, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_integral", 0) < (0)) __PYX_ERR(0, 117, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_integral", 0) < (0)) __PYX_ERR(0, 158, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_integral", 1, 2, 2, i); __PYX_ERR(0, 117, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_integral", 1, 2, 2, i); __PYX_ERR(0, 158, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 117, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 158, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 117, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 158, __pyx_L3_error)
     }
-    __pyx_v_weights = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_weights.memview)) __PYX_ERR(0, 117, __pyx_L3_error)
-    __pyx_v_values = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_values.memview)) __PYX_ERR(0, 117, __pyx_L3_error)
+    __pyx_v_weights = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_weights.memview)) __PYX_ERR(0, 158, __pyx_L3_error)
+    __pyx_v_values = __Pyx_PyObject_to_MemoryviewSlice_ds_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_values.memview)) __PYX_ERR(0, 158, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_fractional_integral", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 117, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_fractional_integral", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 158, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -19309,7 +20449,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_4get_fractional_integral(__pyx_self, __pyx_v_weights, __pyx_v_values);
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_12get_fractional_integral(__pyx_self, __pyx_v_weights, __pyx_v_values);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -19321,7 +20461,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_fractional_integral(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_weights, __Pyx_memviewslice __pyx_v_values) {
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_12get_fractional_integral(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_weights, __Pyx_memviewslice __pyx_v_values) {
   int __pyx_v_N;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -19337,7 +20477,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_fractional_integral(CYTHON
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_fractional_integral", 0);
 
-  /* "qf/nativemath/impl.pyx":121
+  /* "qf/nativemath/impl.pyx":162
  *     Computes the fractional integral (dot product) using the C++ backend.
  *     """
  *     cdef int N = weights.shape[0]             # <<<<<<<<<<<<<<
@@ -19346,7 +20486,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_fractional_integral(CYTHON
 */
   __pyx_v_N = (__pyx_v_weights.shape[0]);
 
-  /* "qf/nativemath/impl.pyx":122
+  /* "qf/nativemath/impl.pyx":163
  *     """
  *     cdef int N = weights.shape[0]
  *     if values.shape[0] != N:             # <<<<<<<<<<<<<<
@@ -19356,7 +20496,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_fractional_integral(CYTHON
   __pyx_t_1 = ((__pyx_v_values.shape[0]) != __pyx_v_N);
   if (unlikely(__pyx_t_1)) {
 
-    /* "qf/nativemath/impl.pyx":123
+    /* "qf/nativemath/impl.pyx":164
  *     cdef int N = weights.shape[0]
  *     if values.shape[0] != N:
  *         raise ValueError("Weights and values arrays must have the same length.")             # <<<<<<<<<<<<<<
@@ -19369,14 +20509,14 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_fractional_integral(CYTHON
       PyObject *__pyx_callargs[2] = {__pyx_t_3, __pyx_mstate_global->__pyx_kp_u_Weights_and_values_arrays_must_h};
       __pyx_t_2 = __Pyx_PyObject_FastCall((PyObject*)(((PyTypeObject*)PyExc_ValueError)), __pyx_callargs+__pyx_t_4, (2-__pyx_t_4) | (__pyx_t_4*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
       __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-      if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 123, __pyx_L1_error)
+      if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 164, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
     }
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __PYX_ERR(0, 123, __pyx_L1_error)
+    __PYX_ERR(0, 164, __pyx_L1_error)
 
-    /* "qf/nativemath/impl.pyx":122
+    /* "qf/nativemath/impl.pyx":163
  *     """
  *     cdef int N = weights.shape[0]
  *     if values.shape[0] != N:             # <<<<<<<<<<<<<<
@@ -19385,7 +20525,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_fractional_integral(CYTHON
 */
   }
 
-  /* "qf/nativemath/impl.pyx":124
+  /* "qf/nativemath/impl.pyx":165
  *     if values.shape[0] != N:
  *         raise ValueError("Weights and values arrays must have the same length.")
  *     return fractional_integral_cy(N, &weights[0], &values[0])             # <<<<<<<<<<<<<<
@@ -19401,7 +20541,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_fractional_integral(CYTHON
   } else if (unlikely(__pyx_t_5 >= __pyx_v_weights.shape[0])) __pyx_t_6 = 0;
   if (unlikely(__pyx_t_6 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_6);
-    __PYX_ERR(0, 124, __pyx_L1_error)
+    __PYX_ERR(0, 165, __pyx_L1_error)
   }
   __pyx_t_7 = 0;
   __pyx_t_6 = -1;
@@ -19411,15 +20551,15 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_fractional_integral(CYTHON
   } else if (unlikely(__pyx_t_7 >= __pyx_v_values.shape[0])) __pyx_t_6 = 0;
   if (unlikely(__pyx_t_6 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_6);
-    __PYX_ERR(0, 124, __pyx_L1_error)
+    __PYX_ERR(0, 165, __pyx_L1_error)
   }
-  __pyx_t_2 = PyFloat_FromDouble(fractional_integral_cy(__pyx_v_N, (&(*((double *) ( /* dim=0 */ (__pyx_v_weights.data + __pyx_t_5 * __pyx_v_weights.strides[0]) )))), (&(*((double *) ( /* dim=0 */ (__pyx_v_values.data + __pyx_t_7 * __pyx_v_values.strides[0]) )))))); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 124, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble(fractional_integral_cy(__pyx_v_N, (&(*((double *) ( /* dim=0 */ (__pyx_v_weights.data + __pyx_t_5 * __pyx_v_weights.strides[0]) )))), (&(*((double *) ( /* dim=0 */ (__pyx_v_values.data + __pyx_t_7 * __pyx_v_values.strides[0]) )))))); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 165, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "qf/nativemath/impl.pyx":117
+  /* "qf/nativemath/impl.pyx":158
  * 
  * # 4. Python-facing function for fractional integral
  * def get_fractional_integral(double[:] weights, double[:] values):             # <<<<<<<<<<<<<<
@@ -19439,7 +20579,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_fractional_integral(CYTHON
   return __pyx_r;
 }
 
-/* "qf/nativemath/impl.pyx":127
+/* "qf/nativemath/impl.pyx":168
  * 
  * # 5. New Python-facing function for fractional integral weights
  * def get_fractional_integral_weights(double order, int N):             # <<<<<<<<<<<<<<
@@ -19448,16 +20588,16 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_4get_fractional_integral(CYTHON
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_7get_fractional_integral_weights(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_15get_fractional_integral_weights(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_6get_fractional_integral_weights, "\n    Generates fractional integral weights of length N for a given order.\n    ");
-static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_7get_fractional_integral_weights = {"get_fractional_integral_weights", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_7get_fractional_integral_weights, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_6get_fractional_integral_weights};
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_7get_fractional_integral_weights(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_14get_fractional_integral_weights, "\n    Generates fractional integral weights of length N for a given order.\n    ");
+static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_15get_fractional_integral_weights = {"get_fractional_integral_weights", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_15get_fractional_integral_weights, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_14get_fractional_integral_weights};
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_15get_fractional_integral_weights(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -19488,39 +20628,39 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_order,&__pyx_mstate_global->__pyx_n_u_N,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 127, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 168, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 127, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 168, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 127, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 168, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_integral_weights", 0) < (0)) __PYX_ERR(0, 127, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_integral_weights", 0) < (0)) __PYX_ERR(0, 168, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 2; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_integral_weights", 1, 2, 2, i); __PYX_ERR(0, 127, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_integral_weights", 1, 2, 2, i); __PYX_ERR(0, 168, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 127, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 168, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 127, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 168, __pyx_L3_error)
     }
-    __pyx_v_order = __Pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_order == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 127, __pyx_L3_error)
-    __pyx_v_N = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_N == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 127, __pyx_L3_error)
+    __pyx_v_order = __Pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_order == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 168, __pyx_L3_error)
+    __pyx_v_N = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_N == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 168, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_fractional_integral_weights", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 127, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_fractional_integral_weights", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 168, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -19531,7 +20671,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weights(__pyx_self, __pyx_v_order, __pyx_v_N);
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_14get_fractional_integral_weights(__pyx_self, __pyx_v_order, __pyx_v_N);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -19541,7 +20681,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weights(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_order, int __pyx_v_N) {
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_integral_weights(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_order, int __pyx_v_N) {
   PyArrayObject *__pyx_v_weights_out = 0;
   __Pyx_LocalBuf_ND __pyx_pybuffernd_weights_out;
   __Pyx_Buffer __pyx_pybuffer_weights_out;
@@ -19566,7 +20706,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weight
   __pyx_pybuffernd_weights_out.data = NULL;
   __pyx_pybuffernd_weights_out.rcbuffer = &__pyx_pybuffer_weights_out;
 
-  /* "qf/nativemath/impl.pyx":131
+  /* "qf/nativemath/impl.pyx":172
  *     Generates fractional integral weights of length N for a given order.
  *     """
  *     if N <= 0:             # <<<<<<<<<<<<<<
@@ -19576,7 +20716,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weight
   __pyx_t_1 = (__pyx_v_N <= 0);
   if (unlikely(__pyx_t_1)) {
 
-    /* "qf/nativemath/impl.pyx":132
+    /* "qf/nativemath/impl.pyx":173
  *     """
  *     if N <= 0:
  *         raise ValueError("N must be a positive integer.")             # <<<<<<<<<<<<<<
@@ -19589,14 +20729,14 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weight
       PyObject *__pyx_callargs[2] = {__pyx_t_3, __pyx_mstate_global->__pyx_kp_u_N_must_be_a_positive_integer};
       __pyx_t_2 = __Pyx_PyObject_FastCall((PyObject*)(((PyTypeObject*)PyExc_ValueError)), __pyx_callargs+__pyx_t_4, (2-__pyx_t_4) | (__pyx_t_4*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET));
       __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-      if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 132, __pyx_L1_error)
+      if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 173, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
     }
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __PYX_ERR(0, 132, __pyx_L1_error)
+    __PYX_ERR(0, 173, __pyx_L1_error)
 
-    /* "qf/nativemath/impl.pyx":131
+    /* "qf/nativemath/impl.pyx":172
  *     Generates fractional integral weights of length N for a given order.
  *     """
  *     if N <= 0:             # <<<<<<<<<<<<<<
@@ -19605,7 +20745,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weight
 */
   }
 
-  /* "qf/nativemath/impl.pyx":134
+  /* "qf/nativemath/impl.pyx":175
  *         raise ValueError("N must be a positive integer.")
  * 
  *     cdef cnp.ndarray[cnp.float64_t, ndim=1] weights_out = np.empty(N, dtype=np.float64)             # <<<<<<<<<<<<<<
@@ -19613,16 +20753,16 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weight
  * 
 */
   __pyx_t_3 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 134, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 175, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_empty); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 134, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_empty); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 175, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_v_N); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 134, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyLong_From_int(__pyx_v_N); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 175, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 134, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 175, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 134, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_mstate_global->__pyx_n_u_float64); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 175, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   __pyx_t_4 = 1;
@@ -19639,31 +20779,31 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weight
   #endif
   {
     PyObject *__pyx_callargs[2 + ((CYTHON_VECTORCALL) ? 1 : 0)] = {__pyx_t_3, __pyx_t_5};
-    __pyx_t_7 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 134, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_MakeVectorcallBuilderKwds(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 175, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_8, __pyx_t_7, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 134, __pyx_L1_error)
+    if (__Pyx_VectorcallBuilder_AddArg(__pyx_mstate_global->__pyx_n_u_dtype, __pyx_t_8, __pyx_t_7, __pyx_callargs+2, 0) < (0)) __PYX_ERR(0, 175, __pyx_L1_error)
     __pyx_t_2 = __Pyx_Object_Vectorcall_CallFromBuilder((PyObject*)__pyx_t_6, __pyx_callargs+__pyx_t_4, (2-__pyx_t_4) | (__pyx_t_4*__Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET), __pyx_t_7);
     __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 134, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 175, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
   }
-  if (!(likely(((__pyx_t_2) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_2, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 134, __pyx_L1_error)
+  if (!(likely(((__pyx_t_2) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_2, __pyx_mstate_global->__pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 175, __pyx_L1_error)
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
     if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_weights_out.rcbuffer->pybuffer, (PyObject*)((PyArrayObject *)__pyx_t_2), &__Pyx_TypeInfo_nn___pyx_t_5numpy_float64_t, PyBUF_FORMAT| PyBUF_STRIDES, 1, 0, __pyx_stack) == -1)) {
       __pyx_v_weights_out = ((PyArrayObject *)Py_None); __Pyx_INCREF(Py_None); __pyx_pybuffernd_weights_out.rcbuffer->pybuffer.buf = NULL;
-      __PYX_ERR(0, 134, __pyx_L1_error)
+      __PYX_ERR(0, 175, __pyx_L1_error)
     } else {__pyx_pybuffernd_weights_out.diminfo[0].strides = __pyx_pybuffernd_weights_out.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_weights_out.diminfo[0].shape = __pyx_pybuffernd_weights_out.rcbuffer->pybuffer.shape[0];
     }
   }
   __pyx_v_weights_out = ((PyArrayObject *)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "qf/nativemath/impl.pyx":135
+  /* "qf/nativemath/impl.pyx":176
  * 
  *     cdef cnp.ndarray[cnp.float64_t, ndim=1] weights_out = np.empty(N, dtype=np.float64)
  *     fractional_integral_weights_cy(order, N, &weights_out[0])             # <<<<<<<<<<<<<<
@@ -19678,11 +20818,11 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weight
   } else if (unlikely(__pyx_t_9 >= __pyx_pybuffernd_weights_out.diminfo[0].shape)) __pyx_t_10 = 0;
   if (unlikely(__pyx_t_10 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_10);
-    __PYX_ERR(0, 135, __pyx_L1_error)
+    __PYX_ERR(0, 176, __pyx_L1_error)
   }
   fractional_integral_weights_cy(__pyx_v_order, __pyx_v_N, (&(*__Pyx_BufPtrStrided1d(__pyx_t_5numpy_float64_t *, __pyx_pybuffernd_weights_out.rcbuffer->pybuffer.buf, __pyx_t_9, __pyx_pybuffernd_weights_out.diminfo[0].strides))));
 
-  /* "qf/nativemath/impl.pyx":137
+  /* "qf/nativemath/impl.pyx":178
  *     fractional_integral_weights_cy(order, N, &weights_out[0])
  * 
  *     return weights_out             # <<<<<<<<<<<<<<
@@ -19694,7 +20834,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weight
   __pyx_r = ((PyObject *)__pyx_v_weights_out);
   goto __pyx_L0;
 
-  /* "qf/nativemath/impl.pyx":127
+  /* "qf/nativemath/impl.pyx":168
  * 
  * # 5. New Python-facing function for fractional integral weights
  * def get_fractional_integral_weights(double order, int N):             # <<<<<<<<<<<<<<
@@ -19728,45 +20868,45 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_6get_fractional_integral_weight
   return __pyx_r;
 }
 
-/* "qf/nativemath/impl.pyx":141
+/* "qf/nativemath/impl.pyx":182
  * # Add this at the bottom of the file as a new Python-facing function
  * # 6. Python-facing function for trading signals
- * def get_fractional_signal(double L0, double L, double Lambda, double Lambda_hat, double f0, double f, double f_mean, double f_std, double order):             # <<<<<<<<<<<<<<
- *     """
- *     Computes the trading signal based on fractional force and momentum parameters using the C++ backend.
+ * def get_fractional_signal(double L, double L_hat, double Lambda, double Lambda_hat,             # <<<<<<<<<<<<<<
+ *                           double y, double y_mean, double y_std, double order,
+ *                           double energy_signal, double thrust_signal):
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_9get_fractional_signal(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_17get_fractional_signal(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_8get_fractional_signal, "\n    Computes the trading signal based on fractional force and momentum parameters using the C++ backend.\n    Returns integers corresponding to STALL (0), STRONG_BULLISH (1), STRONG_BEARISH (-1), etc.\n    ");
-static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_9get_fractional_signal = {"get_fractional_signal", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_9get_fractional_signal, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_8get_fractional_signal};
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_9get_fractional_signal(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_17get_fractional_signal = {"get_fractional_signal", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_17get_fractional_signal, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_17get_fractional_signal(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ) {
-  double __pyx_v_L0;
   double __pyx_v_L;
+  double __pyx_v_L_hat;
   double __pyx_v_Lambda;
   double __pyx_v_Lambda_hat;
-  double __pyx_v_f0;
-  double __pyx_v_f;
-  double __pyx_v_f_mean;
-  double __pyx_v_f_std;
+  double __pyx_v_y;
+  double __pyx_v_y_mean;
+  double __pyx_v_y_std;
   double __pyx_v_order;
+  double __pyx_v_energy_signal;
+  double __pyx_v_thrust_signal;
   #if !CYTHON_METH_FASTCALL
   CYTHON_UNUSED Py_ssize_t __pyx_nargs;
   #endif
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject* values[9] = {0,0,0,0,0,0,0,0,0};
+  PyObject* values[10] = {0,0,0,0,0,0,0,0,0,0};
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -19782,90 +20922,97 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   #endif
   __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
   {
-    PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_L0,&__pyx_mstate_global->__pyx_n_u_L,&__pyx_mstate_global->__pyx_n_u_Lambda,&__pyx_mstate_global->__pyx_n_u_Lambda_hat,&__pyx_mstate_global->__pyx_n_u_f0,&__pyx_mstate_global->__pyx_n_u_f,&__pyx_mstate_global->__pyx_n_u_f_mean,&__pyx_mstate_global->__pyx_n_u_f_std,&__pyx_mstate_global->__pyx_n_u_order,0};
+    PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_L,&__pyx_mstate_global->__pyx_n_u_L_hat,&__pyx_mstate_global->__pyx_n_u_Lambda,&__pyx_mstate_global->__pyx_n_u_Lambda_hat,&__pyx_mstate_global->__pyx_n_u_y,&__pyx_mstate_global->__pyx_n_u_y_mean,&__pyx_mstate_global->__pyx_n_u_y_std,&__pyx_mstate_global->__pyx_n_u_order,&__pyx_mstate_global->__pyx_n_u_energy_signal,&__pyx_mstate_global->__pyx_n_u_thrust_signal,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 141, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 182, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
+        case 10:
+        values[9] = __Pyx_ArgRef_FASTCALL(__pyx_args, 9);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 182, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
         case  9:
         values[8] = __Pyx_ArgRef_FASTCALL(__pyx_args, 8);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 141, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 182, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  8:
         values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 141, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 182, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  7:
         values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 141, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 182, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  6:
         values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 141, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 182, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  5:
         values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 141, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 182, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 141, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 182, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  3:
         values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 141, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 182, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 141, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 182, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 141, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 182, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_signal", 0) < (0)) __PYX_ERR(0, 141, __pyx_L3_error)
-      for (Py_ssize_t i = __pyx_nargs; i < 9; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_signal", 1, 9, 9, i); __PYX_ERR(0, 141, __pyx_L3_error) }
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_signal", 0) < (0)) __PYX_ERR(0, 182, __pyx_L3_error)
+      for (Py_ssize_t i = __pyx_nargs; i < 10; i++) {
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_signal", 1, 10, 10, i); __PYX_ERR(0, 182, __pyx_L3_error) }
       }
-    } else if (unlikely(__pyx_nargs != 9)) {
+    } else if (unlikely(__pyx_nargs != 10)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 141, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 182, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 141, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 182, __pyx_L3_error)
       values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 141, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 182, __pyx_L3_error)
       values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 141, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 182, __pyx_L3_error)
       values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 141, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 182, __pyx_L3_error)
       values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 141, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 182, __pyx_L3_error)
       values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 141, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 182, __pyx_L3_error)
       values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 141, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 182, __pyx_L3_error)
       values[8] = __Pyx_ArgRef_FASTCALL(__pyx_args, 8);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 141, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 182, __pyx_L3_error)
+      values[9] = __Pyx_ArgRef_FASTCALL(__pyx_args, 9);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 182, __pyx_L3_error)
     }
-    __pyx_v_L0 = __Pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_L0 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 141, __pyx_L3_error)
-    __pyx_v_L = __Pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_L == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 141, __pyx_L3_error)
-    __pyx_v_Lambda = __Pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_Lambda == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 141, __pyx_L3_error)
-    __pyx_v_Lambda_hat = __Pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_Lambda_hat == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 141, __pyx_L3_error)
-    __pyx_v_f0 = __Pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_f0 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 141, __pyx_L3_error)
-    __pyx_v_f = __Pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_f == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 141, __pyx_L3_error)
-    __pyx_v_f_mean = __Pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_f_mean == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 141, __pyx_L3_error)
-    __pyx_v_f_std = __Pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_f_std == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 141, __pyx_L3_error)
-    __pyx_v_order = __Pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_order == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 141, __pyx_L3_error)
+    __pyx_v_L = __Pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_L == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 182, __pyx_L3_error)
+    __pyx_v_L_hat = __Pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_L_hat == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 182, __pyx_L3_error)
+    __pyx_v_Lambda = __Pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_Lambda == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 182, __pyx_L3_error)
+    __pyx_v_Lambda_hat = __Pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_Lambda_hat == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 182, __pyx_L3_error)
+    __pyx_v_y = __Pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_y == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 183, __pyx_L3_error)
+    __pyx_v_y_mean = __Pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_y_mean == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 183, __pyx_L3_error)
+    __pyx_v_y_std = __Pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_y_std == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 183, __pyx_L3_error)
+    __pyx_v_order = __Pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_order == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 183, __pyx_L3_error)
+    __pyx_v_energy_signal = __Pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_energy_signal == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 184, __pyx_L3_error)
+    __pyx_v_thrust_signal = __Pyx_PyFloat_AsDouble(values[9]); if (unlikely((__pyx_v_thrust_signal == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 184, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_fractional_signal", 1, 9, 9, __pyx_nargs); __PYX_ERR(0, 141, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_fractional_signal", 1, 10, 10, __pyx_nargs); __PYX_ERR(0, 182, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -19876,7 +21023,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_8get_fractional_signal(__pyx_self, __pyx_v_L0, __pyx_v_L, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_f0, __pyx_v_f, __pyx_v_f_mean, __pyx_v_f_std, __pyx_v_order);
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_16get_fractional_signal(__pyx_self, __pyx_v_L, __pyx_v_L_hat, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_y, __pyx_v_y_mean, __pyx_v_y_std, __pyx_v_order, __pyx_v_energy_signal, __pyx_v_thrust_signal);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -19886,7 +21033,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_8get_fractional_signal(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_f0, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_std, double __pyx_v_order) {
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_16get_fractional_signal(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_L, double __pyx_v_L_hat, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_y, double __pyx_v_y_mean, double __pyx_v_y_std, double __pyx_v_order, double __pyx_v_energy_signal, double __pyx_v_thrust_signal) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -19895,26 +21042,34 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_8get_fractional_signal(CYTHON_U
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_fractional_signal", 0);
 
-  /* "qf/nativemath/impl.pyx":146
- *     Returns integers corresponding to STALL (0), STRONG_BULLISH (1), STRONG_BEARISH (-1), etc.
- *     """
- *     return calculate_fractional_signal_cy(L0, L, Lambda, Lambda_hat, f0, f, f_mean, f_std, order)             # <<<<<<<<<<<<<<
- * 
- * # Add this at the very bottom of the file:
+  /* "qf/nativemath/impl.pyx":185
+ *                           double y, double y_mean, double y_std, double order,
+ *                           double energy_signal, double thrust_signal):
+ *     return calculate_fractional_signal_cy(             # <<<<<<<<<<<<<<
+ *         L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, energy_signal, thrust_signal
+ *     )
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_int(calculate_fractional_signal_cy(__pyx_v_L0, __pyx_v_L, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_f0, __pyx_v_f, __pyx_v_f_mean, __pyx_v_f_std, __pyx_v_order)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 146, __pyx_L1_error)
+
+  /* "qf/nativemath/impl.pyx":186
+ *                           double energy_signal, double thrust_signal):
+ *     return calculate_fractional_signal_cy(
+ *         L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, energy_signal, thrust_signal             # <<<<<<<<<<<<<<
+ *     )
+ * 
+*/
+  __pyx_t_1 = __Pyx_PyLong_From_int(calculate_fractional_signal_cy(__pyx_v_L, __pyx_v_L_hat, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_y, __pyx_v_y_mean, __pyx_v_y_std, __pyx_v_order, __pyx_v_energy_signal, __pyx_v_thrust_signal)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 185, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "qf/nativemath/impl.pyx":141
+  /* "qf/nativemath/impl.pyx":182
  * # Add this at the bottom of the file as a new Python-facing function
  * # 6. Python-facing function for trading signals
- * def get_fractional_signal(double L0, double L, double Lambda, double Lambda_hat, double f0, double f, double f_mean, double f_std, double order):             # <<<<<<<<<<<<<<
- *     """
- *     Computes the trading signal based on fractional force and momentum parameters using the C++ backend.
+ * def get_fractional_signal(double L, double L_hat, double Lambda, double Lambda_hat,             # <<<<<<<<<<<<<<
+ *                           double y, double y_mean, double y_std, double order,
+ *                           double energy_signal, double thrust_signal):
 */
 
   /* function exit code */
@@ -19928,24 +21083,24 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_8get_fractional_signal(CYTHON_U
   return __pyx_r;
 }
 
-/* "qf/nativemath/impl.pyx":150
+/* "qf/nativemath/impl.pyx":191
  * # Add this at the very bottom of the file:
  * # 7. Python-facing function for position sizing levels
- * def get_levels(int signal, double L0, double L, double Lambda, double Lambda_hat,             # <<<<<<<<<<<<<<
- *                int direction_bias, double f, double f_mean, double f_stdev,
- *                double current_price, double low_price, double high_price, double order): # Add order
+ * def get_levels(             # <<<<<<<<<<<<<<
+ *         int signal, double L0, double L, double Lambda, double Lambda_hat,
+ *         int direction_bias, double f, double f_mean, double f_stdev,
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_11get_levels(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_19get_levels(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_11get_levels = {"get_levels", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_11get_levels, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_11get_levels(PyObject *__pyx_self, 
+static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_19get_levels = {"get_levels", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_19get_levels, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_19get_levels(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -19965,11 +21120,13 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   double __pyx_v_low_price;
   double __pyx_v_high_price;
   double __pyx_v_order;
+  double __pyx_v_energy_signal;
+  double __pyx_v_thrust_signal;
   #if !CYTHON_METH_FASTCALL
   CYTHON_UNUSED Py_ssize_t __pyx_nargs;
   #endif
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject* values[13] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
+  PyObject* values[15] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -19985,118 +21142,132 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   #endif
   __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
   {
-    PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_signal,&__pyx_mstate_global->__pyx_n_u_L0,&__pyx_mstate_global->__pyx_n_u_L,&__pyx_mstate_global->__pyx_n_u_Lambda,&__pyx_mstate_global->__pyx_n_u_Lambda_hat,&__pyx_mstate_global->__pyx_n_u_direction_bias,&__pyx_mstate_global->__pyx_n_u_f,&__pyx_mstate_global->__pyx_n_u_f_mean,&__pyx_mstate_global->__pyx_n_u_f_stdev,&__pyx_mstate_global->__pyx_n_u_current_price,&__pyx_mstate_global->__pyx_n_u_low_price,&__pyx_mstate_global->__pyx_n_u_high_price,&__pyx_mstate_global->__pyx_n_u_order,0};
+    PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_signal,&__pyx_mstate_global->__pyx_n_u_L0,&__pyx_mstate_global->__pyx_n_u_L,&__pyx_mstate_global->__pyx_n_u_Lambda,&__pyx_mstate_global->__pyx_n_u_Lambda_hat,&__pyx_mstate_global->__pyx_n_u_direction_bias,&__pyx_mstate_global->__pyx_n_u_f,&__pyx_mstate_global->__pyx_n_u_f_mean,&__pyx_mstate_global->__pyx_n_u_f_stdev,&__pyx_mstate_global->__pyx_n_u_current_price,&__pyx_mstate_global->__pyx_n_u_low_price,&__pyx_mstate_global->__pyx_n_u_high_price,&__pyx_mstate_global->__pyx_n_u_order,&__pyx_mstate_global->__pyx_n_u_energy_signal,&__pyx_mstate_global->__pyx_n_u_thrust_signal,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 150, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 191, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
+        case 15:
+        values[14] = __Pyx_ArgRef_FASTCALL(__pyx_args, 14);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[14])) __PYX_ERR(0, 191, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
+        case 14:
+        values[13] = __Pyx_ArgRef_FASTCALL(__pyx_args, 13);
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[13])) __PYX_ERR(0, 191, __pyx_L3_error)
+        CYTHON_FALLTHROUGH;
         case 13:
         values[12] = __Pyx_ArgRef_FASTCALL(__pyx_args, 12);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[12])) __PYX_ERR(0, 150, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[12])) __PYX_ERR(0, 191, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 12:
         values[11] = __Pyx_ArgRef_FASTCALL(__pyx_args, 11);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[11])) __PYX_ERR(0, 150, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[11])) __PYX_ERR(0, 191, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 11:
         values[10] = __Pyx_ArgRef_FASTCALL(__pyx_args, 10);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[10])) __PYX_ERR(0, 150, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[10])) __PYX_ERR(0, 191, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 10:
         values[9] = __Pyx_ArgRef_FASTCALL(__pyx_args, 9);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 150, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 191, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  9:
         values[8] = __Pyx_ArgRef_FASTCALL(__pyx_args, 8);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 150, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 191, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  8:
         values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 150, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 191, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  7:
         values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 150, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 191, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  6:
         values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 150, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 191, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  5:
         values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 150, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 191, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 150, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 191, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  3:
         values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 150, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 191, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 150, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 191, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 150, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 191, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_levels", 0) < (0)) __PYX_ERR(0, 150, __pyx_L3_error)
-      for (Py_ssize_t i = __pyx_nargs; i < 13; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_levels", 1, 13, 13, i); __PYX_ERR(0, 150, __pyx_L3_error) }
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_levels", 0) < (0)) __PYX_ERR(0, 191, __pyx_L3_error)
+      for (Py_ssize_t i = __pyx_nargs; i < 15; i++) {
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_levels", 1, 15, 15, i); __PYX_ERR(0, 191, __pyx_L3_error) }
       }
-    } else if (unlikely(__pyx_nargs != 13)) {
+    } else if (unlikely(__pyx_nargs != 15)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 150, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 191, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 150, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 191, __pyx_L3_error)
       values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 150, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 191, __pyx_L3_error)
       values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 150, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 191, __pyx_L3_error)
       values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 150, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 191, __pyx_L3_error)
       values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 150, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 191, __pyx_L3_error)
       values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 150, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 191, __pyx_L3_error)
       values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 150, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 191, __pyx_L3_error)
       values[8] = __Pyx_ArgRef_FASTCALL(__pyx_args, 8);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 150, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 191, __pyx_L3_error)
       values[9] = __Pyx_ArgRef_FASTCALL(__pyx_args, 9);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 150, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 191, __pyx_L3_error)
       values[10] = __Pyx_ArgRef_FASTCALL(__pyx_args, 10);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[10])) __PYX_ERR(0, 150, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[10])) __PYX_ERR(0, 191, __pyx_L3_error)
       values[11] = __Pyx_ArgRef_FASTCALL(__pyx_args, 11);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[11])) __PYX_ERR(0, 150, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[11])) __PYX_ERR(0, 191, __pyx_L3_error)
       values[12] = __Pyx_ArgRef_FASTCALL(__pyx_args, 12);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[12])) __PYX_ERR(0, 150, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[12])) __PYX_ERR(0, 191, __pyx_L3_error)
+      values[13] = __Pyx_ArgRef_FASTCALL(__pyx_args, 13);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[13])) __PYX_ERR(0, 191, __pyx_L3_error)
+      values[14] = __Pyx_ArgRef_FASTCALL(__pyx_args, 14);
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[14])) __PYX_ERR(0, 191, __pyx_L3_error)
     }
-    __pyx_v_signal = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_signal == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 150, __pyx_L3_error)
-    __pyx_v_L0 = __Pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_L0 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 150, __pyx_L3_error)
-    __pyx_v_L = __Pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_L == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 150, __pyx_L3_error)
-    __pyx_v_Lambda = __Pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_Lambda == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 150, __pyx_L3_error)
-    __pyx_v_Lambda_hat = __Pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_Lambda_hat == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 150, __pyx_L3_error)
-    __pyx_v_direction_bias = __Pyx_PyLong_As_int(values[5]); if (unlikely((__pyx_v_direction_bias == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 151, __pyx_L3_error)
-    __pyx_v_f = __Pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_f == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 151, __pyx_L3_error)
-    __pyx_v_f_mean = __Pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_f_mean == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 151, __pyx_L3_error)
-    __pyx_v_f_stdev = __Pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_f_stdev == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 151, __pyx_L3_error)
-    __pyx_v_current_price = __Pyx_PyFloat_AsDouble(values[9]); if (unlikely((__pyx_v_current_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 152, __pyx_L3_error)
-    __pyx_v_low_price = __Pyx_PyFloat_AsDouble(values[10]); if (unlikely((__pyx_v_low_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 152, __pyx_L3_error)
-    __pyx_v_high_price = __Pyx_PyFloat_AsDouble(values[11]); if (unlikely((__pyx_v_high_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 152, __pyx_L3_error)
-    __pyx_v_order = __Pyx_PyFloat_AsDouble(values[12]); if (unlikely((__pyx_v_order == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 152, __pyx_L3_error)
+    __pyx_v_signal = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_signal == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 192, __pyx_L3_error)
+    __pyx_v_L0 = __Pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_L0 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 192, __pyx_L3_error)
+    __pyx_v_L = __Pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_L == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 192, __pyx_L3_error)
+    __pyx_v_Lambda = __Pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_Lambda == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 192, __pyx_L3_error)
+    __pyx_v_Lambda_hat = __Pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_Lambda_hat == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 192, __pyx_L3_error)
+    __pyx_v_direction_bias = __Pyx_PyLong_As_int(values[5]); if (unlikely((__pyx_v_direction_bias == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 193, __pyx_L3_error)
+    __pyx_v_f = __Pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_f == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 193, __pyx_L3_error)
+    __pyx_v_f_mean = __Pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_f_mean == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 193, __pyx_L3_error)
+    __pyx_v_f_stdev = __Pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_f_stdev == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 193, __pyx_L3_error)
+    __pyx_v_current_price = __Pyx_PyFloat_AsDouble(values[9]); if (unlikely((__pyx_v_current_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 194, __pyx_L3_error)
+    __pyx_v_low_price = __Pyx_PyFloat_AsDouble(values[10]); if (unlikely((__pyx_v_low_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 194, __pyx_L3_error)
+    __pyx_v_high_price = __Pyx_PyFloat_AsDouble(values[11]); if (unlikely((__pyx_v_high_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 194, __pyx_L3_error)
+    __pyx_v_order = __Pyx_PyFloat_AsDouble(values[12]); if (unlikely((__pyx_v_order == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 194, __pyx_L3_error)
+    __pyx_v_energy_signal = __Pyx_PyFloat_AsDouble(values[13]); if (unlikely((__pyx_v_energy_signal == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 195, __pyx_L3_error)
+    __pyx_v_thrust_signal = __Pyx_PyFloat_AsDouble(values[14]); if (unlikely((__pyx_v_thrust_signal == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 195, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_levels", 1, 13, 13, __pyx_nargs); __PYX_ERR(0, 150, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_levels", 1, 15, 15, __pyx_nargs); __PYX_ERR(0, 191, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -20107,7 +21278,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_10get_levels(__pyx_self, __pyx_v_signal, __pyx_v_L0, __pyx_v_L, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_direction_bias, __pyx_v_f, __pyx_v_f_mean, __pyx_v_f_stdev, __pyx_v_current_price, __pyx_v_low_price, __pyx_v_high_price, __pyx_v_order);
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_18get_levels(__pyx_self, __pyx_v_signal, __pyx_v_L0, __pyx_v_L, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_direction_bias, __pyx_v_f, __pyx_v_f_mean, __pyx_v_f_stdev, __pyx_v_current_price, __pyx_v_low_price, __pyx_v_high_price, __pyx_v_order, __pyx_v_energy_signal, __pyx_v_thrust_signal);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -20117,7 +21288,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_10get_levels(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_signal, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, int __pyx_v_direction_bias, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_stdev, double __pyx_v_current_price, double __pyx_v_low_price, double __pyx_v_high_price, double __pyx_v_order) {
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_18get_levels(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_signal, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, int __pyx_v_direction_bias, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_stdev, double __pyx_v_current_price, double __pyx_v_low_price, double __pyx_v_high_price, double __pyx_v_order, double __pyx_v_energy_signal, double __pyx_v_thrust_signal) {
   double __pyx_v_take_profit;
   double __pyx_v_stop_loss;
   int __pyx_v_signal_direction;
@@ -20132,17 +21303,17 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_10get_levels(CYTHON_UNUSED PyOb
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_levels", 0);
 
-  /* "qf/nativemath/impl.pyx":153
- *                int direction_bias, double f, double f_mean, double f_stdev,
- *                double current_price, double low_price, double high_price, double order): # Add order
+  /* "qf/nativemath/impl.pyx":197
+ *         double energy_signal, double thrust_signal
+ *     ): # Add order
  *     cdef double take_profit = 0.0             # <<<<<<<<<<<<<<
  *     cdef double stop_loss = 0.0
  *     cdef int signal_direction = 0
 */
   __pyx_v_take_profit = 0.0;
 
-  /* "qf/nativemath/impl.pyx":154
- *                double current_price, double low_price, double high_price, double order): # Add order
+  /* "qf/nativemath/impl.pyx":198
+ *     ): # Add order
  *     cdef double take_profit = 0.0
  *     cdef double stop_loss = 0.0             # <<<<<<<<<<<<<<
  *     cdef int signal_direction = 0
@@ -20150,7 +21321,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_10get_levels(CYTHON_UNUSED PyOb
 */
   __pyx_v_stop_loss = 0.0;
 
-  /* "qf/nativemath/impl.pyx":155
+  /* "qf/nativemath/impl.pyx":199
  *     cdef double take_profit = 0.0
  *     cdef double stop_loss = 0.0
  *     cdef int signal_direction = 0             # <<<<<<<<<<<<<<
@@ -20159,16 +21330,16 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_10get_levels(CYTHON_UNUSED PyOb
 */
   __pyx_v_signal_direction = 0;
 
-  /* "qf/nativemath/impl.pyx":157
+  /* "qf/nativemath/impl.pyx":201
  *     cdef int signal_direction = 0
  * 
  *     calculate_levels_cy(             # <<<<<<<<<<<<<<
  *         signal, L0, L, Lambda, Lambda_hat, direction_bias, f, f_mean, f_stdev,
- *         current_price, low_price, high_price, order, # Pass order
+ *         current_price, low_price, high_price, order, energy_signal, thrust_signal, &take_profit, &stop_loss, &signal_direction
 */
-  calculate_levels_cy(__pyx_v_signal, __pyx_v_L0, __pyx_v_L, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_direction_bias, __pyx_v_f, __pyx_v_f_mean, __pyx_v_f_stdev, __pyx_v_current_price, __pyx_v_low_price, __pyx_v_high_price, __pyx_v_order, (&__pyx_v_take_profit), (&__pyx_v_stop_loss), (&__pyx_v_signal_direction));
+  calculate_levels_cy(__pyx_v_signal, __pyx_v_L0, __pyx_v_L, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_direction_bias, __pyx_v_f, __pyx_v_f_mean, __pyx_v_f_stdev, __pyx_v_current_price, __pyx_v_low_price, __pyx_v_high_price, __pyx_v_order, __pyx_v_energy_signal, __pyx_v_thrust_signal, (&__pyx_v_take_profit), (&__pyx_v_stop_loss), (&__pyx_v_signal_direction));
 
-  /* "qf/nativemath/impl.pyx":163
+  /* "qf/nativemath/impl.pyx":206
  *     )
  * 
  *     return take_profit, stop_loss, signal_direction             # <<<<<<<<<<<<<<
@@ -20176,20 +21347,20 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_10get_levels(CYTHON_UNUSED PyOb
  * def get_fractional_qty(double entry_price, double stop_loss, double current_capital,
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_take_profit); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 163, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_take_profit); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 206, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_stop_loss); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 163, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_stop_loss); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 206, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyLong_From_int(__pyx_v_signal_direction); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 163, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyLong_From_int(__pyx_v_signal_direction); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 206, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = PyTuple_New(3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 163, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 206, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_GIVEREF(__pyx_t_1);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_1) != (0)) __PYX_ERR(0, 163, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_1) != (0)) __PYX_ERR(0, 206, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_2);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_t_2) != (0)) __PYX_ERR(0, 163, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_t_2) != (0)) __PYX_ERR(0, 206, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_3);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 2, __pyx_t_3) != (0)) __PYX_ERR(0, 163, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 2, __pyx_t_3) != (0)) __PYX_ERR(0, 206, __pyx_L1_error);
   __pyx_t_1 = 0;
   __pyx_t_2 = 0;
   __pyx_t_3 = 0;
@@ -20197,12 +21368,12 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_10get_levels(CYTHON_UNUSED PyOb
   __pyx_t_4 = 0;
   goto __pyx_L0;
 
-  /* "qf/nativemath/impl.pyx":150
+  /* "qf/nativemath/impl.pyx":191
  * # Add this at the very bottom of the file:
  * # 7. Python-facing function for position sizing levels
- * def get_levels(int signal, double L0, double L, double Lambda, double Lambda_hat,             # <<<<<<<<<<<<<<
- *                int direction_bias, double f, double f_mean, double f_stdev,
- *                double current_price, double low_price, double high_price, double order): # Add order
+ * def get_levels(             # <<<<<<<<<<<<<<
+ *         int signal, double L0, double L, double Lambda, double Lambda_hat,
+ *         int direction_bias, double f, double f_mean, double f_stdev,
 */
 
   /* function exit code */
@@ -20219,7 +21390,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_10get_levels(CYTHON_UNUSED PyOb
   return __pyx_r;
 }
 
-/* "qf/nativemath/impl.pyx":165
+/* "qf/nativemath/impl.pyx":208
  *     return take_profit, stop_loss, signal_direction
  * 
  * def get_fractional_qty(double entry_price, double stop_loss, double current_capital,             # <<<<<<<<<<<<<<
@@ -20228,16 +21399,16 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_10get_levels(CYTHON_UNUSED PyOb
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_13get_fractional_qty(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_21get_fractional_qty(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_12get_fractional_qty, "\n    Calculates the ideal position size and leverage based on capital risk limits\n    and fractional physics conviction scaling.\n    Returns: (qty, leverage)\n    ");
-static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_13get_fractional_qty = {"get_fractional_qty", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_13get_fractional_qty, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_12get_fractional_qty};
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_13get_fractional_qty(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_20get_fractional_qty, "\n    Calculates the ideal position size and leverage based on capital risk limits\n    and fractional physics conviction scaling.\n    Returns: (qty, leverage)\n    ");
+static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_21get_fractional_qty = {"get_fractional_qty", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_21get_fractional_qty, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_20get_fractional_qty};
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_21get_fractional_qty(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -20276,95 +21447,95 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_entry_price,&__pyx_mstate_global->__pyx_n_u_stop_loss,&__pyx_mstate_global->__pyx_n_u_current_capital,&__pyx_mstate_global->__pyx_n_u_L0,&__pyx_mstate_global->__pyx_n_u_L,&__pyx_mstate_global->__pyx_n_u_Lambda,&__pyx_mstate_global->__pyx_n_u_Lambda_hat,&__pyx_mstate_global->__pyx_n_u_max_leverage_allowed,&__pyx_mstate_global->__pyx_n_u_platform_commission,&__pyx_mstate_global->__pyx_n_u_order,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 165, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 208, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case 10:
         values[9] = __Pyx_ArgRef_FASTCALL(__pyx_args, 9);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 165, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 208, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  9:
         values[8] = __Pyx_ArgRef_FASTCALL(__pyx_args, 8);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 165, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 208, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  8:
         values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 165, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 208, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  7:
         values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 165, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 208, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  6:
         values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 165, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 208, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  5:
         values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 165, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 208, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 165, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 208, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  3:
         values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 165, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 208, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 165, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 208, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 165, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 208, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_qty", 0) < (0)) __PYX_ERR(0, 165, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_qty", 0) < (0)) __PYX_ERR(0, 208, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 10; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_qty", 1, 10, 10, i); __PYX_ERR(0, 165, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_qty", 1, 10, 10, i); __PYX_ERR(0, 208, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 10)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 165, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 208, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 165, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 208, __pyx_L3_error)
       values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 165, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 208, __pyx_L3_error)
       values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 165, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 208, __pyx_L3_error)
       values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 165, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 208, __pyx_L3_error)
       values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 165, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 208, __pyx_L3_error)
       values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 165, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 208, __pyx_L3_error)
       values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 165, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 208, __pyx_L3_error)
       values[8] = __Pyx_ArgRef_FASTCALL(__pyx_args, 8);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 165, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 208, __pyx_L3_error)
       values[9] = __Pyx_ArgRef_FASTCALL(__pyx_args, 9);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 165, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 208, __pyx_L3_error)
     }
-    __pyx_v_entry_price = __Pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_entry_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 165, __pyx_L3_error)
-    __pyx_v_stop_loss = __Pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_stop_loss == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 165, __pyx_L3_error)
-    __pyx_v_current_capital = __Pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_current_capital == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 165, __pyx_L3_error)
-    __pyx_v_L0 = __Pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_L0 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 166, __pyx_L3_error)
-    __pyx_v_L = __Pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_L == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 166, __pyx_L3_error)
-    __pyx_v_Lambda = __Pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_Lambda == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 166, __pyx_L3_error)
-    __pyx_v_Lambda_hat = __Pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_Lambda_hat == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 166, __pyx_L3_error)
-    __pyx_v_max_leverage_allowed = __Pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_max_leverage_allowed == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 167, __pyx_L3_error)
-    __pyx_v_platform_commission = __Pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_platform_commission == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 167, __pyx_L3_error)
-    __pyx_v_order = __Pyx_PyFloat_AsDouble(values[9]); if (unlikely((__pyx_v_order == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 167, __pyx_L3_error)
+    __pyx_v_entry_price = __Pyx_PyFloat_AsDouble(values[0]); if (unlikely((__pyx_v_entry_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 208, __pyx_L3_error)
+    __pyx_v_stop_loss = __Pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_stop_loss == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 208, __pyx_L3_error)
+    __pyx_v_current_capital = __Pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_current_capital == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 208, __pyx_L3_error)
+    __pyx_v_L0 = __Pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_L0 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 209, __pyx_L3_error)
+    __pyx_v_L = __Pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_L == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 209, __pyx_L3_error)
+    __pyx_v_Lambda = __Pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_Lambda == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 209, __pyx_L3_error)
+    __pyx_v_Lambda_hat = __Pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_Lambda_hat == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 209, __pyx_L3_error)
+    __pyx_v_max_leverage_allowed = __Pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_max_leverage_allowed == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 210, __pyx_L3_error)
+    __pyx_v_platform_commission = __Pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_platform_commission == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 210, __pyx_L3_error)
+    __pyx_v_order = __Pyx_PyFloat_AsDouble(values[9]); if (unlikely((__pyx_v_order == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 210, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_fractional_qty", 1, 10, 10, __pyx_nargs); __PYX_ERR(0, 165, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_fractional_qty", 1, 10, 10, __pyx_nargs); __PYX_ERR(0, 208, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -20375,7 +21546,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_12get_fractional_qty(__pyx_self, __pyx_v_entry_price, __pyx_v_stop_loss, __pyx_v_current_capital, __pyx_v_L0, __pyx_v_L, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_max_leverage_allowed, __pyx_v_platform_commission, __pyx_v_order);
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_20get_fractional_qty(__pyx_self, __pyx_v_entry_price, __pyx_v_stop_loss, __pyx_v_current_capital, __pyx_v_L0, __pyx_v_L, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_max_leverage_allowed, __pyx_v_platform_commission, __pyx_v_order);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -20385,7 +21556,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_12get_fractional_qty(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_entry_price, double __pyx_v_stop_loss, double __pyx_v_current_capital, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_max_leverage_allowed, double __pyx_v_platform_commission, double __pyx_v_order) {
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_20get_fractional_qty(CYTHON_UNUSED PyObject *__pyx_self, double __pyx_v_entry_price, double __pyx_v_stop_loss, double __pyx_v_current_capital, double __pyx_v_L0, double __pyx_v_L, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_max_leverage_allowed, double __pyx_v_platform_commission, double __pyx_v_order) {
   int __pyx_v_qty;
   double __pyx_v_leverage;
   PyObject *__pyx_r = NULL;
@@ -20398,7 +21569,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_12get_fractional_qty(CYTHON_UNU
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_fractional_qty", 0);
 
-  /* "qf/nativemath/impl.pyx":174
+  /* "qf/nativemath/impl.pyx":217
  *     """
  *     # Initialize variables to hold the output from C++ pointers
  *     cdef int qty = 0             # <<<<<<<<<<<<<<
@@ -20407,7 +21578,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_12get_fractional_qty(CYTHON_UNU
 */
   __pyx_v_qty = 0;
 
-  /* "qf/nativemath/impl.pyx":175
+  /* "qf/nativemath/impl.pyx":218
  *     # Initialize variables to hold the output from C++ pointers
  *     cdef int qty = 0
  *     cdef double leverage = 0.0             # <<<<<<<<<<<<<<
@@ -20416,7 +21587,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_12get_fractional_qty(CYTHON_UNU
 */
   __pyx_v_leverage = 0.0;
 
-  /* "qf/nativemath/impl.pyx":178
+  /* "qf/nativemath/impl.pyx":221
  * 
  *     # Call the C++ wrapper function, passing memory addresses for the outputs
  *     calculate_fractional_qty_cy(             # <<<<<<<<<<<<<<
@@ -20425,7 +21596,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_12get_fractional_qty(CYTHON_UNU
 */
   calculate_fractional_qty_cy(__pyx_v_entry_price, __pyx_v_stop_loss, __pyx_v_current_capital, __pyx_v_L0, __pyx_v_L, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_max_leverage_allowed, __pyx_v_platform_commission, __pyx_v_order, (&__pyx_v_qty), (&__pyx_v_leverage));
 
-  /* "qf/nativemath/impl.pyx":185
+  /* "qf/nativemath/impl.pyx":228
  *     )
  * 
  *     return qty, leverage             # <<<<<<<<<<<<<<
@@ -20433,23 +21604,23 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_12get_fractional_qty(CYTHON_UNU
  * # 9. Python-facing function for dynamic physics close evaluation
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_qty); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 185, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_qty); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 228, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_leverage); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 185, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_leverage); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 228, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 185, __pyx_L1_error)
+  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 228, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_GIVEREF(__pyx_t_1);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_1) != (0)) __PYX_ERR(0, 185, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_1) != (0)) __PYX_ERR(0, 228, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_2);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 1, __pyx_t_2) != (0)) __PYX_ERR(0, 185, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 1, __pyx_t_2) != (0)) __PYX_ERR(0, 228, __pyx_L1_error);
   __pyx_t_1 = 0;
   __pyx_t_2 = 0;
   __pyx_r = __pyx_t_3;
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "qf/nativemath/impl.pyx":165
+  /* "qf/nativemath/impl.pyx":208
  *     return take_profit, stop_loss, signal_direction
  * 
  * def get_fractional_qty(double entry_price, double stop_loss, double current_capital,             # <<<<<<<<<<<<<<
@@ -20470,7 +21641,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_12get_fractional_qty(CYTHON_UNU
   return __pyx_r;
 }
 
-/* "qf/nativemath/impl.pyx":188
+/* "qf/nativemath/impl.pyx":231
  * 
  * # 9. Python-facing function for dynamic physics close evaluation
  * def get_fractional_physics_close(int current_index, int entry_index, double entry_price,             # <<<<<<<<<<<<<<
@@ -20479,16 +21650,16 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_12get_fractional_qty(CYTHON_UNU
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_15get_fractional_physics_close(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_23get_fractional_physics_close(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_14get_fractional_physics_close, "\n    Evaluates whether a trade should be closed due to a 3-Sigma volatility \n    ejection or a dynamic grace-period physics flip.\n    Returns: (exit_reason, profit_loss, stallness_reason)\n    ");
-static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_15get_fractional_physics_close = {"get_fractional_physics_close", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_15get_fractional_physics_close, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_14get_fractional_physics_close};
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_15get_fractional_physics_close(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_22get_fractional_physics_close, "\n    Evaluates whether a trade should be closed due to a 3-Sigma volatility \n    ejection or a dynamic grace-period physics flip.\n    Returns: (exit_reason, profit_loss, stallness_reason)\n    ");
+static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_23get_fractional_physics_close = {"get_fractional_physics_close", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_23get_fractional_physics_close, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_22get_fractional_physics_close};
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_23get_fractional_physics_close(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -20528,102 +21699,102 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_current_index,&__pyx_mstate_global->__pyx_n_u_entry_index,&__pyx_mstate_global->__pyx_n_u_entry_price,&__pyx_mstate_global->__pyx_n_u_quantity,&__pyx_mstate_global->__pyx_n_u_side,&__pyx_mstate_global->__pyx_n_u_current_price,&__pyx_mstate_global->__pyx_n_u_Lambda,&__pyx_mstate_global->__pyx_n_u_Lambda_hat,&__pyx_mstate_global->__pyx_n_u_f,&__pyx_mstate_global->__pyx_n_u_f_mean,&__pyx_mstate_global->__pyx_n_u_f_std,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 188, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 231, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case 11:
         values[10] = __Pyx_ArgRef_FASTCALL(__pyx_args, 10);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[10])) __PYX_ERR(0, 188, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[10])) __PYX_ERR(0, 231, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case 10:
         values[9] = __Pyx_ArgRef_FASTCALL(__pyx_args, 9);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 188, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 231, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  9:
         values[8] = __Pyx_ArgRef_FASTCALL(__pyx_args, 8);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 188, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 231, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  8:
         values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 188, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 231, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  7:
         values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 188, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 231, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  6:
         values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 188, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 231, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  5:
         values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 188, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 231, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 188, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 231, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  3:
         values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 188, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 231, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 188, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 231, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 188, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 231, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_physics_close", 0) < (0)) __PYX_ERR(0, 188, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_physics_close", 0) < (0)) __PYX_ERR(0, 231, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 11; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_physics_close", 1, 11, 11, i); __PYX_ERR(0, 188, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_physics_close", 1, 11, 11, i); __PYX_ERR(0, 231, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 11)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 188, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 231, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 188, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 231, __pyx_L3_error)
       values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 188, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 231, __pyx_L3_error)
       values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 188, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 231, __pyx_L3_error)
       values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 188, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 231, __pyx_L3_error)
       values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 188, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 231, __pyx_L3_error)
       values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 188, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 231, __pyx_L3_error)
       values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 188, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 231, __pyx_L3_error)
       values[8] = __Pyx_ArgRef_FASTCALL(__pyx_args, 8);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 188, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[8])) __PYX_ERR(0, 231, __pyx_L3_error)
       values[9] = __Pyx_ArgRef_FASTCALL(__pyx_args, 9);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 188, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[9])) __PYX_ERR(0, 231, __pyx_L3_error)
       values[10] = __Pyx_ArgRef_FASTCALL(__pyx_args, 10);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[10])) __PYX_ERR(0, 188, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[10])) __PYX_ERR(0, 231, __pyx_L3_error)
     }
-    __pyx_v_current_index = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_current_index == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 188, __pyx_L3_error)
-    __pyx_v_entry_index = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_entry_index == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 188, __pyx_L3_error)
-    __pyx_v_entry_price = __Pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_entry_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 188, __pyx_L3_error)
-    __pyx_v_quantity = __Pyx_PyLong_As_int(values[3]); if (unlikely((__pyx_v_quantity == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 189, __pyx_L3_error)
-    __pyx_v_side = __Pyx_PyLong_As_int(values[4]); if (unlikely((__pyx_v_side == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 189, __pyx_L3_error)
-    __pyx_v_current_price = __Pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_current_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 189, __pyx_L3_error)
-    __pyx_v_Lambda = __Pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_Lambda == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 190, __pyx_L3_error)
-    __pyx_v_Lambda_hat = __Pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_Lambda_hat == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 190, __pyx_L3_error)
-    __pyx_v_f = __Pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_f == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 191, __pyx_L3_error)
-    __pyx_v_f_mean = __Pyx_PyFloat_AsDouble(values[9]); if (unlikely((__pyx_v_f_mean == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 191, __pyx_L3_error)
-    __pyx_v_f_std = __Pyx_PyFloat_AsDouble(values[10]); if (unlikely((__pyx_v_f_std == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 191, __pyx_L3_error)
+    __pyx_v_current_index = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_current_index == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 231, __pyx_L3_error)
+    __pyx_v_entry_index = __Pyx_PyLong_As_int(values[1]); if (unlikely((__pyx_v_entry_index == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 231, __pyx_L3_error)
+    __pyx_v_entry_price = __Pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_entry_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 231, __pyx_L3_error)
+    __pyx_v_quantity = __Pyx_PyLong_As_int(values[3]); if (unlikely((__pyx_v_quantity == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 232, __pyx_L3_error)
+    __pyx_v_side = __Pyx_PyLong_As_int(values[4]); if (unlikely((__pyx_v_side == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 232, __pyx_L3_error)
+    __pyx_v_current_price = __Pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_current_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 232, __pyx_L3_error)
+    __pyx_v_Lambda = __Pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_Lambda == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 233, __pyx_L3_error)
+    __pyx_v_Lambda_hat = __Pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_Lambda_hat == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 233, __pyx_L3_error)
+    __pyx_v_f = __Pyx_PyFloat_AsDouble(values[8]); if (unlikely((__pyx_v_f == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 234, __pyx_L3_error)
+    __pyx_v_f_mean = __Pyx_PyFloat_AsDouble(values[9]); if (unlikely((__pyx_v_f_mean == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 234, __pyx_L3_error)
+    __pyx_v_f_std = __Pyx_PyFloat_AsDouble(values[10]); if (unlikely((__pyx_v_f_std == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 234, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_fractional_physics_close", 1, 11, 11, __pyx_nargs); __PYX_ERR(0, 188, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_fractional_physics_close", 1, 11, 11, __pyx_nargs); __PYX_ERR(0, 231, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -20634,7 +21805,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_14get_fractional_physics_close(__pyx_self, __pyx_v_current_index, __pyx_v_entry_index, __pyx_v_entry_price, __pyx_v_quantity, __pyx_v_side, __pyx_v_current_price, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_f, __pyx_v_f_mean, __pyx_v_f_std);
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_22get_fractional_physics_close(__pyx_self, __pyx_v_current_index, __pyx_v_entry_index, __pyx_v_entry_price, __pyx_v_quantity, __pyx_v_side, __pyx_v_current_price, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_f, __pyx_v_f_mean, __pyx_v_f_std);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -20644,7 +21815,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_physics_close(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_current_index, int __pyx_v_entry_index, double __pyx_v_entry_price, int __pyx_v_quantity, int __pyx_v_side, double __pyx_v_current_price, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_std) {
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_22get_fractional_physics_close(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_current_index, int __pyx_v_entry_index, double __pyx_v_entry_price, int __pyx_v_quantity, int __pyx_v_side, double __pyx_v_current_price, double __pyx_v_Lambda, double __pyx_v_Lambda_hat, double __pyx_v_f, double __pyx_v_f_mean, double __pyx_v_f_std) {
   int __pyx_v_exit_reason;
   double __pyx_v_profit_loss;
   int __pyx_v_stallness_reason;
@@ -20659,7 +21830,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_physics_close(
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_fractional_physics_close", 0);
 
-  /* "qf/nativemath/impl.pyx":197
+  /* "qf/nativemath/impl.pyx":240
  *     Returns: (exit_reason, profit_loss, stallness_reason)
  *     """
  *     cdef int exit_reason = 0             # <<<<<<<<<<<<<<
@@ -20668,7 +21839,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_physics_close(
 */
   __pyx_v_exit_reason = 0;
 
-  /* "qf/nativemath/impl.pyx":198
+  /* "qf/nativemath/impl.pyx":241
  *     """
  *     cdef int exit_reason = 0
  *     cdef double profit_loss = 0.0             # <<<<<<<<<<<<<<
@@ -20677,7 +21848,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_physics_close(
 */
   __pyx_v_profit_loss = 0.0;
 
-  /* "qf/nativemath/impl.pyx":199
+  /* "qf/nativemath/impl.pyx":242
  *     cdef int exit_reason = 0
  *     cdef double profit_loss = 0.0
  *     cdef int stallness_reason = 0             # <<<<<<<<<<<<<<
@@ -20686,7 +21857,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_physics_close(
 */
   __pyx_v_stallness_reason = 0;
 
-  /* "qf/nativemath/impl.pyx":201
+  /* "qf/nativemath/impl.pyx":244
  *     cdef int stallness_reason = 0
  * 
  *     fractional_physics_close_cy(             # <<<<<<<<<<<<<<
@@ -20695,7 +21866,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_physics_close(
 */
   fractional_physics_close_cy(__pyx_v_current_index, __pyx_v_entry_index, __pyx_v_entry_price, __pyx_v_quantity, __pyx_v_side, __pyx_v_current_price, __pyx_v_Lambda, __pyx_v_Lambda_hat, __pyx_v_f, __pyx_v_f_mean, __pyx_v_f_std, (&__pyx_v_exit_reason), (&__pyx_v_profit_loss), (&__pyx_v_stallness_reason));
 
-  /* "qf/nativemath/impl.pyx":207
+  /* "qf/nativemath/impl.pyx":250
  *     )
  * 
  *     return exit_reason, profit_loss, stallness_reason             # <<<<<<<<<<<<<<
@@ -20703,20 +21874,20 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_physics_close(
  * # 10. Python-facing function for dynamic level updates
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_exit_reason); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 207, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyLong_From_int(__pyx_v_exit_reason); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 250, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_profit_loss); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 207, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_profit_loss); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 250, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyLong_From_int(__pyx_v_stallness_reason); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 207, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyLong_From_int(__pyx_v_stallness_reason); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 250, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = PyTuple_New(3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 207, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 250, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_GIVEREF(__pyx_t_1);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_1) != (0)) __PYX_ERR(0, 207, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_1) != (0)) __PYX_ERR(0, 250, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_2);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_t_2) != (0)) __PYX_ERR(0, 207, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_t_2) != (0)) __PYX_ERR(0, 250, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_3);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 2, __pyx_t_3) != (0)) __PYX_ERR(0, 207, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 2, __pyx_t_3) != (0)) __PYX_ERR(0, 250, __pyx_L1_error);
   __pyx_t_1 = 0;
   __pyx_t_2 = 0;
   __pyx_t_3 = 0;
@@ -20724,7 +21895,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_physics_close(
   __pyx_t_4 = 0;
   goto __pyx_L0;
 
-  /* "qf/nativemath/impl.pyx":188
+  /* "qf/nativemath/impl.pyx":231
  * 
  * # 9. Python-facing function for dynamic physics close evaluation
  * def get_fractional_physics_close(int current_index, int entry_index, double entry_price,             # <<<<<<<<<<<<<<
@@ -20746,7 +21917,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_physics_close(
   return __pyx_r;
 }
 
-/* "qf/nativemath/impl.pyx":210
+/* "qf/nativemath/impl.pyx":253
  * 
  * # 10. Python-facing function for dynamic level updates
  * def get_fractional_update_levels(int side, double stop_loss, double take_profit,             # <<<<<<<<<<<<<<
@@ -20755,16 +21926,16 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_14get_fractional_physics_close(
 */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_17get_fractional_update_levels(PyObject *__pyx_self, 
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_25get_fractional_update_levels(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_16get_fractional_update_levels, "\n    Checks for physics-based conviction/exhaustion milestones and \n    dynamically ratchets SL and expands TP targets.\n    Returns: (new_stop_loss, new_take_profit) or (0.0, 0.0) if no update.\n    ");
-static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_17get_fractional_update_levels = {"get_fractional_update_levels", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_17get_fractional_update_levels, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_16get_fractional_update_levels};
-static PyObject *__pyx_pw_2qf_10nativemath_4impl_17get_fractional_update_levels(PyObject *__pyx_self, 
+PyDoc_STRVAR(__pyx_doc_2qf_10nativemath_4impl_24get_fractional_update_levels, "\n    Checks for physics-based conviction/exhaustion milestones and \n    dynamically ratchets SL and expands TP targets.\n    Returns: (new_stop_loss, new_take_profit) or (0.0, 0.0) if no update.\n    ");
+static PyMethodDef __pyx_mdef_2qf_10nativemath_4impl_25get_fractional_update_levels = {"get_fractional_update_levels", (PyCFunction)(void(*)(void))(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_2qf_10nativemath_4impl_25get_fractional_update_levels, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_2qf_10nativemath_4impl_24get_fractional_update_levels};
+static PyObject *__pyx_pw_2qf_10nativemath_4impl_25get_fractional_update_levels(PyObject *__pyx_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -20801,81 +21972,81 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_side,&__pyx_mstate_global->__pyx_n_u_stop_loss,&__pyx_mstate_global->__pyx_n_u_take_profit,&__pyx_mstate_global->__pyx_n_u_entry_price,&__pyx_mstate_global->__pyx_n_u_low_price,&__pyx_mstate_global->__pyx_n_u_high_price,&__pyx_mstate_global->__pyx_n_u_L,&__pyx_mstate_global->__pyx_n_u_Lambda,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 210, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 253, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  8:
         values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 210, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 253, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  7:
         values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 210, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 253, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  6:
         values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 210, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 253, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  5:
         values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 210, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 253, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 210, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 253, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  3:
         values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 210, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 253, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 210, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 253, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 210, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 253, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_update_levels", 0) < (0)) __PYX_ERR(0, 210, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "get_fractional_update_levels", 0) < (0)) __PYX_ERR(0, 253, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 8; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_update_levels", 1, 8, 8, i); __PYX_ERR(0, 210, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("get_fractional_update_levels", 1, 8, 8, i); __PYX_ERR(0, 253, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 8)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 210, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 253, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 210, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 253, __pyx_L3_error)
       values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 210, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 253, __pyx_L3_error)
       values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 210, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 253, __pyx_L3_error)
       values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 210, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 253, __pyx_L3_error)
       values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 210, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 253, __pyx_L3_error)
       values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 210, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 253, __pyx_L3_error)
       values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 210, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 253, __pyx_L3_error)
     }
-    __pyx_v_side = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_side == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 210, __pyx_L3_error)
-    __pyx_v_stop_loss = __Pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_stop_loss == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 210, __pyx_L3_error)
-    __pyx_v_take_profit = __Pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_take_profit == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 210, __pyx_L3_error)
-    __pyx_v_entry_price = __Pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_entry_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 211, __pyx_L3_error)
-    __pyx_v_low_price = __Pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_low_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 211, __pyx_L3_error)
-    __pyx_v_high_price = __Pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_high_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 211, __pyx_L3_error)
-    __pyx_v_L = __Pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_L == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 212, __pyx_L3_error)
-    __pyx_v_Lambda = __Pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_Lambda == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 212, __pyx_L3_error)
+    __pyx_v_side = __Pyx_PyLong_As_int(values[0]); if (unlikely((__pyx_v_side == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 253, __pyx_L3_error)
+    __pyx_v_stop_loss = __Pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_stop_loss == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 253, __pyx_L3_error)
+    __pyx_v_take_profit = __Pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_take_profit == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 253, __pyx_L3_error)
+    __pyx_v_entry_price = __Pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_entry_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 254, __pyx_L3_error)
+    __pyx_v_low_price = __Pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_low_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 254, __pyx_L3_error)
+    __pyx_v_high_price = __Pyx_PyFloat_AsDouble(values[5]); if (unlikely((__pyx_v_high_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 254, __pyx_L3_error)
+    __pyx_v_L = __Pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_L == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 255, __pyx_L3_error)
+    __pyx_v_Lambda = __Pyx_PyFloat_AsDouble(values[7]); if (unlikely((__pyx_v_Lambda == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 255, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_fractional_update_levels", 1, 8, 8, __pyx_nargs); __PYX_ERR(0, 210, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_fractional_update_levels", 1, 8, 8, __pyx_nargs); __PYX_ERR(0, 253, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -20886,7 +22057,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_16get_fractional_update_levels(__pyx_self, __pyx_v_side, __pyx_v_stop_loss, __pyx_v_take_profit, __pyx_v_entry_price, __pyx_v_low_price, __pyx_v_high_price, __pyx_v_L, __pyx_v_Lambda);
+  __pyx_r = __pyx_pf_2qf_10nativemath_4impl_24get_fractional_update_levels(__pyx_self, __pyx_v_side, __pyx_v_stop_loss, __pyx_v_take_profit, __pyx_v_entry_price, __pyx_v_low_price, __pyx_v_high_price, __pyx_v_L, __pyx_v_Lambda);
 
   /* function exit code */
   for (Py_ssize_t __pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
@@ -20896,7 +22067,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_2qf_10nativemath_4impl_16get_fractional_update_levels(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_side, double __pyx_v_stop_loss, double __pyx_v_take_profit, double __pyx_v_entry_price, double __pyx_v_low_price, double __pyx_v_high_price, double __pyx_v_L, double __pyx_v_Lambda) {
+static PyObject *__pyx_pf_2qf_10nativemath_4impl_24get_fractional_update_levels(CYTHON_UNUSED PyObject *__pyx_self, int __pyx_v_side, double __pyx_v_stop_loss, double __pyx_v_take_profit, double __pyx_v_entry_price, double __pyx_v_low_price, double __pyx_v_high_price, double __pyx_v_L, double __pyx_v_Lambda) {
   double __pyx_v_new_sl;
   double __pyx_v_new_tp;
   PyObject *__pyx_r = NULL;
@@ -20909,7 +22080,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_16get_fractional_update_levels(
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_fractional_update_levels", 0);
 
-  /* "qf/nativemath/impl.pyx":218
+  /* "qf/nativemath/impl.pyx":261
  *     Returns: (new_stop_loss, new_take_profit) or (0.0, 0.0) if no update.
  *     """
  *     cdef double new_sl = 0.0             # <<<<<<<<<<<<<<
@@ -20918,7 +22089,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_16get_fractional_update_levels(
 */
   __pyx_v_new_sl = 0.0;
 
-  /* "qf/nativemath/impl.pyx":219
+  /* "qf/nativemath/impl.pyx":262
  *     """
  *     cdef double new_sl = 0.0
  *     cdef double new_tp = 0.0             # <<<<<<<<<<<<<<
@@ -20927,7 +22098,7 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_16get_fractional_update_levels(
 */
   __pyx_v_new_tp = 0.0;
 
-  /* "qf/nativemath/impl.pyx":221
+  /* "qf/nativemath/impl.pyx":264
  *     cdef double new_tp = 0.0
  * 
  *     fractional_update_levels_cy(             # <<<<<<<<<<<<<<
@@ -20936,29 +22107,29 @@ static PyObject *__pyx_pf_2qf_10nativemath_4impl_16get_fractional_update_levels(
 */
   fractional_update_levels_cy(__pyx_v_side, __pyx_v_stop_loss, __pyx_v_take_profit, __pyx_v_entry_price, __pyx_v_low_price, __pyx_v_high_price, __pyx_v_L, __pyx_v_Lambda, (&__pyx_v_new_sl), (&__pyx_v_new_tp));
 
-  /* "qf/nativemath/impl.pyx":226
+  /* "qf/nativemath/impl.pyx":269
  *     )
  * 
  *     return new_sl, new_tp             # <<<<<<<<<<<<<<
 */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_new_sl); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 226, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_new_sl); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 269, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_new_tp); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 226, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_new_tp); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 269, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 226, __pyx_L1_error)
+  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 269, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_GIVEREF(__pyx_t_1);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_1) != (0)) __PYX_ERR(0, 226, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_1) != (0)) __PYX_ERR(0, 269, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_2);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 1, __pyx_t_2) != (0)) __PYX_ERR(0, 226, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_3, 1, __pyx_t_2) != (0)) __PYX_ERR(0, 269, __pyx_L1_error);
   __pyx_t_1 = 0;
   __pyx_t_2 = 0;
   __pyx_r = __pyx_t_3;
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "qf/nativemath/impl.pyx":210
+  /* "qf/nativemath/impl.pyx":253
  * 
  * # 10. Python-facing function for dynamic level updates
  * def get_fractional_update_levels(int side, double stop_loss, double take_profit,             # <<<<<<<<<<<<<<
@@ -22993,139 +24164,199 @@ __Pyx_RefNannySetupContext("PyInit_impl", 0);
 */
   __pyx_t_9 = __pyx_f_5numpy_import_array(); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(0, 4, __pyx_L1_error)
 
-  /* "qf/nativemath/impl.pyx":83
+  /* "qf/nativemath/impl.pyx":35
+ * 
+ * # 2. Add the Python-facing wrappers
+ * def get_energy_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,             # <<<<<<<<<<<<<<
+ *                                cnp.ndarray[double, ndim=1, mode="c"] high_p,
+ *                                cnp.ndarray[double, ndim=1, mode="c"] low_p,
+*/
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_1get_energy_weighed_average, 0, __pyx_mstate_global->__pyx_n_u_get_energy_weighed_average, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[0])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
+  PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
+  #endif
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_energy_weighed_average, __pyx_t_4) < (0)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+  /* "qf/nativemath/impl.pyx":44
+ *     return energy_weighed_average_cy(&open_p[0], &high_p[0], &low_p[0], &close_p[0], len(open_p))
+ * 
+ * def get_thrust_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,             # <<<<<<<<<<<<<<
+ *                                cnp.ndarray[double, ndim=1, mode="c"] high_p,
+ *                                cnp.ndarray[double, ndim=1, mode="c"] low_p,
+*/
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_3get_thrust_weighed_average, 0, __pyx_mstate_global->__pyx_n_u_get_thrust_weighed_average, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[1])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
+  PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
+  #endif
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_thrust_weighed_average, __pyx_t_4) < (0)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+  /* "qf/nativemath/impl.pyx":106
  * 
  * # 2. Python-facing function for indicators
  * def get_price_time_indicators(double[:] close_price, double[:] high_price, double[:] low_price, double[:] volume, size_t lookback_periods):             # <<<<<<<<<<<<<<
  *     cdef int N = close_price.shape[0]
  * 
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_1get_price_time_indicators, 0, __pyx_mstate_global->__pyx_n_u_get_price_time_indicators, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[0])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 83, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_5get_price_time_indicators, 0, __pyx_mstate_global->__pyx_n_u_get_price_time_indicators, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[2])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 106, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_price_time_indicators, __pyx_t_4) < (0)) __PYX_ERR(0, 83, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_price_time_indicators, __pyx_t_4) < (0)) __PYX_ERR(0, 106, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "qf/nativemath/impl.pyx":112
+  /* "qf/nativemath/impl.pyx":135
+ * 
+ * # And update the bridge wrapper:
+ * def get_energy_weighed_average(double[:] open_price, double[:] high_price, double[:] low_price, double[:] close_price):             # <<<<<<<<<<<<<<
+ *     cdef int N = close_price.shape[0]
+ * 
+*/
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_7get_energy_weighed_average, 0, __pyx_mstate_global->__pyx_n_u_get_energy_weighed_average, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[3])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 135, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
+  PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
+  #endif
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_energy_weighed_average, __pyx_t_4) < (0)) __PYX_ERR(0, 135, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+  /* "qf/nativemath/impl.pyx":143
+ *     return energy_weighed_average_cy(&open_price[0], &high_price[0], &low_price[0], &close_price[0], N)
+ * 
+ * def get_thrust_weighed_average(cnp.ndarray[double, ndim=1, mode="c"] open_p,             # <<<<<<<<<<<<<<
+ *                                cnp.ndarray[double, ndim=1, mode="c"] high_p,
+ *                                cnp.ndarray[double, ndim=1, mode="c"] low_p,
+*/
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_9get_thrust_weighed_average, 0, __pyx_mstate_global->__pyx_n_u_get_thrust_weighed_average, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[4])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 143, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
+  PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
+  #endif
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_thrust_weighed_average, __pyx_t_4) < (0)) __PYX_ERR(0, 143, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+  /* "qf/nativemath/impl.pyx":153
  * 
  * # 3. Python-facing function for fractional order
  * def get_fractional_order(double Lambda_val, double[:] L):             # <<<<<<<<<<<<<<
  *     cdef int N = L.shape[0]
  *     return fractional_order_cy(Lambda_val, N, &L[0])
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_3get_fractional_order, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_order, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[1])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_11get_fractional_order, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_order, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[5])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 153, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_order, __pyx_t_4) < (0)) __PYX_ERR(0, 112, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_order, __pyx_t_4) < (0)) __PYX_ERR(0, 153, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "qf/nativemath/impl.pyx":117
+  /* "qf/nativemath/impl.pyx":158
  * 
  * # 4. Python-facing function for fractional integral
  * def get_fractional_integral(double[:] weights, double[:] values):             # <<<<<<<<<<<<<<
  *     """
  *     Computes the fractional integral (dot product) using the C++ backend.
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_5get_fractional_integral, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_integral, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[2])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 117, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_13get_fractional_integral, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_integral, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[6])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 158, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_integral, __pyx_t_4) < (0)) __PYX_ERR(0, 117, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_integral, __pyx_t_4) < (0)) __PYX_ERR(0, 158, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "qf/nativemath/impl.pyx":127
+  /* "qf/nativemath/impl.pyx":168
  * 
  * # 5. New Python-facing function for fractional integral weights
  * def get_fractional_integral_weights(double order, int N):             # <<<<<<<<<<<<<<
  *     """
  *     Generates fractional integral weights of length N for a given order.
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_7get_fractional_integral_weights, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_integral_weights, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[3])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 127, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_15get_fractional_integral_weights, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_integral_weights, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[7])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 168, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_integral_weights, __pyx_t_4) < (0)) __PYX_ERR(0, 127, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_integral_weights, __pyx_t_4) < (0)) __PYX_ERR(0, 168, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "qf/nativemath/impl.pyx":141
+  /* "qf/nativemath/impl.pyx":182
  * # Add this at the bottom of the file as a new Python-facing function
  * # 6. Python-facing function for trading signals
- * def get_fractional_signal(double L0, double L, double Lambda, double Lambda_hat, double f0, double f, double f_mean, double f_std, double order):             # <<<<<<<<<<<<<<
- *     """
- *     Computes the trading signal based on fractional force and momentum parameters using the C++ backend.
+ * def get_fractional_signal(double L, double L_hat, double Lambda, double Lambda_hat,             # <<<<<<<<<<<<<<
+ *                           double y, double y_mean, double y_std, double order,
+ *                           double energy_signal, double thrust_signal):
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_9get_fractional_signal, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_signal, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[4])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 141, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_17get_fractional_signal, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_signal, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[8])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 182, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_signal, __pyx_t_4) < (0)) __PYX_ERR(0, 141, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_signal, __pyx_t_4) < (0)) __PYX_ERR(0, 182, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "qf/nativemath/impl.pyx":150
+  /* "qf/nativemath/impl.pyx":191
  * # Add this at the very bottom of the file:
  * # 7. Python-facing function for position sizing levels
- * def get_levels(int signal, double L0, double L, double Lambda, double Lambda_hat,             # <<<<<<<<<<<<<<
- *                int direction_bias, double f, double f_mean, double f_stdev,
- *                double current_price, double low_price, double high_price, double order): # Add order
+ * def get_levels(             # <<<<<<<<<<<<<<
+ *         int signal, double L0, double L, double Lambda, double Lambda_hat,
+ *         int direction_bias, double f, double f_mean, double f_stdev,
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_11get_levels, 0, __pyx_mstate_global->__pyx_n_u_get_levels, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[5])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 150, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_19get_levels, 0, __pyx_mstate_global->__pyx_n_u_get_levels, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[9])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 191, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_levels, __pyx_t_4) < (0)) __PYX_ERR(0, 150, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_levels, __pyx_t_4) < (0)) __PYX_ERR(0, 191, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "qf/nativemath/impl.pyx":165
+  /* "qf/nativemath/impl.pyx":208
  *     return take_profit, stop_loss, signal_direction
  * 
  * def get_fractional_qty(double entry_price, double stop_loss, double current_capital,             # <<<<<<<<<<<<<<
  *                        double L0, double L, double Lambda, double Lambda_hat,
  *                        double max_leverage_allowed, double platform_commission, double order):
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_13get_fractional_qty, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_qty, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[6])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 165, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_21get_fractional_qty, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_qty, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[10])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 208, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_qty, __pyx_t_4) < (0)) __PYX_ERR(0, 165, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_qty, __pyx_t_4) < (0)) __PYX_ERR(0, 208, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "qf/nativemath/impl.pyx":188
+  /* "qf/nativemath/impl.pyx":231
  * 
  * # 9. Python-facing function for dynamic physics close evaluation
  * def get_fractional_physics_close(int current_index, int entry_index, double entry_price,             # <<<<<<<<<<<<<<
  *                           int quantity, int side, double current_price,
  *                           double Lambda, double Lambda_hat,
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_15get_fractional_physics_close, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_physics_close, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[7])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 188, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_23get_fractional_physics_close, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_physics_close, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[11])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 231, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_physics_close, __pyx_t_4) < (0)) __PYX_ERR(0, 188, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_physics_close, __pyx_t_4) < (0)) __PYX_ERR(0, 231, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "qf/nativemath/impl.pyx":210
+  /* "qf/nativemath/impl.pyx":253
  * 
  * # 10. Python-facing function for dynamic level updates
  * def get_fractional_update_levels(int side, double stop_loss, double take_profit,             # <<<<<<<<<<<<<<
  *                          double entry_price, double low_price, double high_price,
  *                          double L, double Lambda):
 */
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_17get_fractional_update_levels, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_update_levels, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[8])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 210, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_2qf_10nativemath_4impl_25get_fractional_update_levels, 0, __pyx_mstate_global->__pyx_n_u_get_fractional_update_levels, NULL, __pyx_mstate_global->__pyx_n_u_qf_nativemath_impl, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[12])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 253, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030E0000
   PyUnstable_Object_EnableDeferredRefcount(__pyx_t_4);
   #endif
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_update_levels, __pyx_t_4) < (0)) __PYX_ERR(0, 210, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_get_fractional_update_levels, __pyx_t_4) < (0)) __PYX_ERR(0, 253, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
   /* "qf/nativemath/impl.pyx":1
@@ -23271,34 +24502,34 @@ static int __Pyx_InitCachedConstants(__pyx_mstatetype *__pyx_mstate) {
 static int __Pyx_InitConstants(__pyx_mstatetype *__pyx_mstate) {
   CYTHON_UNUSED_VAR(__pyx_mstate);
   {
-    const struct { const unsigned int length: 8; } index[] = {{2},{68},{43},{35},{54},{37},{60},{24},{52},{26},{34},{29},{33},{45},{22},{15},{29},{179},{37},{30},{32},{52},{1},{1},{1},{1},{1},{8},{5},{6},{15},{23},{25},{7},{6},{2},{6},{35},{9},{30},{50},{38},{33},{8},{22},{20},{32},{22},{30},{37},{5},{8},{1},{2},{6},{7},{6},{10},{10},{10},{11},{1},{20},{8},{15},{3},{15},{18},{4},{1},{9},{17},{18},{11},{5},{15},{13},{13},{8},{14},{5},{15},{5},{6},{11},{11},{9},{5},{11},{1},{2},{6},{5},{5},{7},{6},{5},{7},{6},{7},{8},{23},{31},{20},{28},{18},{21},{28},{10},{25},{12},{10},{2},{10},{5},{13},{5},{8},{8},{16},{9},{8},{20},{7},{4},{10},{4},{8},{4},{7},{6},{6},{2},{5},{3},{5},{4},{19},{3},{11},{14},{11},{10},{19},{14},{18},{3},{12},{8},{10},{17},{13},{8},{12},{10},{12},{19},{5},{4},{6},{16},{4},{16},{5},{4},{4},{9},{6},{11},{8},{6},{6},{6},{6},{7},{11},{1},{63},{72},{217},{33},{77},{65},{32},{54},{61},{1}};
-    #if (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (1979 bytes) */
-const char* const cstring = "BZh91AY&SYIf\3641\000\001\006\177\377\357\377\177\377\377\357\377\377\277g\377\214\277\377\377\376@@@@@@@@@@@@@\000@\000`\0077\334y\340\267\275]CV]\270.X(\274\030j\236\223&\210\310\003&\246hj\236\002'\2126P\311\246@\032f\246@h\320\323\324zF\311\251\352x\220z\236\241\204\032i\024\362O)\352zL\231)\220\320\000\321\221\240\001\220\000\000\000\000\000\0004\310\000jd\324\3044\241\240#\000\001\240\020\300\000\010\300\000LL\023\021\243\000\004`\006\232\020j\004\002i\243S\311OhP\0002\000\000\000\000\000\000\000\000\3235\001\006\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000J&\211\240Bz\022xBb4\310\365\r\250\320\000h\320\000\000\000\000\000\000h\320\321\356Aui\231h\353\001\366\031\340h\347\206h\017\321V\"\\g\363\372\010\004\241$\220PUXWA5Q$\377Z\030\210\tn\244\021\265R\021R\010AY\301\005\257\002p\377_`\370T\223LZ\242\021\264{1f\362\r\204\343E\"\336HLY\205\242\032\234\200\342\222\211p\264\307\353\244w\017\340_r\373\013\223G\275\251\240\266c\2374l\354G\010\334\r\354\"!\232\265\2210_Bj\210\0371\301\017\223#\006\264N\227\034\205\"\213#\306\273-\035\326\371Y\356kU0 \230\014\265\305x\301\345\211\312\260\351\2267\211}F\301\324\272L\034\303\340\241\204eny\350\232\365\"\361\005m\202\255@\370\330\252\206 84ZI\3623\322\267\335M\343\263`\344\345\343n\301*\n\265\252\256\272L\235$\244\335 \022\375K\255\240\000\363\202&\214s\302\304\260]\351uLir\346ABB\004\344\242e\023>s\306\302cW\225\030\224\2338\323N\016\361<6\322\260\234\267\303\327\301A\242\246\303\rXX\031lE\276\230\302\2351X\244\336\202(C\n{L\305$\210q]T\230$\302o%\023\323\025Zb\000\244\232\270\243[^\033\361g\305_\002Ym\265h\303\353C\221P\302\264\271R\340&I\356\226\0244\020,\256\034\016Js@\211\021&\343\343\351\302\200\313\332\022\354\024\363\262\264,\277\231\n\006\026\246\252\201]S\001=[E\022\266\242\254 \353\036\214\226D\t\361<\331\3019L-\335'\244\020\252U\356H\203 \303r\315\021\203\236B\010I\022\330\034a\014\257X>$\245\222\246J'K\215\251\377\201\322\211\362\\\234aL!\003\215\021\217\277\000\327\266\233\205\252\353""\32245\265\010\315\006\276,\212\023\"\352\364\005aQ)\036\365)\256b\321\247\251H\021z\271\206\244\273\213\243\364\214M\232\026F\013\333jJ\004,\260h>.\002O\236 \242\226[\021m\200:&\0034\343>\3601E,x4Z\003p\007b\023\020\365\224\254\343(f\346\031\346\0250\273?\006m\254|\303\030\254\205\204\277\227x$\001\340\307\013|M\235\013\365-lKm\225\341\201\005\210\241\032\250' \346E\374\310\013\220\323\231z\"\243,e\235\212\034\210(\242\255\010\212\025\265\2713\304\230\273w\r\373\024 \250z\253\253\205,\205\206\001\203\361\346Av\341=\"h_!\342\016\215hBq\311J\013T*\024,\017z\341\\U\266\220\035\262\335\273\373\267\021s\274\255\327q\207\272\242\212d\216\232\252\365\317L\303eH\231&Mhz\263\016'\2319^o\033'`\231\001]peD\347 \324\255\244,\\\235\t\r\025\221n\312 \014\036'N\233\007k\350\242}[\022%\2422\350\020\204T4AF\000k\226\013s0\007\004\222\\\303uH\316\312R/\255\360\3121\251f*\231\007\317\207 \244\306u]-}\225\246\000\002I$\276P+\265\000\252\034d0\332@\317\260n\r g~\305\226p\245\t\333\000\340\364\016\254\t\336\032z\350\020\343e-h\215999rI\354\202\336\2157_\227\007\220*B\n\024\232\014M9\004\341\330D\310Y\301I\347\034\231*\312\204\003+\005\233\360\327U\217l\034\244\265\264\340\370\026\234\204&5\025T\025I3\244\010\005\t`\310s\"\250>\231\226a :\2060\202A\002m\017\23568<+d\217@\n\021\023\234\002\245\200\345@\340\213\256\240\241\252\016\216F\276r'\324\202E\006\232\276\na\\\252UYN(6;[+\270C\022@fYC\r\347G$rY.%y\205\260\342\211x\206&\224\004y\342T\255D\t>*L\034\023\005\026\351Iq2\211Lg\264\253\206\307\010\202l\3104\260I\216\010\226\375!\022\2102\255P\247\r\000^\262\005\325RAW\326\314\340\025PMG<\304\335\020\213Fcn\312\323\220\332\020v7\004\252\250\023\007\002,\2203\271\322\240\2522\010\246\202H$\021X\033\324\251\002\002\030*\222tdwL\206\233kx\246\363\201i\tf\027\210\301\223@\3255\323@,\026\317s-\004\267-\352\002\240\034/\346\014#H\024\330\251c\220-[\210\225\2408\222 \305H\216&\025K\366\021TR\023/\016\250C\035'4\276\014\006\222\326\305\317\020\307B5\306\005\212\3462\235c\326\267\005\025\033!\027""\311o\">\326\316\350\201L\207\204\334\324\250\355\366\300o\366,\nAdn\024(*\322\2428\306\031\034\227D\200Y(/\026\255\0021\277\026\021H\313\021&\021\306s\2363\313\246\341\370\002iEbB5\024\002\n{=\246\003\223Z\210\024\206\n\333\003>\263E\235\035\030\2315\3073)\232\256AL0\032\212\231LO2g\321d\t$\261[Y;`\216S>\273\310h\246LA\341E\n\224\304\326e\002Bx\010$\032\\-\357\320\210#i\212]\300E\370\360X\0053\202\212\014\264\t\t8\203&Du;Y'\212\014d\261\020\226*V\017-\3530\227R\214(\344\022\211e\21344\016R\336\352\256sO\002\221.\016*D\270\205T\244\256\224\236*\201bI\331\345y\304)\032q\343\336&\301e\034\306\252,J+R\335=+\325^\355AW;\213\304\200\264\2661\312:\244>Q\256\271y\215Js7\035\343\000w\321vk\263y&\227\001\235|\342\022\267\215\032\264\345\005A\0049W\034)4\262\345\335\321\250AiC)0\250$\212\202M\252\007v\310\300\024\030\372\335\303~\002\212\367d\026\215(1\001E+4)x\214eh\334\tR3*\030\244\313n\261\201B\017\354\360\355\014\274\2727}\237!\026\362\212\r\356\025\007\021i\340\276\007\030zf\177\253b\376'#\356`W\354C\343\217w\033\307\310'\013\336`\347 rC\356\030\245\030\2137\221GU\302%\t\r\230k\351\375\344r\031CE\313\207\360Y\367c\236\331\031\261|\342\344\341\305\315\232\221\254\241H\375\003\367\236\216\243y?\314\364\016o;\016\346\345\202\251;R\207\213\023\273\353\270=8\265\256#\335\2175v\233\330tg\352\354s\227\005_\005\031\221BoD\206\354)L\333}\313L\366\254mfg{\302\323[|\360\247\265h\\\326\262\337F\255wEp[6Lg\325|\210\347\006\334$\021\314\200u\204\235$BE\024,\247#RD\235\245\n\244'\376.\344\212p\241 \222\315\350b";
-    PyObject *data = __Pyx_DecompressString(cstring, 1979, 2);
+    const struct { const unsigned int length: 8; } index[] = {{2},{42},{68},{43},{35},{54},{37},{60},{24},{52},{26},{34},{29},{33},{45},{22},{15},{29},{179},{37},{30},{32},{52},{1},{1},{1},{1},{1},{8},{5},{6},{15},{23},{25},{7},{6},{2},{6},{35},{9},{30},{50},{38},{33},{8},{22},{20},{32},{22},{30},{37},{5},{8},{1},{2},{6},{7},{5},{6},{10},{10},{10},{11},{1},{20},{8},{15},{3},{15},{18},{4},{1},{9},{17},{18},{7},{11},{5},{15},{13},{13},{8},{14},{5},{15},{5},{6},{13},{11},{11},{9},{5},{11},{1},{6},{5},{5},{7},{6},{5},{7},{6},{7},{8},{26},{23},{31},{20},{28},{18},{21},{28},{10},{25},{26},{12},{6},{10},{2},{10},{5},{13},{5},{8},{8},{16},{5},{9},{8},{20},{7},{4},{10},{4},{8},{4},{7},{6},{6},{2},{5},{3},{6},{10},{5},{4},{19},{3},{11},{14},{11},{10},{19},{14},{18},{3},{12},{8},{10},{17},{13},{8},{12},{10},{12},{19},{5},{4},{6},{16},{4},{16},{5},{4},{4},{9},{6},{11},{8},{13},{6},{6},{6},{6},{7},{11},{1},{1},{6},{5},{63},{72},{33},{55},{217},{115},{33},{86},{65},{54},{61},{1}};
+    #if (CYTHON_COMPRESS_STRINGS) == 2 /* compression: bz2 (2189 bytes) */
+const char* const cstring = "BZh91AY&SY\302n\333v\000\001\035\377\377\357\357\177\377\377\357\377\377\277g\377\370\377\377\377\376\300@@@@@@@@@@@@\000@\000`\007\377y\353\327\275t\343uj\030\3050\332\3324ip0ji\022~\211\246\244\3750M\021\350\324h\365OLH\310d~\212\032h\032\032\0314\017S\rA\351\250yM\246\206\220\364\310\217P4\324I\342d\233I\243\020S \323\322z\2004\000\000\000\000\000\000\000\000\006@\002\251\232OTi\350\004\302i\210\323\0021\030\230\230 b`\000\2320\t\246L\004`\000\010\003\020\200\232\247\244\323M\020'\204i=\024\300\003L\2234\0004C\t\243FF\000\021\350\t\223i\240\321\006\230\230\000\000\000\000\000\000\000\000\000\000\0020\214\000\000\000\tB\023JxB\237\212\023\300MG\251\2465\rCOF\200\000\000\001\003 \0004\003\023M\220\010\310\205\n\326\355-/\357\207\374y\320\3326\375>\255\244\223\3229Y\300Dq\354\366\242\212\250\250\244\222\010\204\224\264\202{D\316\326\326r\220\261\000\356j\000\366\210\233Y\214\344D!\016\344%\242G\0037\270\305Lb}\250\002\343*\216\323]\357\030B\301\333\004\024 D\225$a\014X\250\340\010\200@\345\0021&\022\007\200C\202\326 g\005\320\0078r\215\365#F\361\021\302/-\272\377v(\321Q\225Cbi!\326wK\373Px\267c\220n\273N\375\231\3403\304}ui\314\350x\237\214\234\231\035\362\232\236k\232\320'\026\247\013S\243lO%\250\310T\264\317+6\305\257!y\354bN!Z3`\342\333O\331\236\271\267b\333\006\311\262\262g\240\215\227L\305\320\020\t\007Dd\344\244\232\024^B\035)\323\205\030g\245L\324\005*Y\312(\203\204RB\025\031`)\037*\205wd\002L:&vj\337U\317\332$\330o\352\263\027\357\340\242\021 c\2140el\217}\237\242\3604*RfI\334H\363c\004\337!4y\221\214\024\306\336\367n\317\\\241UT\327\352\234\037\032\331\317Y\014\210a\031\304\347\202\0032!;\n\224\343h\235/\323\202B\362\330\331\207\331\247\265\2322E\360\017\233\034\271y=5l\341H\273\035G\324\322D\207\236I\333li\260\351P!E\371\217\254\207S\256\231\333\264\226\200` \034*\003\303\"XW#\"\007\310\224U\245x>\351\347\260\272C\035y\351\031\373\221\370`\321,\330\356]ec\227%\347e\230,\212I\030?\214\300s\337\244\267{\277\342\366\2248\376\020\320\200\227>*\360\022\333Vlt""\342\226A\256\035\236X7\272\220q\320\233\242\\B\342\350\260\222\226\036\202\314!\227\2171\303F0\216\302\312\334\031V2\354u)\253N\031Obr|\003D'f&\221\025\321\220\224\304\253;Q*\315l\276G=\230\360\342\2542\224\032\251\327:\023p\271\266g\212\302\221.\217s\026\004i\030&\320\374\322\004^\314\256\035I\202\357;\313\030\213\211\n\321\203\016\305\004\342\025\2706_;\344\n[\033\341IB\354h\262\240\031\002\361\300#\013f\006\010\242\266\202\352\300\222\340e\202T\260I\343)Y\307*\037\026\266\237\004\314\375\366\323\307e\337\353hc\3251\026\320\334&\032\357\204\200e\200B\314b^o\017\006|\306\266G\025\226a\302\t\320\242<\312\t\310B\222\217R\301\266\270Z\271\233\210Te\034\263\270\241\221\005\024U\241\021B\326\353w4L\343\207{\205\202\334\350*\036<\323\006NS\214\303\210C\217l\214j\023\335\024*4\256!\005\362\005-\2312#&\014QN\027V\003@\253\360 !\351\316\307\037\347\032\024-\326~\347\210\306*h\312@A\345V+\267MC~\250Mp\263N0\"\316\342q4\266\242qa\277;\211\204\003Cf\354Oe\005T\331 \326\301\336\220\327YX4w\267\270\031\305\347_\021\307\034\243N\213,:\003\356R\026\253\204\265\211P\213\243@\024X\006\345\301=6m\025\225u\034\022(\252\340\313\312\033\274\345\021qW\000[\361]\250IMRL\352r\257\006\260J\245Ev\336\346\316\200\022\t$\311p\007i\020\007!\240\205\213\304\013\3321\2678\363)\003\203\372\025\331<(\262\001\201\210\031`\\\234\305d\244\335.\003X\210\365\2436k5\355\2443\301cu\251\334\266G\275 T\004\024JM\207\031\323$\022b\326\265\3000\213@)AB0c\200\317\322dG\003F\253\320\311V\013@\312\222\323\265\007\300\255\220\206q\266\252\240\252I\246H$\004\2353\314R:u \371\347Ux\200\307-d\022\010\021\22064T\300\320\251-\243P\002\204\2278\004\324\tR\022\217v\236\215\355\331,\364\306\212\346\243t+\320\213&;\251\025\331\0149,\312\272\n\020\307\242\3657\014!\\\200\347,\301\257\201\243\220d\317H\336K\214-LO/9.s\340$OC\032\324\330KD\225&\026g6\031.Q\227:\030Jcw$\320\037f\300\031\270r9N\014\307mn\362|\312\334\232\221\251\254Q\337\241\r\313\335\310gfH&\226\373\274\000\231\204\006k\016\254\t\301(\014\rk\0345\247\032""\310\021\334`\032\263\0010\264)\205y\205LA\221L\\\213Su$\022\010WU\307\"\266@\\\025t\306P\213I$K\245\332gN\032\332\357\260\013d$(\210\205\013G\014LV\006\200\36133V\246\210i\265,\014\201\205\375q\302:@\242\337\006\261\245\322\026\254\371KP\030\222 \342\244E\007\241#\025\010H$&\272\254\260\374)\030\244\340\275%\215v\226\3064>\372\021\220\270I\241\205\035\366x\2537\325GN6\226\274\261\\5@\024\334\215\026\027G~\200\370;Lg\323\3248\346\256\313\307(\257\242EEB\274\010\214\030\007#%\324H\005e\005\342\313\001\034u\002\225\r*hM\201a\321h\017\003\023\201\034\262y\005\235 ^\234!\300`\217\367\356\364\016~\363\013\212]\303?\001x\336Ti\322\013\245'\033l\312L\333Fy\354\016Z\014\2451=\263\257r\366\032\246g\243\026\234\007Y\230G^\366h=\247\247dE\230Q(\245\013}(-\020Y\021)([0\206\351\010\224\215)\225\263b\327\345\254F\232\025\000St\"\305KX\220\224\014\224\234\230`\271\256g\246\312\332\256\000I\323&vV~=\r\000\342\224sHA\"ov\231T\020\216]*\302\327<\321\240\344\226\032\200\034\222&4\340\263T^\210\201\242wx\031\334\021\200\367\020\"\001\350*\215\345V\027H\263\243=\336\025,\317\242\370\315c\312H\004\352\353\206\364\333Q\365\030\245\253QeT\324vZD\263nAn\016e\367\014\316\010\332\033o\326@\333@\327\311\335\324S\004\031\222\204\3609fg-\206\347\360\324\021\220E@\222qP\222\025\t,\230\017I\313\200\210\323\320\342\033\220\024W\265egB\016 ,\313\243b\274\267$\266\236#\223K\233\271\t\2224*\031v.\213\023\301\232f!\031\376|\317.\270\262\327$?M\275\3639d\030V\371\221\001\366.\275\257\251\205\261\217;\233\201\301j\343\215l\013i\016\022\030,qz\270\237O\214N\026}a\353\317\007)\274r)e\177`\t\201+\202Xl\245\020\357\351\326\345r\3609\216\031\275s\362X\006\323i\304G\224:\023\036\221\000\264/\303\374\321\214f\206\021\210a\315\347!\177\266g\271u\2641\r_\357\235e\260\315\220\271\317\223J\235\013\305\025\331\276)\261H||.\305WRV\312\225\334\251\307V\256\010\2632\245\270\"\202\256\256\"\207Dx\336\351\266\035\n9\257\233\276\343-\317os.\006\267\231\247\007u\246\374<u76Zgv\2332q1\376b\214\235\275-A\264E\255S\251\024""\0233\354T\034\206\303\207\233\244'CV\306>p\3121tj\315\336\276\224\242\003\177\205%\r(\234.\036oR\2277\263\006\023\255f\231!(\177\217&\242'\367\027rE8P\220\302n\333v";
+    PyObject *data = __Pyx_DecompressString(cstring, 2189, 2);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (1825 bytes) */
-const char* const cstring = "x\332\205VMs\0337\022\265*\264\243\254\222T\350l\354\304_\001\343\315*\256\330\214\265r\234/\305)Y\261jU\3458\226\235\365\036\234*\0248\203!\021a\200\341\000C\221\316n\225\216<\316q\216<\362\310#\217<\362\250#\217\372\t\371\t\351\006\206\224,o\262U\022\204\301t7\372\275~\335\243\257\311\246\224$\0241WFheH\222\362\200\207B5\217\017\311\307!\2113cI\203\023\241B\336\345!a*$J[b\244\000s\214!T\222Y\302\322\224\365\2147o\261\016'\266\305\211a1'\222\253\246m\325\357gQ\304S\322\021|\237\204\232\033\027\205w\023m\300\316\246\"\344f\213)\242\225\354\221 \345\314r\302H\303;\331\026\263D\030\022heE3\323\231\201[I\314c\235\366\352\340\205\241\2301\242\251\210\325\004\234\303[.\216\267\300+K\2432\360~*,kH^\032\370\244\242T\307\177\346\353\030 \373\302\266\210\355%\234\254\226\3476e\3128\030\307.\336\014<\004\260jO\320\374\375In\205'\301\033=\210\023\333#\246\305 \264\315\022H.\322)\tz\266\245U\335\261\273\343\022\320@\266\216HCg*4\344\023\326\205(\037\2077v^\275\313\327)K\022\235Z\036\356\250\016\223\002\n\252C~\023\211\007c\250\347j\260J\340\236U\270\014\201\254\336$M\360\232\033\373t\200kw\315\306\017\016\3403\004\010)<Z\210\203\021\300/\254\350\240\255\345M\236\326\037i\313}\335\266\034\004\004\033r)\032<\205\n\000\277Xs\310\300\025W\221\307\017\036\337\272\363\345\035'\257\224\377\002\271\031H\275\021H(+h\005\001gBZ\310\004\2717u\262\023\221\236\316\210\342\200\001j\236\200\335I\007P\237\"\206['\303UW(f\201\024\n\356\240\361\325\222t\314\030\274\267\2314\274\376\343K\314B\312\245\372X\020p3\247\372\251\345\t\211Y\317\221\013\320_\360T\037W\341_\312\311\nB\202T;<\005\325X\036\343\263n \250\177s\321l\0014\204\t\014g\220\351\377m\234\372\275\325\033\337\2610\244\n)EO\002\254\336\356\006ZJ\204\000\225\256\263F\260q\2429\320\310\003\274w\372x\256\311{\2410\230+w\0317\003\362\t\326\275\351\344\210\250q\020\360\256\345\312\272^;\236\t\302x\227\020\221\031\361\202\223\215o\311\355W\304\2524\224;b\231\264\204\322\224\207Y\300)%a\346\310QZ\335\202\362w\004\223\3606\020JXJU\026'\275z""\240S^\217\301M\2700$bB\372\022\213\030\205|\302*\213\0314\331i\203\222\351{\355\3503\305\260\300h\365\031\274\223\365\244\327\335\360\243&|\211\242W\317\260%\026L\275\364~q\232-J\315\244\324\201\233W.\343\220YV\377\037o}/a\214r\334\3257\237n\355\354<\220R$F\230\207\017o?|L\241\273a\305\021\362\220\305\215\220\371\225B\037\225;4\360;\320\317|\007\346\217(}\334\353\302\357\367\320U\364\021\224\356\t\217\236\362v\306U\300\261c\353\307\315\013j\231gE\275\306\231\351\251@h\344\025.\020\212\233\0063<\200\332`?Q:\3374\271\305\262\343#\030Q\001\375\224\262\2007X\260\027H\030\2014\201\246\346\001t\220\r\2624\005\365\320\200%0l\345\374\321M\321\371\203\263\2464\304\224i\331\221\320\243\r\301L\210}\356\026*\014\3655\3458\"\001\017L0\360N{>\230\337\272P\034\324\341\346\013OSPH\027d\005\003\335h\025E\267#\032s\246\"$0\242\306\206n\341\235\310\261\027I\3264\221\324\314\336\275\003J\006\311\224\363\220\322(S\300\003\000\247\021@\305\374\230\244n\312\245L\376\3011\335\367}~\352\265NC\236\236:KZ=#\002C\035}\247\336\265m\357\324\t~\342^\2715KB\254\244\344\035.\335\225\307;O\260\205\346E\256\004T\\\247\306\2411\026}h\013\362\364V\"\244\324w\020\365\274\"\357\013=\370f/;\036\343\247\254\311\245\326{Xz\232\300\274\320\241\221z\177^\322\230\2016`\355\322\2711E\311\355\363\020>\222\3108~\206\300@\207\231\204\277\n\346\335b\205Y\003+\337\367\213\221\270\332D%\256\365A\t\216\306\004\356M\244\253S\014i\306\26108\236\022\235$\251\216\240\360\300' \205\226\247A\213\007{&\213\375S\t\034\267N]n\227\251D\004{\220\311\0035\267\353\270\377\020(mG\365\3439R\3079\002e\201\343\214I\237/\354`\302\342\331|\314-v~ \2368\000Va\333\024\006>|\224\302\367\251\304\014\273rZ\272}\231\343\211\375<\222\033\"\006\247\207S\202_\217[\007\253\003\016\0228\003\364^\373\360\234B\024\236\030\253\335\257\243\006fP\026X\313\366\260g\035a\324\202+E*\200Z\257)\377\211\352h\tmUJ\272\374\203m\324=X\372\355\374\231\263\177\315\327f\225\313\305\332o\347\316\234%E{\266\374^\376|\2604[~\263\277\325\357\346\360|\355\360\332\372h""m\266\374F\377\275>\353\267\321\356\315\376\347\371\222w\277R\200\373\265\202\315*d\260tT\371\020#\\\314\377;\370ati\274\206\333n\361\237\341\372\2605b\030\341j\316\340\335\346`\327G\371\266xk\260{\2604\253T\363\313\305\366\2406X;\252\274~\360\"\277\220\267\213\327\212\365\2421xm\360\325p{T\033\255\217\202\361\371\361\3728\232lOk\323\365ip\270\373d\266\374v\377\227b\251\250\036U>\037=\031u\306\273\343`ra\222N\253\263\312W`}wR\235\\\237<\233\376c\272;\253\334\031\335\037E\343\315\361\323\311\271Ic\n\231^-\340\2646\000\333+\305\346\021.\230\340\345|3\337\305\315\245|-w'\037\344\265\334\241\277\320o\347\300\313\033\376\247\1771_\312\253/\2718\003\017\354\313|\243h{`\325\374\357\230\343\254\262r\270\002<96\330\260=Z\032U\017\234\365\207H\036^\357\031\274\210\234\277\223W\362-\244\356\360\323o\000uk\302\220\312_\0077\207\013\032\177E\272\3464\256\014\326 \330\362\231\263\347\363\213\3059\270\245=\003\";\375g\200b+7Em\301\225\313\003`\017\256\017v\007\315\341\3560\004v\357\216\253\343\032\004\370\013D;\\\2711\254\016\3776\014F\357\217\257L~\232\276;\375\347\341O\317\017\237\377\014\357\3379s\366\022\206\370\0009w\245~\273\277W\\\035\304\243o\306rz}\352hx\037 \327\3464\224i-\037\244\375w\373\233'*\366\365\370\243\361\366\2446Y\237D\323\373S`\340#\300\363\305\360:d\264\207\331\034UV\372k?\376\016\201<\373S";
-    PyObject *data = __Pyx_DecompressString(cstring, 1825, 1);
+    #elif (CYTHON_COMPRESS_STRINGS) != 0 /* compression: zlib (2003 bytes) */
+const char* const cstring = "x\332\205V\315s\023G\026\267*6q\n\226\212X\202\023\010\244\03561\324\202\202\326\204$\304a\313\030\\\353*\007,\014\336d\367\320i\315\364H\215g\272G\323=\262\304\356\326r\324q\216:\352\250\343\034u\324QG\035u\344O\310\237\260\357uK\376\"Y\252p\253?\336\347\357\375\336\033\356\223\3650$O\377\266\275AX\222\260\266&Q\252\r\251\263&'\246\316\211f\021'!\2275S/\241\244/\".\265PR\2238\341\036\367\205\254\035]\222/|\247_\345DH\237\267\270O\230\364\211T\206\350P\2008\332\0202N\315\273\335=L\203\200'\244)\370\001\361\025\327\326\no\305J\203\234I\204\317\365\006\223D\311\260M\274\2043\303\t#U\247d\352\314\020\241\211\247\244\021\265T\245\032\274\222\210G*i\227@\013M1\255EM\022\243\010(\373\267\255\035'\201.\247BS\303\007\2110\254\032\362\251\200\013*HT\364\377t-\002\344@\230:1\355\230\223\225\351\275I\230\3246\215#\025'\006\032\002P5\307`~t\034[\341@pB\217\243\330\264\211\25630m\322\030\202\013TB\274\266\251+Y\262\350n\331\000\024\200\255\002RU\251\3645\271\301Z`\345\013\377\346\326\333\276\\\235\3228V\211\341\376\226l\262P@A\225\317o!\360 \014\365\\\361V\010\370Y\001g\230\310\312-R\003\255\231\260\013\007\260\266n\326~\264\t\356a\202\020\302\223Cr0\002\371\013#\232(kx\215'\245'\312pW\267\r\233\002&\353\363PTy\002\025\000|\261\346\020\201-\256$;\217wn\337\375\366\256\245W\302_Bl\032B\257z!\224\025\270\202\t\247\"4\020\tb\257Kd+ m\225\022\311!\007\250y\014r\307\025\200}\222hn,\rWl\241\230\001P(\250\003\307W\246\240c\304\240\275\311B\315KOO \013!O\331\307<\217\353\031\324\273\206\307$bm\013.\244\376\212'\352\250\n/\244\245\025\230\004\2526y\002\2541<\302\263\252bR\177\347\242V\207\3240M@8\205H\337\3318\245\007+7\377\312|\237J\204\0245\t\240z\247\345\2510\304\024\240\322%V\365\326\2165\007\n\271\004\037\234\276\236q\362\201/4\306\312m\3045\217\334\300\272\327,\0351k\034\004\274e\2704\266\327\216f\202\320N\305\307\314\264x\305\311\332\017\344\316[d\225\n\312\035\26044\204\322\204\373\251\307)%~j\301\221J\336\206\3627\005\013\341\325\023R\030Je\032\305\355\222\247\022^\212@MX3$`""\"t%\026\021\022\371\230T\0321h\262\323\002S\244\0374\202\257$\303\002\243\324W\360\026\226\342vk\315\215\032\377\004Do\337aK\034\"u\342\375\3606=,5\013C\345\331ye#\366\231a\245\337xu\275\2046\246\343\256\264\276\273\261\265\3658\014E\254\205\336\336\276\263\275C\241\273a\305\021\262M\241y\266YT\365\231[\217\316V\312\355\200D\263\035\350<\241t\247\335\202\277G\320Z\364\t\324\357\031\017vy#\345\322\343\330\266\245\243\016\006\312\314B\243\216\350L\267\245'\024\202\013\016\204\344\272\3124\367\240@\330T\224\31665n\260\366x\004!*\240\251\022\346\361*\363\366\275\020\346 \215\247?\320\340\334\203n2^\232$\300$\352\261\030\006o8;\332\211:;XiJ}\214\234N\273\023\372\265*\230\366\261\347\355B\205\246\256\276\034\307%\244\005\323\214K\236\324\332\024\307?\203\2361I\333Yv[k\227\003m\354\340\341I\002\324i\001\337`\322k%\203\200F\234\311\000!\r\2506\276]x3\260x\006!\253\351 T\314\334\273\013\004\007&M\307$\245A*\001\031\200\202N\335\037`ks\237B\013'\254\306\361%\000X0\t\026R;\026\023\026\376\316\265\3236\372\324\263J|\260}\362.\256\267\265\3604\265\030\237zk\230\366\251\033\007\312\251\3134\366\261\352!o\362\320\272<\332\271*\030\350v\304P\000;Tb\037L=\201\tu:K\213\2006h\215\326\341\005\242\263+Z\021>\245\256%\251\253\007\026\357\220[nzLG\010\372Gs\241R\373H#\032\303\000R\276\016\325\001\215\355\342\310\0211 \033\254-:\323\240\310\341\003\356\303\247\027\013\206\0377\020P~\032\302\257\204)z\270\302\004\203\225\037\270E\207\270\232X\306v\240\000\247T\314%\215\335\212\336,\3661\004\023\207\266\354\021\304\036EB\343\020\004\2618Q\001\260\010\212\000\235\001\203\205zu\356\355\3534r\247)&\270\265\274\265\273T\306\302\333\207\310\036\313\231\\\323\376?\204\322FP:\232V%\234VPK\270NY\350\342\207\035\314q\274\233\r\323\303\235\033\273\307.\000j\330\326\204\206\317+\245\360\025\234b\000\273\351L\266\373i\214\307\3663KvTi\234Q\226>n=jJ,\031(\204\200!d\357\032\t\316\tX\341\2616\312\376Yh`\322\245\2361l\037\247\201\005\214\032P\2453:9\313\200\013\340\354X\351\276\212M\025B\303N\233b\372\203-""\332j\267m\277\266\261K_\027~\2750\267p1+O\346\257t\313\277\236\231[ \335\306d\361\243\354\237\275\302d\361\\g\243\323\312\340|m|m5/O\026?\350|\324a\235\006\312\235\353|\235\025\234\372\247]P\277\326e\223y\322+\274\231\377\014-,e\377\351\375\230_\036\224q\333\352\376\273\277\332\257\347\014-\\\315\030\274\255\367*\316\312\017\335?\364*`\007\017\343\2637\373\305\311\342\331\3167\331\215\356\255\236\327\3778_\032\274?\370\357\210\201\300y+\360'\324\354\005\375\365\376\363\274\230\1779(\014.\016*\003>,\017\037\215\n\243\245\361Ne\\y1~\361\323\370\247\237\307?\377\343ua2_\314\256t7{\313\275\362\233\371\367_\277\312.e\215\356{\335\325n\265\367^\357\273\376f\276\234\257\346\336\340\302`u\020\0147G\313\243\325\2217\256<\233,\236\357\274\354\026\272\3057\363_\347\317\362&\370\360\206\227\206\311\2508\231\377\016\244\357\r\213\303\353\303\275\321_F\225\311\374\335\374a\036\014\326\007\273\3033\303\352\010\020\270\332\205\333\345\036\310~\332]\177\203\013&~%[\317*\270\271\234\2253{\363I\266\234YT/u\032\031\340\375\201\373\327Y\312\nY\361\204\212\025p\200}\233\255u\033\357H\354~\177//\347\033\271\036|>\330\030\264GgFl\244\307\317\000\230\275c\231\235\235\301\3712/\344\027\363J\376rX\030^\034V\206b\324\030\357<\037?\007\371_\306\277\2601\343c\0368\227\305\354KT\236\2402\224\334\026\226\365\033`\240\0105:7\267\360\031\362\0003vdXB\372|\230\315g\033\310\202\361\237\277\007\240\353C\206\254\370W\357V\277\226\323\341\323\361.\370\002/\325q5\032Gr,\325\214\032g{e\260\2728\267p![\352\236\001w\215\t\344\332\354\354\001\202\033\231\356.\037fc\003\002\310{\327!\237Z\277\322\367\241\262\367\006\305\3012\030\370pn\3412\212|\202Y[z\236\357\354w\257\366\242\374\373A8\272>\262\020\177\014\271-\317 \236\272]|\235t\376\330Y?\206\331}@ts\270<\\\035\006\243\207#H\365s\250\3007\375\353\340q\037\275\001\252\235\362\323\377\001\221^\217'";
+    PyObject *data = __Pyx_DecompressString(cstring, 2003, 1);
     if (unlikely(!data)) __PYX_ERR(0, 1, __pyx_L1_error)
     const char* const bytes = __Pyx_PyBytes_AsString(data);
     #if !CYTHON_ASSUME_SAFE_MACROS
     if (likely(bytes)); else { Py_DECREF(data); __PYX_ERR(0, 1, __pyx_L1_error) }
     #endif
-    #else /* compression: none (3303 bytes) */
-const char* const bytes = ": All dimensions preceding dimension %d must be indexed and not slicedAll input arrays must have the same length.Buffer view does not expose stridesCan only create a buffer that is contiguous in memory.Cannot assign to read-only memoryviewCannot create writable memory view from read-only memoryviewCannot index with type 'Cannot transpose memoryview with indirect dimensionsDimension %d is not directEmpty shape tuple for cython.arrayIndex out of bounds (axis %d)Indirect dimensions not supportedInvalid mode, expected 'c' or 'fortran', got Invalid shape in axis <MemoryView of N must be a positive integer.Note that Cython is deliberately stricter than PEP-484 and rejects subclasses of builtin types. If you need to pass subclasses then set the 'annotation_typing' directive to False.Out of bounds on buffer access (axis Step may not be zero (axis %d)Unable to convert item to objectWeights and values arrays must have the same length..>')?add_note and  at 0xcollections.abc<contiguous and direct><contiguous and indirect>disableenablegc (got got differing extents in dimension isenableditemsize <= 0 for cython.arrayno default __reduce__ due to non-trivial __cinit__numpy.core.multiarray failed to importnumpy.core.umath failed to import object>qf/nativemath/impl.pyx<strided and direct><strided and direct or indirect><strided and indirect>unable to allocate array data.unable to allocate shape and strides.ASCIIEllipsisLL0LP_outLP_viewLambdaLambda_hatLambda_outLambda_valLambda_viewN__Pyx_PyDict_NextRefSequenceView.MemoryViewabcallocate_bufferasyncio.coroutinesbasec__class____class_getitem__cline_in_tracebackclose_pricecountcurrent_capitalcurrent_indexcurrent_price__dict__direction_biasdtypedtype_is_objectemptyencodeentry_indexentry_priceenumerateerrorexit_reasonff0f_meanf_outf_stdf_stdevf_viewflagsfloat64formatfortran__func__get_fractional_integralget_fractional_integral_weightsget_fractional_orderget_fractional_physics_closeget_fractional_qtyget_fractional_signalget_fractional_updat""e_levelsget_levelsget_price_time_indicators__getstate__high_priceid__import__index_is_coroutineitemsitemsizeleveragelookback_periodslow_price__main__max_leverage_allowedmemviewmode__module__name__name__ndim__new__new_slnew_tpnpnumpyobjorderpackplatform_commissionpopprofit_loss__pyx_checksum__pyx_state__pyx_type__pyx_unpickle_Enum__pyx_vtable__qf.nativemath.implqty__qualname__quantity__reduce____reduce_cython____reduce_ex__register__set_name__setdefault__setstate____setstate_cython__shapesidesignalsignal_directionsizestallness_reasonstartstepstopstop_lossstructtake_profit__test__unpackupdatevaluesvolumeweightsweights_outx\200\001\360\022\000\005\024\2201\330\004\033\2301\360\006\000\005 \230q\330\010\025\220[\240\001\330\010\014\210C\210x\220q\330\010\036\320\0363\2601\330\010\t\210\025\210a\210q\360\006\000\005\014\2105\220\001\200\001\360\022\000\005\034\2301\330\004\036\230a\330\004 \240\001\340\004\037\230q\330\010\027\220}\240M\260\032\2701\330\010\027\220x\230|\2503\250h\260a\330\010\t\210\035\220a\220}\240A\240Q\360\006\000\005\014\210=\230\r\240Q\200\001\330\004\021\220\033\230F\240!\2401\340\004\007\200z\220\026\220q\230\003\2303\230b\240\003\2409\250F\260!\2603\260c\270\022\2703\270f\300F\310!\3103\310c\320QR\330\010\016\210j\230\001\230\021\340\0045\260R\260v\270Q\270c\300\026\300r\310\021\330\0049\270\022\2706\300\021\300#\300V\3102\310Q\330\0044\260B\260f\270A\270S\300\006\300b\310\001\340\004\035\230Q\330\004!\240\021\330\004\034\230A\340\004\034\230A\330\010\t\210\033\220A\220Q\330\010\t\210\032\2201\220A\330\010\t\210\031\220!\2201\330\010\t\210\026\210q\220\001\330\010\t\330\010\t\330\010\t\210\027\220\001\220\021\330\010\t\210\033\220A\220Q\330\010\t\210\026\210q\220\001\360\006\000\005\014\2108\220<\230q\200\001\330\004\021\220\021\220&\230\001\230\021\330\004\013\320\013\036\230a\230|\2503\250a\250q\260\001\260\021\200\001\360\006\000\005\037\230a\330\004\034\230A\330\004 \240\001\340\004\027\220q\330\010\020\220\004\220C\220x\230|\320+;\2703\270h""\300a\330\010\027\220{\240,\250a\330\010\t\210\035\220a\220{\240!\2401\360\006\000\005\014\210=\230\013\2401\200\001\360\010\000\005\022\220\027\230\006\230a\230q\330\004\007\200v\210V\2201\220C\220s\230!\330\010\016\210j\230\001\230\021\330\004\013\320\013!\240\021\240#\240Q\240g\250Q\250d\260!\2606\270\021\270!\200\001\360\n\000\005\014\320\013)\250\021\250$\250c\260\030\270\034\300T\310\023\310H\320T[\320[\\\200\001\360\020\000\005\032\230\021\330\004\031\230\021\340\004\037\230q\330\010\016\210k\230\035\240m\260;\270l\310#\310Q\330\010\t\210\030\220\021\220!\360\006\000\005\014\2108\2201\200\001\360\010\000\005\010\200r\210\023\210A\330\010\016\210j\230\001\230\021\340\004:\270\"\270F\300!\3003\300f\310B\310a\330\004\"\240!\2407\250#\250Q\250k\270\021\270!\340\004\013\2101O";
+    #else /* compression: none (3652 bytes) */
+const char* const bytes = ": All OHLC arrays must have the same length.All dimensions preceding dimension %d must be indexed and not slicedAll input arrays must have the same length.Buffer view does not expose stridesCan only create a buffer that is contiguous in memory.Cannot assign to read-only memoryviewCannot create writable memory view from read-only memoryviewCannot index with type 'Cannot transpose memoryview with indirect dimensionsDimension %d is not directEmpty shape tuple for cython.arrayIndex out of bounds (axis %d)Indirect dimensions not supportedInvalid mode, expected 'c' or 'fortran', got Invalid shape in axis <MemoryView of N must be a positive integer.Note that Cython is deliberately stricter than PEP-484 and rejects subclasses of builtin types. If you need to pass subclasses then set the 'annotation_typing' directive to False.Out of bounds on buffer access (axis Step may not be zero (axis %d)Unable to convert item to objectWeights and values arrays must have the same length..>')?add_note and  at 0xcollections.abc<contiguous and direct><contiguous and indirect>disableenablegc (got got differing extents in dimension isenableditemsize <= 0 for cython.arrayno default __reduce__ due to non-trivial __cinit__numpy.core.multiarray failed to importnumpy.core.umath failed to import object>qf/nativemath/impl.pyx<strided and direct><strided and direct or indirect><strided and indirect>unable to allocate array data.unable to allocate shape and strides.ASCIIEllipsisLL0LP_outLP_viewL_hatLambdaLambda_hatLambda_outLambda_valLambda_viewN__Pyx_PyDict_NextRefSequenceView.MemoryViewabcallocate_bufferasyncio.coroutinesbasec__class____class_getitem__cline_in_tracebackclose_pclose_pricecountcurrent_capitalcurrent_indexcurrent_price__dict__direction_biasdtypedtype_is_objectemptyencodeenergy_signalentry_indexentry_priceenumerateerrorexit_reasonff_meanf_outf_stdf_stdevf_viewflagsfloat64formatfortran__func__get_energy_weighed_averageget_fractional_integralget_fractional_integral_weightsget_fractional_o""rderget_fractional_physics_closeget_fractional_qtyget_fractional_signalget_fractional_update_levelsget_levelsget_price_time_indicatorsget_thrust_weighed_average__getstate__high_phigh_priceid__import__index_is_coroutineitemsitemsizeleveragelookback_periodslow_plow_price__main__max_leverage_allowedmemviewmode__module__name__name__ndim__new__new_slnew_tpnpnumpyobjopen_popen_priceorderpackplatform_commissionpopprofit_loss__pyx_checksum__pyx_state__pyx_type__pyx_unpickle_Enum__pyx_vtable__qf.nativemath.implqty__qualname__quantity__reduce____reduce_cython____reduce_ex__register__set_name__setdefault__setstate____setstate_cython__shapesidesignalsignal_directionsizestallness_reasonstartstepstopstop_lossstructtake_profit__test__thrust_signalunpackupdatevaluesvolumeweightsweights_outxyy_meany_std\200\001\360\022\000\005\024\2201\330\004\033\2301\360\006\000\005 \230q\330\010\025\220[\240\001\330\010\014\210C\210x\220q\330\010\036\320\0363\2601\330\010\t\210\025\210a\210q\360\006\000\005\014\2105\220\001\200\001\360\022\000\005\034\2301\330\004\036\230a\330\004 \240\001\340\004\037\230q\330\010\027\220}\240M\260\032\2701\330\010\027\220x\230|\2503\250h\260a\330\010\t\210\035\220a\220}\240A\240Q\360\006\000\005\014\210=\230\r\240Q\200\001\360\006\000\005\014\320\013)\250\021\330\010\013\2107\220(\230,\240c\250\030\260\027\270\007\270\177\310a\200\001\360\016\000\005\014\320\013$\240A\240Q\240f\250A\250T\260\021\260&\270\001\270\024\270Q\270e\3001\300D\310\001\310\027\320PQ\320QU\320UX\320XY\320YZ\200\001\330\004\021\220\033\230F\240!\2401\340\004\007\200z\220\026\220q\230\003\2303\230b\240\003\2409\250F\260!\2603\260c\270\022\2703\270f\300F\310!\3103\310c\320QR\330\010\016\210j\230\001\230\021\340\0045\260R\260v\270Q\270c\300\026\300r\310\021\330\0049\270\022\2706\300\021\300#\300V\3102\310Q\330\0044\260B\260f\270A\270S\300\006\300b\310\001\340\004\035\230Q\330\004!\240\021\330\004\034\230A\340\004\034\230A\330\010\t\210\033\220A\220Q\330\010\t\210\032\2201\220A\330\010\t\210""\031\220!\2201\330\010\t\210\026\210q\220\001\330\010\t\330\010\t\330\010\t\210\027\220\001\220\021\330\010\t\210\033\220A\220Q\330\010\t\210\026\210q\220\001\360\006\000\005\014\2108\220<\230q\200\001\330\004\021\220\033\230F\240!\2401\340\004\007\200z\220\026\220q\230\003\2303\230b\240\003\240:\250V\2601\260C\260s\270\"\270C\270y\310\006\310a\310s\320RU\320UV\330\010\016\210j\230\001\230\021\340\004\013\320\013$\240A\240Q\240j\260\001\260\024\260Q\260j\300\001\300\024\300Q\300i\310q\320PT\320TU\320U`\320`a\320ae\320ef\200\001\330\004\021\220\021\220&\230\001\230\021\330\004\013\320\013\036\230a\230|\2503\250a\250q\260\001\260\021\200\001\360\014\000\005\037\230a\330\004\034\230A\330\004 \240\001\340\004\027\220q\330\010\020\220\004\220C\220x\230|\320+;\2703\270h\300a\330\010\027\220{\240,\250g\260_\300O\320ST\320Ta\320ab\320bm\320mn\320no\360\006\000\005\014\210=\230\013\2401\200\001\360\010\000\005\022\220\027\230\006\230a\230q\330\004\007\200v\210V\2201\220C\220s\230!\330\010\016\210j\230\001\230\021\330\004\013\320\013!\240\021\240#\240Q\240g\250Q\250d\260!\2606\270\021\270!\200\001\360\020\000\005\032\230\021\330\004\031\230\021\340\004\037\230q\330\010\016\210k\230\035\240m\260;\270l\310#\310Q\330\010\t\210\030\220\021\220!\360\006\000\005\014\2108\2201\200\001\360\010\000\005\010\200r\210\023\210A\330\010\016\210j\230\001\230\021\340\004:\270\"\270F\300!\3003\300f\310B\310a\330\004\"\240!\2407\250#\250Q\250k\270\021\270!\340\004\013\2101O";
     PyObject *data = NULL;
     CYTHON_UNUSED_VAR(__Pyx_DecompressString);
     #endif
     PyObject **stringtab = __pyx_mstate->__pyx_string_tab;
     Py_ssize_t pos = 0;
-    for (int i = 0; i < 177; i++) {
+    for (int i = 0; i < 190; i++) {
       Py_ssize_t bytes_length = index[i].length;
       PyObject *string = PyUnicode_DecodeUTF8(bytes + pos, bytes_length, NULL);
-      if (likely(string) && i >= 50) PyUnicode_InternInPlace(&string);
+      if (likely(string) && i >= 51) PyUnicode_InternInPlace(&string);
       if (unlikely(!string)) {
         Py_XDECREF(data);
         __PYX_ERR(0, 1, __pyx_L1_error)
@@ -23306,7 +24537,7 @@ const char* const bytes = ": All dimensions preceding dimension %d must be index
       stringtab[i] = string;
       pos += bytes_length;
     }
-    for (int i = 177; i < 187; i++) {
+    for (int i = 190; i < 202; i++) {
       Py_ssize_t bytes_length = index[i].length;
       PyObject *string = PyBytes_FromStringAndSize(bytes + pos, bytes_length);
       stringtab[i] = string;
@@ -23317,15 +24548,15 @@ const char* const bytes = ": All dimensions preceding dimension %d must be index
       }
     }
     Py_XDECREF(data);
-    for (Py_ssize_t i = 0; i < 187; i++) {
+    for (Py_ssize_t i = 0; i < 202; i++) {
       if (unlikely(PyObject_Hash(stringtab[i]) == -1)) {
         __PYX_ERR(0, 1, __pyx_L1_error)
       }
     }
     #if CYTHON_IMMORTAL_CONSTANTS
     {
-      PyObject **table = stringtab + 177;
-      for (Py_ssize_t i=0; i<10; ++i) {
+      PyObject **table = stringtab + 190;
+      for (Py_ssize_t i=0; i<12; ++i) {
         #if CYTHON_COMPILING_IN_CPYTHON_FREETHREADING
         #if PY_VERSION_HEX < 0x030E0000
         if (_Py_IsOwnedByCurrentThread(table[i]) && Py_REFCNT(table[i]) == 1)
@@ -23398,49 +24629,69 @@ static int __Pyx_CreateCodeObjects(__pyx_mstatetype *__pyx_mstate) {
   PyObject* tuple_dedup_map = PyDict_New();
   if (unlikely(!tuple_dedup_map)) return -1;
   {
-    const __Pyx_PyCode_New_function_description descr = {5, 0, 0, 12, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 83};
+    const __Pyx_PyCode_New_function_description descr = {4, 0, 0, 4, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 35};
+    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_open_p, __pyx_mstate->__pyx_n_u_high_p, __pyx_mstate->__pyx_n_u_low_p, __pyx_mstate->__pyx_n_u_close_p};
+    __pyx_mstate_global->__pyx_codeobj_tab[0] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_energy_weighed_average, __pyx_mstate->__pyx_kp_b_iso88591_AQfAT_Qe1D_PQQUUXXYYZ, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[0])) goto bad;
+  }
+  {
+    const __Pyx_PyCode_New_function_description descr = {4, 0, 0, 4, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 44};
+    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_open_p, __pyx_mstate->__pyx_n_u_high_p, __pyx_mstate->__pyx_n_u_low_p, __pyx_mstate->__pyx_n_u_close_p};
+    __pyx_mstate_global->__pyx_codeobj_tab[1] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_thrust_weighed_average, __pyx_mstate->__pyx_kp_b_iso88591_AQfAT_Qe1D_PQQUUXXYYZ, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[1])) goto bad;
+  }
+  {
+    const __Pyx_PyCode_New_function_description descr = {5, 0, 0, 12, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 106};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_close_price, __pyx_mstate->__pyx_n_u_high_price, __pyx_mstate->__pyx_n_u_low_price, __pyx_mstate->__pyx_n_u_volume, __pyx_mstate->__pyx_n_u_lookback_periods, __pyx_mstate->__pyx_n_u_N, __pyx_mstate->__pyx_n_u_LP_out, __pyx_mstate->__pyx_n_u_Lambda_out, __pyx_mstate->__pyx_n_u_f_out, __pyx_mstate->__pyx_n_u_LP_view, __pyx_mstate->__pyx_n_u_Lambda_view, __pyx_mstate->__pyx_n_u_f_view};
-    __pyx_mstate_global->__pyx_codeobj_tab[0] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_price_time_indicators, __pyx_mstate->__pyx_kp_b_iso88591_F_1_z_q_3b_9F_3c_3fF_3cQR_j_5Rv, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[0])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[2] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_price_time_indicators, __pyx_mstate->__pyx_kp_b_iso88591_F_1_z_q_3b_9F_3c_3fF_3cQR_j_5Rv, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[2])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 112};
+    const __Pyx_PyCode_New_function_description descr = {4, 0, 0, 5, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 135};
+    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_open_price, __pyx_mstate->__pyx_n_u_high_price, __pyx_mstate->__pyx_n_u_low_price, __pyx_mstate->__pyx_n_u_close_price, __pyx_mstate->__pyx_n_u_N};
+    __pyx_mstate_global->__pyx_codeobj_tab[3] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_energy_weighed_average, __pyx_mstate->__pyx_kp_b_iso88591_F_1_z_q_3b_V1Cs_Cy_asRUUV_j_AQj, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[3])) goto bad;
+  }
+  {
+    const __Pyx_PyCode_New_function_description descr = {4, 0, 0, 4, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 143};
+    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_open_p, __pyx_mstate->__pyx_n_u_high_p, __pyx_mstate->__pyx_n_u_low_p, __pyx_mstate->__pyx_n_u_close_p};
+    __pyx_mstate_global->__pyx_codeobj_tab[4] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_thrust_weighed_average, __pyx_mstate->__pyx_kp_b_iso88591_AQfAT_Qe1D_PQQUUXXYYZ, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[4])) goto bad;
+  }
+  {
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 153};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_Lambda_val, __pyx_mstate->__pyx_n_u_L, __pyx_mstate->__pyx_n_u_N};
-    __pyx_mstate_global->__pyx_codeobj_tab[1] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_order, __pyx_mstate->__pyx_kp_b_iso88591_a_3aq, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[1])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[5] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_order, __pyx_mstate->__pyx_kp_b_iso88591_a_3aq, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[5])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 117};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 158};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_weights, __pyx_mstate->__pyx_n_u_values, __pyx_mstate->__pyx_n_u_N};
-    __pyx_mstate_global->__pyx_codeobj_tab[2] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_integral, __pyx_mstate->__pyx_kp_b_iso88591_aq_vV1Cs_j_QgQd_6, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[2])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[6] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_integral, __pyx_mstate->__pyx_kp_b_iso88591_aq_vV1Cs_j_QgQd_6, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[6])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 127};
+    const __Pyx_PyCode_New_function_description descr = {2, 0, 0, 3, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 168};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_order, __pyx_mstate->__pyx_n_u_N, __pyx_mstate->__pyx_n_u_weights_out};
-    __pyx_mstate_global->__pyx_codeobj_tab[3] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_integral_weights, __pyx_mstate->__pyx_kp_b_iso88591_r_A_j_F_3fBa_7_Qk_1, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[3])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[7] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_integral_weights, __pyx_mstate->__pyx_kp_b_iso88591_r_A_j_F_3fBa_7_Qk_1, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[7])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {9, 0, 0, 9, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 141};
-    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_L0, __pyx_mstate->__pyx_n_u_L, __pyx_mstate->__pyx_n_u_Lambda, __pyx_mstate->__pyx_n_u_Lambda_hat, __pyx_mstate->__pyx_n_u_f0, __pyx_mstate->__pyx_n_u_f, __pyx_mstate->__pyx_n_u_f_mean, __pyx_mstate->__pyx_n_u_f_std, __pyx_mstate->__pyx_n_u_order};
-    __pyx_mstate_global->__pyx_codeobj_tab[4] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_signal, __pyx_mstate->__pyx_kp_b_iso88591_c_T_HT, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[4])) goto bad;
+    const __Pyx_PyCode_New_function_description descr = {10, 0, 0, 10, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 182};
+    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_L, __pyx_mstate->__pyx_n_u_L_hat, __pyx_mstate->__pyx_n_u_Lambda, __pyx_mstate->__pyx_n_u_Lambda_hat, __pyx_mstate->__pyx_n_u_y, __pyx_mstate->__pyx_n_u_y_mean, __pyx_mstate->__pyx_n_u_y_std, __pyx_mstate->__pyx_n_u_order, __pyx_mstate->__pyx_n_u_energy_signal, __pyx_mstate->__pyx_n_u_thrust_signal};
+    __pyx_mstate_global->__pyx_codeobj_tab[8] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_signal, __pyx_mstate->__pyx_kp_b_iso88591_7_c_a, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[8])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {13, 0, 0, 16, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 150};
-    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_signal, __pyx_mstate->__pyx_n_u_L0, __pyx_mstate->__pyx_n_u_L, __pyx_mstate->__pyx_n_u_Lambda, __pyx_mstate->__pyx_n_u_Lambda_hat, __pyx_mstate->__pyx_n_u_direction_bias, __pyx_mstate->__pyx_n_u_f, __pyx_mstate->__pyx_n_u_f_mean, __pyx_mstate->__pyx_n_u_f_stdev, __pyx_mstate->__pyx_n_u_current_price, __pyx_mstate->__pyx_n_u_low_price, __pyx_mstate->__pyx_n_u_high_price, __pyx_mstate->__pyx_n_u_order, __pyx_mstate->__pyx_n_u_take_profit, __pyx_mstate->__pyx_n_u_stop_loss, __pyx_mstate->__pyx_n_u_signal_direction};
-    __pyx_mstate_global->__pyx_codeobj_tab[5] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_levels, __pyx_mstate->__pyx_kp_b_iso88591_a_A_q_Cx_3ha_a_a_1_1, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[5])) goto bad;
+    const __Pyx_PyCode_New_function_description descr = {15, 0, 0, 18, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 191};
+    PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_signal, __pyx_mstate->__pyx_n_u_L0, __pyx_mstate->__pyx_n_u_L, __pyx_mstate->__pyx_n_u_Lambda, __pyx_mstate->__pyx_n_u_Lambda_hat, __pyx_mstate->__pyx_n_u_direction_bias, __pyx_mstate->__pyx_n_u_f, __pyx_mstate->__pyx_n_u_f_mean, __pyx_mstate->__pyx_n_u_f_stdev, __pyx_mstate->__pyx_n_u_current_price, __pyx_mstate->__pyx_n_u_low_price, __pyx_mstate->__pyx_n_u_high_price, __pyx_mstate->__pyx_n_u_order, __pyx_mstate->__pyx_n_u_energy_signal, __pyx_mstate->__pyx_n_u_thrust_signal, __pyx_mstate->__pyx_n_u_take_profit, __pyx_mstate->__pyx_n_u_stop_loss, __pyx_mstate->__pyx_n_u_signal_direction};
+    __pyx_mstate_global->__pyx_codeobj_tab[9] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_levels, __pyx_mstate->__pyx_kp_b_iso88591_a_A_q_Cx_3ha_g_OSTTaabbmmnno_1, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[9])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {10, 0, 0, 12, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 165};
+    const __Pyx_PyCode_New_function_description descr = {10, 0, 0, 12, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 208};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_entry_price, __pyx_mstate->__pyx_n_u_stop_loss, __pyx_mstate->__pyx_n_u_current_capital, __pyx_mstate->__pyx_n_u_L0, __pyx_mstate->__pyx_n_u_L, __pyx_mstate->__pyx_n_u_Lambda, __pyx_mstate->__pyx_n_u_Lambda_hat, __pyx_mstate->__pyx_n_u_max_leverage_allowed, __pyx_mstate->__pyx_n_u_platform_commission, __pyx_mstate->__pyx_n_u_order, __pyx_mstate->__pyx_n_u_qty, __pyx_mstate->__pyx_n_u_leverage};
-    __pyx_mstate_global->__pyx_codeobj_tab[6] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_qty, __pyx_mstate->__pyx_kp_b_iso88591_1_1_q_Cxq_31_aq_5, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[6])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[10] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_qty, __pyx_mstate->__pyx_kp_b_iso88591_1_1_q_Cxq_31_aq_5, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[10])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 14, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 188};
+    const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 14, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 231};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_current_index, __pyx_mstate->__pyx_n_u_entry_index, __pyx_mstate->__pyx_n_u_entry_price, __pyx_mstate->__pyx_n_u_quantity, __pyx_mstate->__pyx_n_u_side, __pyx_mstate->__pyx_n_u_current_price, __pyx_mstate->__pyx_n_u_Lambda, __pyx_mstate->__pyx_n_u_Lambda_hat, __pyx_mstate->__pyx_n_u_f, __pyx_mstate->__pyx_n_u_f_mean, __pyx_mstate->__pyx_n_u_f_std, __pyx_mstate->__pyx_n_u_exit_reason, __pyx_mstate->__pyx_n_u_profit_loss, __pyx_mstate->__pyx_n_u_stallness_reason};
-    __pyx_mstate_global->__pyx_codeobj_tab[7] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_physics_close, __pyx_mstate->__pyx_kp_b_iso88591_1_a_q_M_1_x_3ha_a_AQ_Q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[7])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[11] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_physics_close, __pyx_mstate->__pyx_kp_b_iso88591_1_a_q_M_1_x_3ha_a_AQ_Q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[11])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {8, 0, 0, 10, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 210};
+    const __Pyx_PyCode_New_function_description descr = {8, 0, 0, 10, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 253};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_side, __pyx_mstate->__pyx_n_u_stop_loss, __pyx_mstate->__pyx_n_u_take_profit, __pyx_mstate->__pyx_n_u_entry_price, __pyx_mstate->__pyx_n_u_low_price, __pyx_mstate->__pyx_n_u_high_price, __pyx_mstate->__pyx_n_u_L, __pyx_mstate->__pyx_n_u_Lambda, __pyx_mstate->__pyx_n_u_new_sl, __pyx_mstate->__pyx_n_u_new_tp};
-    __pyx_mstate_global->__pyx_codeobj_tab[8] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_update_levels, __pyx_mstate->__pyx_kp_b_iso88591_q_k_m_l_Q_81, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[8])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[12] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_qf_nativemath_impl_pyx, __pyx_mstate->__pyx_n_u_get_fractional_update_levels, __pyx_mstate->__pyx_kp_b_iso88591_q_k_m_l_Q_81, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[12])) goto bad;
   }
   Py_DECREF(tuple_dedup_map);
   return 0;
@@ -26234,38 +27485,6 @@ static CYTHON_INLINE long __Pyx_div_long(long a, long b, int b_is_constant) {
     return q - adapt_python;
 }
 
-/* PyObjectVectorCallKwBuilder */
-#if CYTHON_VECTORCALL
-static int __Pyx_VectorcallBuilder_AddArg(PyObject *key, PyObject *value, PyObject *builder, PyObject **args, int n) {
-    (void)__Pyx_PyObject_FastCallDict;
-    if (__Pyx_PyTuple_SET_ITEM(builder, n, key) != (0)) return -1;
-    Py_INCREF(key);
-    args[n] = value;
-    return 0;
-}
-CYTHON_UNUSED static int __Pyx_VectorcallBuilder_AddArg_Check(PyObject *key, PyObject *value, PyObject *builder, PyObject **args, int n) {
-    (void)__Pyx_VectorcallBuilder_AddArgStr;
-    if (unlikely(!PyUnicode_Check(key))) {
-        PyErr_SetString(PyExc_TypeError, "keywords must be strings");
-        return -1;
-    }
-    return __Pyx_VectorcallBuilder_AddArg(key, value, builder, args, n);
-}
-static int __Pyx_VectorcallBuilder_AddArgStr(const char *key, PyObject *value, PyObject *builder, PyObject **args, int n) {
-    PyObject *pyKey = PyUnicode_FromString(key);
-    if (!pyKey) return -1;
-    return __Pyx_VectorcallBuilder_AddArg(pyKey, value, builder, args, n);
-}
-#else // CYTHON_VECTORCALL
-CYTHON_UNUSED static int __Pyx_VectorcallBuilder_AddArg_Check(PyObject *key, PyObject *value, PyObject *builder, CYTHON_UNUSED PyObject **args, CYTHON_UNUSED int n) {
-    if (unlikely(!PyUnicode_Check(key))) {
-        PyErr_SetString(PyExc_TypeError, "keywords must be strings");
-        return -1;
-    }
-    return PyDict_SetItem(builder, key, value);
-}
-#endif
-
 /* IsLittleEndian (used by BufferFormatCheck) */
 static CYTHON_INLINE int __Pyx_Is_Little_Endian(void)
 {
@@ -26829,6 +28048,38 @@ static const char* __Pyx_BufFmt_CheckString(__Pyx_BufFmt_Context* ctx, const cha
     PyErr_Format(PyExc_IndexError,
        "Out of bounds on buffer access (axis %d)", axis);
   }
+  
+/* PyObjectVectorCallKwBuilder */
+  #if CYTHON_VECTORCALL
+  static int __Pyx_VectorcallBuilder_AddArg(PyObject *key, PyObject *value, PyObject *builder, PyObject **args, int n) {
+      (void)__Pyx_PyObject_FastCallDict;
+      if (__Pyx_PyTuple_SET_ITEM(builder, n, key) != (0)) return -1;
+      Py_INCREF(key);
+      args[n] = value;
+      return 0;
+  }
+  CYTHON_UNUSED static int __Pyx_VectorcallBuilder_AddArg_Check(PyObject *key, PyObject *value, PyObject *builder, PyObject **args, int n) {
+      (void)__Pyx_VectorcallBuilder_AddArgStr;
+      if (unlikely(!PyUnicode_Check(key))) {
+          PyErr_SetString(PyExc_TypeError, "keywords must be strings");
+          return -1;
+      }
+      return __Pyx_VectorcallBuilder_AddArg(key, value, builder, args, n);
+  }
+  static int __Pyx_VectorcallBuilder_AddArgStr(const char *key, PyObject *value, PyObject *builder, PyObject **args, int n) {
+      PyObject *pyKey = PyUnicode_FromString(key);
+      if (!pyKey) return -1;
+      return __Pyx_VectorcallBuilder_AddArg(pyKey, value, builder, args, n);
+  }
+  #else // CYTHON_VECTORCALL
+  CYTHON_UNUSED static int __Pyx_VectorcallBuilder_AddArg_Check(PyObject *key, PyObject *value, PyObject *builder, CYTHON_UNUSED PyObject **args, CYTHON_UNUSED int n) {
+      if (unlikely(!PyUnicode_Check(key))) {
+          PyErr_SetString(PyExc_TypeError, "keywords must be strings");
+          return -1;
+      }
+      return PyDict_SetItem(builder, key, value);
+  }
+  #endif
   
 /* AllocateExtensionType */
   static PyObject *__Pyx_AllocateExtensionType(PyTypeObject *t, int is_final) {

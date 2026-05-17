@@ -32,11 +32,11 @@ unique_ptr<LEVELS> calculate_levels(
     double current_price, 
     double low_price, 
     double high_price,
-    double order 
+    double order,          // Represents S (Fractional Order / Entropy)
+    double energy_signal,  // Magnitude-weighted micro-momentum
+    double thrust_signal   // Conviction-weighted micro-momentum
 ) {
-    if (signal == STALL) {
-        return std::make_unique<LEVELS>(0.0, 0.0, 0);
-    }
+    if (signal == STALL) return make_unique<LEVELS>(0.0, 0.0, 0);
 
     int side = (signal == STRONG_BULLISH || signal == MEAN_REVERSION_LONG) ? 1 : -1;
 
@@ -48,7 +48,7 @@ unique_ptr<LEVELS> calculate_levels(
     double z_score = std::abs(f - f_mean) / (f_stdev + 1e-9);
     double noise_adjustment = 1.0 / (1.0 + order);
     double total_buffer = potential_barrier * (1.0 + (z_score * noise_adjustment));
-
+    
     // 3. Structural Memory
     double Lambda_ratio = std::exp(Lambda_hat) / (Lambda + 1.0);
     double memory_scalar = std::clamp(std::log1p(Lambda_ratio), 0.5, 2.0);
@@ -57,7 +57,7 @@ unique_ptr<LEVELS> calculate_levels(
     // If current momentum (L) exceeds baseline (L0), stretch the TP to capture the surge.
     double L_ratio = std::exp(L) / (L0 + 1e-8);
     double velocity_scalar = std::clamp(L_ratio, 0.8, 2.0);
-
+        
     // 5. Macro Directional Bias (Activating direction_bias)
     // Reward trend-following with larger targets; force quick exits on counter-trend setups.
     double bias_scalar = 1.0;
@@ -80,10 +80,11 @@ unique_ptr<LEVELS> calculate_levels(
 void calculate_levels_cy(
     int signal, double L0, double L, double Lambda, double Lambda_hat, int direction_bias, 
     double f, double f_mean, double f_stdev, double current_price, 
-    double low_price, double high_price, double order, // New
+    double low_price, double high_price, double order,
+    double energy_signal, double thrust_signal,
     double * take_profit, double * stop_loss, int * signal_direction
 ) {
-    auto res = calculate_levels(signal, L0, L, Lambda, Lambda_hat, direction_bias, f, f_mean, f_stdev, current_price, low_price, high_price, order);
+    auto res = calculate_levels(signal, L0, L, Lambda, Lambda_hat, direction_bias, f, f_mean, f_stdev, current_price, low_price, high_price, order, energy_signal, thrust_signal);
     *take_profit = res->take_profit;
     *stop_loss = res->stop_loss;
     *signal_direction = res->signal_direction;
@@ -92,7 +93,6 @@ void calculate_levels_cy(
 unique_ptr<SIZING> calculate_fractional_qty(
     double entry_price, double stop_loss, double current_capital, double L0, double L, double Lambda, double Lambda_hat, double max_leverage_allowed, double platform_commission, double order
 ) {
-
     if (stop_loss == 0.0 || entry_price == stop_loss || order > 0.5) {
         return std::make_unique<SIZING>(0, 1.0);
     }

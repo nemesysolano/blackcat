@@ -1,4 +1,4 @@
-from qf.nativemath import get_fractional_integral as fractional_integral, get_fractional_integral_weights as fractional_integral_weights, get_fractional_signal as calculate_signal
+from qf.nativemath import get_fractional_integral as fractional_integral, get_fractional_integral_weights as fractional_integral_weights, get_fractional_signal as fractional_signal, get_energy_weighed_average as energy_weighed_average, get_thrust_weighed_average as thrust_weighed_average
 from qf.nn.models.calculus import fractional_orders    
 from qf.trade import create_backtest_stats
 import pandas as pd
@@ -36,29 +36,44 @@ def trade_fracdiff(quote_name, trade_dataset, lookback_periods, feature_names, t
         
     # Main simulation loop
     for current_index in range(lookback_periods, len(trade_dataset)-1):       
+        backward_window = trade_dataset.index[current_index - lookback_periods + 1 : current_index + 1]
         t0 = index[current_index - 1]        
         t = index[current_index]       
         f = trade_dataset.loc[t, 'f']
-        f0 = trade_dataset.loc[t0, 'f']
-        window_f = trade_dataset['f'].iloc[current_index - lookback_periods : current_index]
-        f_mean = window_f.mean()
-        f_stdev = window_f.std()
+        f_mean = trade_dataset.loc[backward_window, 'f'].mean()
+        f_stdev = trade_dataset.loc[backward_window, 'f'].std()
         order = trade_dataset.loc[t, 'S']
 
         Lambda = trade_dataset.loc[t, target_name] # Current acceleration
         Lambda_hat  = trade_dataset.loc[t, estimation_name] # Predicted acceleration                
-
+        
         L = trade_dataset.loc[t0, 'L']
         L_hat = trade_dataset.loc[t, 'L']
 
-        signal = calculate_signal(L, L_hat, Lambda_hat, Lambda, f0, f, f_mean, f_stdev, order)            
+        open_prices = trade_dataset.loc[backward_window, 'OPEN'].values
+        high_prices = trade_dataset.loc[backward_window, 'HIGH'].values
+        low_prices = trade_dataset.loc[backward_window, 'LOW'].values
+        close_prices = trade_dataset.loc[backward_window, 'CLOSE'].values
+        energy_signal = energy_weighed_average(
+            open_prices,
+            high_prices,
+            low_prices,
+            close_prices
+        )
+        thrust_signal = thrust_weighed_average(
+            open_prices,
+            high_prices,
+            low_prices,
+            close_prices
+        )        
+        primary_signal = fractional_signal(L, L_hat, Lambda_hat, Lambda, f, f_mean, f_stdev, order, energy_signal, thrust_signal)            
         active_position, transaction, gap_hit = update_position(current_index, trade_dataset, L, Lambda_hat, Lambda, active_position, f, f_mean, f_stdev)
 
         if transaction is not None:     
             add_transaction(transaction)
 
         if active_position is None and not gap_hit:
-            active_position = create_position(quote_name, current_index, signal, trade_dataset, f, f_mean, f_stdev, L, L_hat, Lambda_hat, Lambda, current_capital, max_leverage_allowed, direction_bias, platform_commission, order)
+            active_position = create_position(quote_name, current_index, primary_signal, trade_dataset, f, f_mean, f_stdev, L, L_hat, Lambda_hat, Lambda, current_capital, max_leverage_allowed, direction_bias, platform_commission, order, energy_signal, thrust_signal)
             long_trades = long_trades + 1 if active_position and active_position.side == 1 else long_trades
             short_trades = short_trades + 1 if active_position and active_position.side == -1 else short_trades
         if active_position is not None:
