@@ -88,7 +88,8 @@ def try_physics_close(current_index, position, eval_price, exec_price, exit_date
         current_index, position.entry_index, position.entry_price, position.quantity, position.side, 
         eval_price, Lambda, Lambda_hat, f, f_mean, f_std
     )
-    
+    profit_loss = (exec_price - position.entry_price) * position.quantity * position.side
+
     if exit_reason != 0:
         stalness_label = "Physics Flip" if stallness_reason == 2 else "3-Sigma Volatility Ejection"
         
@@ -134,7 +135,7 @@ def update_position(current_index, trade_dataset, L, Lambda, Lambda_hat, positio
             next_date = trade_dataset.index[current_index + 1]
             next_open_price = trade_dataset.iloc[current_index + 1]['OPEN']
             
-            # Pass BOTH current_price (eval) and next_open_price (exec)
+            ## Pass BOTH current_price (eval) and next_open_price (exec)
             position, transaction = try_physics_close(
                 current_index, position, current_price, next_open_price, next_date, 
                 Lambda, Lambda_hat, f, f_mean, f_std

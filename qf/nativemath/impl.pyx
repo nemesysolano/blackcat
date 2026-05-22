@@ -26,6 +26,7 @@ cdef extern from "fracdiff.h":
 # Add this under section "# 1. Bind to the C++ bridge functions"
 cdef extern from "entries.h":
     int calculate_fractional_signal_cy(double L0, double L, double Lambda, double Lambda_hat, double f, double f_mean, double f_std, double order, double energy_signal, double thrust_signal)
+    int calculate_fractional_relaxed_signal_cy(double L, double L_hat, double Lambda, double Lambda_hat, double y, double y_mean, double y_std, double order, double energy_signal, double thrust_signal)
 
 cdef extern from "ohlc.h":
     double energy_weighed_average_cy(const double * open_p, const double * high_p, const double * low_p, const double * close_p, int N)
@@ -186,6 +187,18 @@ def get_fractional_signal(double L, double L_hat, double Lambda, double Lambda_h
         L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, energy_signal, thrust_signal
     )
 
+# Python-facing function for the relaxed fractional signal
+def get_fractional_relaxed_signal(double L, double L_hat, double Lambda, double Lambda_hat, 
+                                  double y, double y_mean, double y_std, double order, 
+                                  double energy_signal, double thrust_signal):
+    """
+    Evaluates the physics engine logic with relaxed alignment constraints.
+    Returns: Signal (1 for STRONG_BULLISH, -1 for STRONG_BEARISH, 0 for STALL, etc.)
+    """
+    return calculate_fractional_relaxed_signal_cy(
+        L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, energy_signal, thrust_signal
+    )
+    
 # Add this at the very bottom of the file:
 # 7. Python-facing function for position sizing levels
 def get_levels(

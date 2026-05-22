@@ -508,13 +508,18 @@ be prepared for a reversal. Let's enhance decision table in Application to Tradi
 
 | Signal Type | Phase Check (Signs) | Bar Momentum ($\bar B(t)$) | Kinetic Gate | Structural Check ($y(t)$) | Execution Logic |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Fake-Out** | $L, \hat L, \hat \Lambda \text{ align } \neq \Lambda$ | Fails to confirm $\hat \Lambda$ | Fail or $S \ge 0.1$ | $y(t) > Y_u(t)$ | **ABORT**. Boundary reached but micro-momentum suggests the move is driven by noise or exhaustion. |
+| **Fake-Out** | $L, \hat L, \hat \Lambda \text{ align } \neq \Lambda$ | Fails to confirm $\hat \Lambda$ | Fail or $S \ge 1$ | $y(t) > Y_u(t)$ | **ABORT**. Boundary reached but micro-momentum suggests the move is driven by noise or exhaustion. |
 | **Noise** | $\hat L$ and $\Lambda$ out of phase | N/A | N/A | $y(t) < Y_l(t)$ | **IGNORE**. System in a low-energy state; price action is statistically insignificant. |
-| **Reversion** | $L, \hat L \text{ align } \neq \hat \Lambda, \Lambda$ | **Must align with** $\hat \Lambda$ | **Pass** & $S < 0.1$ | $y(t) > Y_u(t)$ | **ENTER REVERSAL**. Structural saturation reached and bar-level geometry confirms the snap-back toward the mean. |
-| **Strong Trend** | All aligned ($L, \hat L, \Lambda, \hat \Lambda$) | **Must align with** $\hat \Lambda$ | **Pass** & $S < 0.1$ | $Y_l(t) \le y(t) \le Y_u(t)$ | **ENTER TREND**. Macro-acceleration and micro-bar momentum are synchronized, indicating a high-conviction move. |
+| **Reversion** | $L, \hat L \text{ align } \neq \hat \Lambda, \Lambda$ | **Must align with** $\hat \Lambda$ | **Pass** & $S < 1$ | $y(t) > Y_u(t)$ | **ENTER REVERSAL**. Structural saturation reached and bar-level geometry confirms the snap-back toward the mean. |
+| **Strong Trend** | All aligned ($L, \hat L, \Lambda, \hat \Lambda$) | **Must align with** $\hat \Lambda$ | **Pass** & $S < 1$ | $Y_l(t) \le y(t) \le Y_u(t)$ | **ENTER TREND**. Macro-acceleration and micro-bar momentum are synchronized, indicating a high-conviction move. |
 ---
 
 
 # References #
 [The deep learning book](https://www.deeplearningbook.org)
 [Fractional Derivatives](https://www.sciencedirect.com/science/article/pii/S0377042714000065)
+[Alpaca Code: 3e148fe8-0bdf-433f-b613-35d3a97e9347](https://app.alpaca.markets/)
+[Alpaca Endpoint](https://paper-api.alpaca.markets/v2)
+[Alpaca Key](PK6GGWVXTB7337G5LFDECW2EU5)
+[Alpaca Secret](8EdRBPHtczC4eDmBPHrstGSd5eiASSUEenwkVb5YkGr6)
+[Russell 3000](https://www.kibot.com/Historical_Data/Russell_3000_Historical_Intraday_Data.aspx)

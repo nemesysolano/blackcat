@@ -1,4 +1,10 @@
-from qf.nativemath import get_fractional_integral as fractional_integral, get_fractional_integral_weights as fractional_integral_weights, get_fractional_signal as fractional_signal, get_energy_weighed_average as energy_weighed_average, get_thrust_weighed_average as thrust_weighed_average
+from qf.nativemath import get_fractional_integral as fractional_integral, \
+    get_fractional_relaxed_signal as fractional_relaxed_signal, \
+    get_fractional_integral_weights as fractional_integral_weights, \
+    get_fractional_signal as fractional_signal, \
+    get_energy_weighed_average as energy_weighed_average, \
+    get_thrust_weighed_average as thrust_weighed_average
+
 from qf.nn.models.calculus import fractional_orders    
 from qf.trade import create_backtest_stats
 import pandas as pd

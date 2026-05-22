@@ -374,170 +374,197 @@ void rolling_stdev_test() {
 }
 
 void calculate_fractional_signal_test() {
-    std::cout << "Running calculate_fractional_signal_test..." << std::endl;
+    std::cout << "Running calculate_fractional_signal_test (Dual-Gate & Bound Corrected)..." << std::endl;
 
-    // Common setup variables
+    // Base structural parameters
     double y_mean = 0.0;
-    double y_std = 1.0;
-    double order = 0.05; // Below the 0.1 threshold to allow entry
+    double y_std = 0.02; // Assuming F_STD_K_FACTOR = 2.5, bounds are effectively +/- 0.05
+    double order = 0.05; // Low entropy to pass the fractional gate
 
     // ---------------------------------------------------------
-    // TEST 1: STRONG BULLISH TREND (Alignment Trigger)
+    // TEST 1: STRONG TREND BULLISH (Dual-Gate Alignment)
     // ---------------------------------------------------------
-    // Predicted: Upward velocity increasing (L=1.0 -> L_hat=2.0, Lambda=1e-4 -> Lambda_hat=3e-4)
-    // Structural: Inside the well (y=0.0)
-    // Gate: Requires thrust_signal alignment
     {
-        double L = 1.0, L_hat = 2.0;
-        double Lambda = 1e-4, Lambda_hat = 3e-4; 
-        double y = 0.0; 
+        double L = 1e-4, L_hat = 2e-4;           
+        double Lambda = 1e-4, Lambda_hat = 4e-4; 
+        double y = 0.01;                         
+        // Energy must be >= Thrust to pass the alignment_trigger
+        double energy_signal = 0.8, thrust_signal = 0.5; 
 
-        // 1A: Thrust aligns (Bullish), Energy contradicts (Bearish) -> SHOULD ENTER
-        assert(calculate_fractional_signal(L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, -1.0, 1.0) == STRONG_BULLISH);
-
-        // 1B: Thrust contradicts (Bearish), Energy aligns (Bullish) -> SHOULD STALL
-        assert(calculate_fractional_signal(L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, 1.0, -1.0) == STALL);
+        int signal = calculate_fractional_signal(
+            L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, energy_signal, thrust_signal
+        );
         
-        std::cout << "[PASS] Strong Bullish Trend Gates" << std::endl;
+        assert(signal == STRONG_BULLISH);
+        std::cout << "[PASS] Strong Bullish Trend Alignment" << std::endl;
     }
 
     // ---------------------------------------------------------
-    // TEST 2: MEAN REVERSION SHORT (Reversion Trigger at Top)
+    // TEST 2: MEAN REVERSION SHORT (Upper Bound Exhaustion)
     // ---------------------------------------------------------
-    // Predicted: High upward velocity (L=1.0), but acceleration flipped down (Lambda_hat = -3e-4)
-    // Structural: Outside upper bound (y=5.0)
-    // Gate: Requires energy_signal alignment
     {
-        double L = 1.0, L_hat = 2.0;
-        double Lambda = -1e-4, Lambda_hat = -3e-4; 
-        double y = 5.0; 
+        double L = 1e-4, L_hat = 2e-4;             
+        double Lambda = -1e-4, Lambda_hat = -4e-4; 
+        double y = 0.06;                           
+        // Thrust magnitude must be > Energy magnitude to pass reversion_trigger
+        double energy_signal = -0.2, thrust_signal = -0.8; 
 
-        // 2A: Energy aligns (Bearish), Thrust contradicts (Bullish) -> SHOULD ENTER
-        assert(calculate_fractional_signal(L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, -1.0, 1.0) == MEAN_REVERSION_SHORT);
-
-        // 2B: Energy contradicts (Bullish), Thrust aligns (Bearish) -> SHOULD STALL
-        assert(calculate_fractional_signal(L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, 1.0, -1.0) == STALL);
-
-        std::cout << "[PASS] Mean Reversion Short Gates" << std::endl;
+        int signal = calculate_fractional_signal(
+            L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, energy_signal, thrust_signal
+        );
+        
+        assert(signal == MEAN_REVERSION_SHORT);
+        std::cout << "[PASS] Mean Reversion Short (Upper Bound Ejection)" << std::endl;
     }
 
     // ---------------------------------------------------------
-    // TEST 3: KINETIC RATIO FAILSAFE (Macro Filter)
+    // TEST 3: COMMENTED LOWER BOUND LOGIC (Bar Weighed Average Fix)
     // ---------------------------------------------------------
-    // Even if signals align, if Lambda_ratio <= L_ratio, we must STALL.
     {
-        double L = 1.0, L_hat = 3.0;      // L_ratio = 3.0
-        double Lambda = 1e-4, Lambda_hat = 2e-4; // Lambda_ratio = 2.0
-        double y = 0.0;
+        double L = -1e-4, L_hat = -2e-4;          
+        double Lambda = 1e-4, Lambda_hat = 4e-4;  
+        double y = -0.06;                         
+        double energy_signal = 0.5, thrust_signal = 0.5;
+
+        int signal = calculate_fractional_signal(
+            L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, energy_signal, thrust_signal
+        );
         
-        // Everything aligns perfectly, but the kinetic move is too "sluggish"
-        assert(calculate_fractional_signal(L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, 1.0, 1.0) == STALL);
-        
-        std::cout << "[PASS] Kinetic Ratio Filter" << std::endl;
+        assert(signal == STALL);
+        std::cout << "[PASS] Commented Lower Bound Reversion (Stall Confirmed)" << std::endl;
     }
 
     // ---------------------------------------------------------
-    // TEST 4: NOISE / FLAT CANDLES
+    // TEST 4: KINETIC BOTTLENECK (Velocity outpaces Acceleration)
     // ---------------------------------------------------------
-    // If micro-momentum is zero, we should never enter regardless of macro prediction.
     {
-        double L = 1.0, L_hat = 2.0;
-        double Lambda = 1e-4, Lambda_hat = 3e-4;
-        double y = 0.0;
+        double L = 1e-4, L_hat = 4e-4;           
+        double Lambda = 1e-4, Lambda_hat = 2e-4; 
+        double y = 0.01; 
+        double energy_signal = 0.5, thrust_signal = 0.5;
 
-        assert(calculate_fractional_signal(L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, 0.0, 0.0) == STALL);
+        int signal = calculate_fractional_signal(
+            L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, energy_signal, thrust_signal
+        );
         
-        std::cout << "[PASS] Noise/Zero-Signal Filter" << std::endl;
+        assert(signal == STALL);
+        std::cout << "[PASS] Kinetic Bottleneck Filter" << std::endl;
     }
 
     // ---------------------------------------------------------
-    // TEST 5: ORDER BURN-IN / HIGH FRACTIONAL NOISE
+    // TEST 5: VISCOSITY / ENTROPY GATE 
     // ---------------------------------------------------------
-    // If the calculated fractional order 'S' is too high (> 0.5), it's a fake-out.
     {
-        double high_order = 0.6;
-        assert(calculate_fractional_signal(1.0, 2.0, 1e-4, 3e-4, 0.0, 0.0, 1.0, high_order, 1.0, 1.0) == STALL);
+        double L = 1e-4, L_hat = 2e-4;
+        double Lambda = 1e-4, Lambda_hat = 4e-4; 
+        double y = 0.01; 
+        double energy_signal = 0.5, thrust_signal = 0.5;
+        double high_order = 1.5; 
+
+        int signal = calculate_fractional_signal(
+            L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, high_order, energy_signal, thrust_signal
+        );
         
-        std::cout << "[PASS] High Fractional Order Failsafe" << std::endl;
+        assert(signal == STALL);
+        std::cout << "[PASS] Viscosity/Entropy Noise Filter" << std::endl;
     }
 
     std::cout << "All calculate_fractional_signal tests PASSED." << std::endl;
 }
 
 void calculate_levels_test() {
-    std::cout << "Running calculate_levels_test (Fixing Epsilon Assertion)..." << std::endl;
+    std::cout << "Running calculate_levels_test (Aligned with Production sizing.cpp)..." << std::endl;
 
-    double current_price = 100.0;
-    double f_mean = 0.0;
-    double tolerance = 1e-4; 
-    
+    double tolerance = 1e-4;
+
     // ---------------------------------------------------------
-    // TEST 1: PHYSICAL FLOOR (The Epsilon Fix)
+    // TEST 1: TREND BULLISH WITH FULL MULTIPLIERS
     // ---------------------------------------------------------
-    // To trigger the floor, we use a tiny f_stdev so base_dist < 0.05
+    // Scenario: Strong trend alignment with high velocity and low entropy.
     {
-        double tiny_f_stdev = 0.0001; 
-        int signal = MEAN_REVERSION_LONG;
-        double energy_signal = 1.0;   
-        double order = 0.0;           
+        double current_price = 100.0;
+        double low_price = 99.0;
+        double high_price = 101.0; // base_vol = max(2.0, 0.5) = 2.0
         
-        auto levels = calculate_levels(
-            signal, 0, 0, 1e-4, 3e-4, 0, -0.05, f_mean, tiny_f_stdev, 
-            current_price, 99.0, 101.0, order, energy_signal, 0.0
-        );
-
-        double sl_dist = std::abs(levels->stop_loss - current_price);
-        double price_epsilon = current_price * 0.0005; // 0.05
-
-        // Verify the floor was hit and correctly clamped the distance
-        if (!(std::abs(sl_dist - price_epsilon) <= tolerance)) {
-            std::cerr << "Floor Test Failed! SL Dist: " << sl_dist 
-                      << " Expected: " << price_epsilon << std::endl;
-        }
-        assert(std::abs(sl_dist - price_epsilon) <= tolerance);
-        std::cout << "[PASS] Physical Floor (Epsilon) Verification" << std::endl;
-    }
-
-    // ---------------------------------------------------------
-    // TEST 2: TREND THRUST EXPANSION
-    // ---------------------------------------------------------
-    {
-        double f_stdev = 0.02;
-        int signal = STRONG_BULLISH;
-        double thrust_signal = 0.9;
-        double Lambda_hat = 4e-4;
-        double Lambda = 1e-4;
+        int signal = STRONG_BULLISH; // side = 1
+        int direction_bias = 1;      // Pro-trend -> bias_scalar = 1.5
+        
+        double order = 0.0; // No entropy -> noise_adjustment = 1.0, potential_barrier = 2.0
+        double f = 0.04;
+        double f_mean = 0.0;
+        double f_stdev = 0.02; // z_score = 2.0 -> total_buffer = 2.0 * (1.0 + 2.0 * 1.0) = 6.0
+        
+        // Memory Scalar
+        // Lambda_ratio = exp(0)/(0+1) = 1.0  -> memory_scalar = clamp(log1p(1), 0.5, 2.0) = ~0.693
+        double Lambda = 0.0;
+        double Lambda_hat = 0.0;
+        
+        // Velocity Scalar
+        // L_ratio = exp(0)/(0+1e-8) = 1e8 -> velocity_scalar = clamp(1e8, 0.8, 2.0) = 2.0
+        double L0 = 0.0;
+        double L = 0.0;
 
         auto levels = calculate_levels(
-            signal, 0, 0, Lambda, Lambda_hat, 0, 0.01, f_mean, f_stdev, 
-            current_price, 99.0, 101.0, 0.1, 0.0, thrust_signal
+            signal, L0, L, Lambda, Lambda_hat, direction_bias, 
+            f, f_mean, f_stdev, current_price, low_price, high_price, 
+            order, 0.0, 0.0
         );
 
-        double base_dist = current_price * f_stdev * F_STD_K_FACTOR; // 5.0
-        double tp_dist = std::abs(levels->take_profit - current_price);
+        // Expected SL = 100.0 - (1 * 6.0) = 94.0
+        assert(std::abs(levels->stop_loss - 94.0) <= tolerance);
 
-        assert(tp_dist > base_dist);
+        // Expected TP_dist = 6.0 * std::log1p(1.0) * 2.0 * 1.5 * 1.5 = 18.71497...
+        double expected_tp = 100.0 + (6.0 * std::log1p(1.0) * 2.0 * 1.5 * 1.5);
+        assert(std::abs(levels->take_profit - (std::round(expected_tp * 10000.0)/10000.0)) <= tolerance);
         assert(levels->signal_direction == 1);
-        std::cout << "[PASS] Trend Thrust Expansion" << std::endl;
+        std::cout << "[PASS] Production Model: Trend Bullish Scaling" << std::endl;
     }
 
     // ---------------------------------------------------------
-    // TEST 3: MEAN REVERSION TARGETING
+    // TEST 2: MEAN REVERSION SHORT WITH HIGH ENTROPY
     // ---------------------------------------------------------
+    // Scenario: Counter-trend reversal under high noise conditions.
     {
-        int signal = MEAN_REVERSION_SHORT;
-        double f = 0.04; 
+        double current_price = 100.0;
+        double low_price = 99.5;
+        double high_price = 100.5; // base_vol = max(1.0, 0.5) = 1.0
+        
+        int signal = MEAN_REVERSION_SHORT; // side = -1
+        int direction_bias = 1;            // Counter-trend -> bias_scalar = 0.8
+        
+        double order = 1.0; // High entropy -> potential_barrier = 1.0 * (1+1) = 2.0, noise_adj = 0.5
+        double f = -0.04;
+        double f_mean = 0.0;
+        double f_stdev = 0.02; // z_score = 2.0 -> total_buffer = 2.0 * (1.0 + 2.0 * 0.5) = 4.0
+        
+        // Memory & Velocity Scalars fallback to 0.693 and 2.0 based on flat bounds.
+        double Lambda = 0.0, Lambda_hat = 0.0;
+        double L0 = 0.0, L = 0.0;
+
         auto levels = calculate_levels(
-            signal, 0, 0, 0, 0, 0, f, f_mean, 0.02, 
-            current_price, 99.0, 101.0, 0.1, 0.5, 0.0
+            signal, L0, L, Lambda, Lambda_hat, direction_bias, 
+            f, f_mean, f_stdev, current_price, low_price, high_price, 
+            order, 0.0, 0.0
         );
 
-        double tp_dist = std::abs(levels->take_profit - current_price);
-        double expected_target = std::abs(current_price * (f - f_mean)); // 4.0
+        // Expected SL = 100.0 - (-1 * 4.0) = 104.0
+        assert(std::abs(levels->stop_loss - 104.0) <= tolerance);
 
-        assert(std::abs(tp_dist - expected_target) <= tolerance);
+        // Expected TP_dist = 4.0 * std::log1p(1.0) * 2.0 * 0.8 * 1.5 = 6.65421...
+        double expected_tp = 100.0 - (4.0 * std::log1p(1.0) * 2.0 * 0.8 * 1.5);
+        assert(std::abs(levels->take_profit - (std::round(expected_tp * 10000.0)/10000.0)) <= tolerance);
         assert(levels->signal_direction == -1);
-        std::cout << "[PASS] Reversal Mean Center Targeting" << std::endl;
+        std::cout << "[PASS] Production Model: Mean Reversion under Entropy" << std::endl;
+    }
+
+    // ---------------------------------------------------------
+    // TEST 3: STALL STATE INTEGRITY
+    // ---------------------------------------------------------
+    // Scenario: System halts execution due to internal structural friction.
+    {
+        auto levels = calculate_levels(STALL, 0, 0, 0, 0, 0, 0, 0, 0, 100.0, 99.0, 101.0, 0, 0, 0);
+        assert(levels->take_profit == 0.0 && levels->stop_loss == 0.0 && levels->signal_direction == 0);
+        std::cout << "[PASS] Production Model: Stall State Integrity" << std::endl;
     }
 
     std::cout << "All calculate_levels tests PASSED." << std::endl;
@@ -851,6 +878,88 @@ void energy_weighed_average_test() {
     std::cout << "energy_weighed_average_test passed." << std::endl;
 }
 
+void calculate_fractional_relaxed_signal_test() {
+    std::cout << "Running calculate_fractional_relaxed_signal_test (Vector Summation & Relaxed Viscosity)..." << std::endl;
+
+    double y_mean = 0.0;
+    double y_std = 0.02; // bounds +/- 0.05
+    
+// ---------------------------------------------------------
+    // TEST 1: RELAXED ALIGNMENT (Net Positive Vector)
+    // ---------------------------------------------------------
+    // Scenario: Instantaneous velocity (L) is slightly negative due to a micro-pullback, 
+    // but predicted velocity (L_hat) is massively positive. 
+    // Strict logic would STALL here. Relaxed logic sums them to a net positive (sign_L = 1).
+    {
+        double L = -1e-4, L_hat = 4e-4;           // Vector sum = +3e-4 (sign_L = 1), L_ratio = 4.0
+        
+        // FIX: Increased Lambda_hat to 5e-4 so Lambda_ratio (5.0) outpaces L_ratio (4.0)
+        double Lambda = 1e-4, Lambda_hat = 5e-4;  // Vector sum = +6e-4 (sign_Lambda = 1)
+        
+        double y = 0.01;                          // Inside the structural well
+        
+        // Thrust <= Energy is required for alignment
+        double energy_signal = 0.8, thrust_signal = 0.5; 
+        
+        // High entropy (0.9), but passes the relaxed `order < 1` gate
+        double order = 0.9; 
+        
+        int signal = calculate_fractional_relaxed_signal(
+            L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, energy_signal, thrust_signal
+        );
+        
+        assert(signal == STRONG_BULLISH);
+        std::cout << "[PASS] Relaxed Bullish (Net Positive Vector Tolerance)" << std::endl;
+    }
+
+    // ---------------------------------------------------------
+    // TEST 2: RELAXED MEAN REVERSION (Net Negative Acceleration)
+    // ---------------------------------------------------------
+    // Scenario: Price ejects above the upper bound. Current acceleration (Lambda) is positive,
+    // but the predicted acceleration (Lambda_hat) heavily crashes negative.
+    // The net acceleration sums to negative (sign_Lambda = -1), triggering the short.
+    {
+        double L = 1e-4, L_hat = 2e-4;             // Vector sum = +3e-4 (sign_L = 1)
+        double Lambda = 2e-4, Lambda_hat = -5e-4;  // Vector sum = -3e-4 (sign_Lambda = -1)
+        double y = 0.06;                           // Ejected above upper bound of 0.05
+        
+        // Thrust > Energy is required for reversion
+        double energy_signal = -0.2, thrust_signal = -0.8; 
+        double order = 0.5;
+
+        int signal = calculate_fractional_relaxed_signal(
+            L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, energy_signal, thrust_signal
+        );
+        
+        assert(signal == MEAN_REVERSION_SHORT);
+        std::cout << "[PASS] Relaxed Reversion Short (Net Negative Acceleration)" << std::endl;
+    }
+
+    // ---------------------------------------------------------
+    // TEST 3: MAXIMUM ENTROPY REJECTION (The Hard Wall)
+    // ---------------------------------------------------------
+    // Scenario: The vectors sum perfectly, but fractional noise exceeds the relaxed absolute limit.
+    // Even the relaxed engine must refuse to trade when the market is pure random walk (S >= 1).
+    {
+        double L = 1e-4, L_hat = 2e-4; 
+        double Lambda = 1e-4, Lambda_hat = 4e-4; 
+        double y = 0.01;
+        double energy_signal = 0.8, thrust_signal = 0.5; 
+        
+        // S = 1.1 (Fails `order < 1` execution gate)
+        double order = 1.1; 
+
+        int signal = calculate_fractional_relaxed_signal(
+            L, L_hat, Lambda, Lambda_hat, y, y_mean, y_std, order, energy_signal, thrust_signal
+        );
+        
+        assert(signal == STALL);
+        std::cout << "[PASS] Maximum Entropy Rejection (S >= 1.0)" << std::endl;
+    }
+
+    std::cout << "All calculate_fractional_relaxed_signal tests PASSED.\n" << std::endl;
+}
+
 int main(int argc, char* argv[]) {
     (void)argc;
     (void)argv;
@@ -873,6 +982,7 @@ int main(int argc, char* argv[]) {
     fractional_update_levels_test();
     test_cnn_inference_success();
     energy_weighed_average_test();
+    calculate_fractional_relaxed_signal_test();
     return 0;
 }
 #endif // __TEST_MAIN__

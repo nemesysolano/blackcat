@@ -12,6 +12,7 @@
 
 int calculate_fractional_signal(double L, double L_hat, double Lambda, double Lambda_hat,  double y, double y_mean, double y_std, double order, double energy_signal, double thrust_signal);
 int calculate_fractional_signal_cy(double L, double L_hat, double Lambda, double Lambda_hat, double y, double y_mean, double y_std, double order, double energy_signal, double thrust_signal);
-
+int calculate_fractional_relaxed_signal(double L, double L_hat, double Lambda, double Lambda_hat, double y, double y_mean, double y_std, double order, double energy_signal, double thrust_signal);
+int calculate_fractional_relaxed_signal_cy(double L, double L_hat, double Lambda, double Lambda_hat, double y, double y_mean, double y_std, double order, double energy_signal, double thrust_signal);
  
 #endif // __ENTRIES_H__

@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+import sys
+import os
+import re
+
+def find_matching(test_results_dir, expression):
+    pattern = re.compile(expression)
+    return tuple([f for f in os.listdir(test_results_dir) if pattern.match(f)])
+
+if __name__ == "__main__":
+    test_results_dir = sys.argv[1]
+    expression = sys.argv[2]
+    transaction_files = find_matching(test_results_dir, expression)
+    

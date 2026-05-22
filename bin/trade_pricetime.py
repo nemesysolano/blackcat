@@ -50,7 +50,7 @@ def write_results(output_file, details_file, stats, transactions):
                     "trailing": [{"datetime": t.datetime.isoformat(), "take_profit": float(t.take_profit), "stop_loss": float(t.stop_loss)} for t in transaction.trailing]
                 }
                 transaction_list.append(transaction)
-            print(json.dumps(transaction_list, ensure_ascii = False), file=f)     
+            print(json.dumps(transaction_list, ensure_ascii = False, indent=4), file=f)     
 
 def main(train_stats_folder, test_results_folder, model_name, max_leverage, platform_commission, initial_capital):
     try:
