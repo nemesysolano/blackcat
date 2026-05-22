@@ -3,7 +3,7 @@ import traceback
 import psycopg2
 import yfinance as yf
 import numpy as np
-from qf.indicators import log_acceleration_direction
+
 
 def table_name(quote_name):
     return "quote_stocks"
